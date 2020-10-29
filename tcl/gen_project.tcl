@@ -130,6 +130,8 @@ create_root_design ""
 
 validate_bd_design
 save_bd_design
+make_wrapper -files [get_files ./bd/ethernet_test/ethernet_test.bd] -top
+add_files -norecurse           ./bd/ethernet_test/hdl/ethernet_test_wrapper.v
 
 
 ##################################################################
