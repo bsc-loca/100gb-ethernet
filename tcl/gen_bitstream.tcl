@@ -97,17 +97,32 @@ if { $stepImpl == 1} {
 	reset_run impl_1
 	if { $stepBits == 0 } {
 		launch_runs impl_1 -jobs $jobsNum
+	    wait_on_run impl_1
 	} else {
 		launch_runs impl_1 -jobs $jobsNum -to_step write_bitstream
+	    wait_on_run impl_1
+
+		# creating platform for sw development
+        write_hw_platform -fixed -include_bit -force -file ./project/ethernet_test_wrapper.xsa
+
+		# programming FPGA
+        open_hw_manager
+        connect_hw_server
+        current_hw_target
+        open_hw_target -jtag_mode off
+        current_hw_device [get_hw_devices xcu280_0]
+        refresh_hw_device
+        set_property PROGRAM.FILE {./project/ethernet_test.runs/impl_1/ethernet_test_wrapper.bit} [get_hw_devices xcu280_0]
+        program_hw_devices
+        refresh_hw_device
+        close_hw_target
+        close_hw_manager
 	}
-	wait_on_run impl_1
 	reportImpl $root_dir
-    write_hw_platform -fixed -include_bit -force -file $root_dir/project/${g_project_name}_wrapper.xsa
 }
 
 if { $stepSynth == 0} {
 	openGUI
 } else {
-	exit
+	# exit
 }
-
