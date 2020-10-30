@@ -1,6 +1,7 @@
 variable stepSynth 0
 variable stepImpl 0
 variable stepBits 0
+variable jobsNum 16
 
 proc openGUI {} {
 
@@ -81,7 +82,7 @@ show_options $root_dir "implementation"
 
 if { $stepSynth == 1} {
 	reset_run synth_1
-	launch_runs synth_1 -jobs 16
+	launch_runs synth_1 -jobs $jobsNum
 	#wait_on_run synth_1
 	
 	set synthRuns [get_runs -filter {NAME=~ "*_synth_1"}]
@@ -95,12 +96,13 @@ if { $stepImpl == 1} {
 	wait_on_run synth_1
 	reset_run impl_1
 	if { $stepBits == 0 } {
-		launch_runs impl_1 -jobs 16
+		launch_runs impl_1 -jobs $jobsNum
 	} else {
-		launch_runs impl_1 -jobs 16 -to_step write_bitstream
+		launch_runs impl_1 -jobs $jobsNum -to_step write_bitstream
 	}
 	wait_on_run impl_1
 	reportImpl $root_dir
+    write_hw_platform -fixed -include_bit -force -file $root_dir/project/${g_project_name}_wrapper.xsa
 }
 
 if { $stepSynth == 0} {

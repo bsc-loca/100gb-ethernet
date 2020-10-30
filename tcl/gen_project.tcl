@@ -130,20 +130,17 @@ create_root_design ""
 
 validate_bd_design
 save_bd_design
-make_wrapper -files [get_files ./bd/ethernet_test/ethernet_test.bd] -top
-add_files -norecurse           ./bd/ethernet_test/hdl/ethernet_test_wrapper.v
+make_wrapper -files [get_files $root_dir/bd/${g_project_name}/${g_project_name}.bd] -top
+add_files -norecurse           $root_dir/bd/${g_project_name}/hdl/${g_project_name}_wrapper.v
 
 
 ##################################################################
 # MAIN FLOW
 ##################################################################
 
-
-
-set g_top_name ethernet_test_top
-
-set top_module "$root_dir/src/${g_top_name}.sv"
-add_files ${top_module}
+# set g_top_name ethernet_test_top
+# set top_module "$root_dir/src/${g_top_name}.sv"
+# add_files ${top_module}
 
 # Add Constraint files to project
 add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_pinout.xdc"
@@ -155,4 +152,3 @@ add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_alv
 puts "Project generation ended successfully"
 
 source $root_dir/tcl/gen_bitstream.tcl
-
