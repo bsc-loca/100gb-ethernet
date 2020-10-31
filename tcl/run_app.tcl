@@ -8,55 +8,49 @@
 # Local connection case
 connect -url tcp:localhost:3121
 connect -list
+
+# ---- Reading FPGA state
+fpga -boot-status
+fpga -config-status
+fpga -state
 targets
 
+# ---- Programming FPGA
+fpga -file ./project/ethernet_test.runs/impl_1/ethernet_test_wrapper.bit
+fpga -boot-status
+fpga -config-status
+fpga -state
+targets
 
+# ---- Setting CPU as debug target
+targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
+# loadhw -hw ./project/ethernet_test_wrapper.xsa
+# targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
+targets
+state
+rst -system
+after 3000
+state
 
+# ---- Opening Stdin/Stdout
+# jtagterminal -start
+readjtaguart -start
 
-# targets -set -nocase -filter {name =~ "APU*"}
-# rst -system
-# after 3000
-# targets -set -nocase -filter {name =~ "APU*"}
-# rst -cores
-# targets -set -nocase -filter {name =~ "RPU*"}
-# rst -cores
-# targets -set -nocase -filter {name =~ "PSU*"}
-# targets
-# state
+# ---- Loading app
+dow    ./xsct_ws/eth_test/Release/eth_test.elf
+verify ./xsct_ws/eth_test/Release/eth_test.elf
+state
+rst
+state
 
-# # ---- Configuring FPGA
-# fpga -file ../vivado/base.bit
-# fpga -state
+# ---- Running app
+con
+state
 
-# # ----- Initializing PSU
-# # targets -set -nocase -filter {name =~ "APU*"}
-# # loadhw -hw ./ws/baseHW/system.hdf
-# targets -set -nocase -filter {name =~ "APU*"}
-# source ./ws_baremet/base_hdf/psu_init.tcl
-# psu_init
-# after 1000
-# psu_ps_pl_isolation_removal
-# after 1000
-# psu_ps_pl_reset_config
-# targets
-# state
+# ---- Closing Stdin/Stdout
+# jtagterminal -stop
+# readjtaguart -stop
 
-# # ---- Activating and initializing core 0 of APU 
-# targets -set -nocase -filter {name =~"*A53*0"}
-# rst -processor
-# dow    ./ws_baremet/hello_baremet/Release/hello_baremet.elf
-# verify ./ws_baremet/hello_baremet/Release/hello_baremet.elf
-# targets
-# state
-
-# # ---- Running app
-# # jtagterminal -start
-# readjtaguart -start
-# con
-# # jtagterminal -stop
-# # readjtaguart -stop
-# targets
-# state
-
+# ---- Disconnecting
 # disconnect
 # exit
