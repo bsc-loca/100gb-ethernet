@@ -45,6 +45,7 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:clk_wiz:6.0\
+xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:mdm:3.2\
 xilinx.com:ip:microblaze:11.0\
 xilinx.com:ip:axi_intc:4.1\
@@ -208,6 +209,9 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
+  set HBM_CATTRIP [ create_bd_port -dir O -from 0 -to 0 HBM_CATTRIP ]
+  set_property USER_COMMENTS.comment_0 "If unused HBM_CATTRIP should be driven low
+to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   set resetn [ create_bd_port -dir I -type rst resetn ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_LOW} \
@@ -221,6 +225,12 @@ proc create_root_design { parentCell } {
    CONFIG.RESET_BOARD_INTERFACE {resetn} \
    CONFIG.USE_BOARD_FLOW {true} \
  ] $clk_wiz_1
+
+  # Create instance: const_gnd, and set properties
+  set const_gnd [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_gnd ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+ ] $const_gnd
 
   # Create instance: mdm_1, and set properties
   set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
@@ -284,6 +294,7 @@ proc create_root_design { parentCell } {
 
   # Create port connections
   connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins rst_clk_wiz_1_100M/dcm_locked]
+  connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_pins const_gnd/dout]
   connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rst_clk_wiz_1_100M/mb_debug_sys_rst]
   connect_bd_net -net microblaze_0_Clk [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rst_clk_wiz_1_100M/slowest_sync_clk]
   connect_bd_net -net microblaze_0_intr [get_bd_pins microblaze_0_axi_intc/intr] [get_bd_pins microblaze_0_xlconcat/dout]
