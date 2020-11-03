@@ -46,7 +46,6 @@ if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:xlconstant:1.1\
-xilinx.com:ip:l_ethernet:3.1\
 xilinx.com:ip:mdm:3.2\
 xilinx.com:ip:microblaze:11.0\
 xilinx.com:ip:axi_intc:4.1\
@@ -202,13 +201,6 @@ proc create_root_design { parentCell } {
 
 
   # Create interface ports
-  set qsfp0_161mhz [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp0_161mhz ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {161132812} \
-   ] $qsfp0_161mhz
-
-  set qsfp0_2x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp0_2x ]
-
   set sysclk0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 sysclk0 ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {100000000} \
@@ -219,10 +211,6 @@ proc create_root_design { parentCell } {
   set HBM_CATTRIP [ create_bd_port -dir O -from 0 -to 0 HBM_CATTRIP ]
   set_property USER_COMMENTS.comment_0 "If unused HBM_CATTRIP should be driven low
 to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
-  set QSFP0_FS [ create_bd_port -dir O -from 0 -to 0 QSFP0_FS ]
-  set_property USER_COMMENTS.comment_2 "QSFP0_FS=0 for QSFP0 clock = 161.132812 MHz" [get_bd_ports /QSFP0_FS]
-  set QSFP0_OEB [ create_bd_port -dir O -from 0 -to 0 QSFP0_OEB ]
-  set_property USER_COMMENTS.comment_3 "QSFP0_OEB must driven low to enable QSFP0 clock" [get_bd_ports /QSFP0_OEB]
   set resetn [ create_bd_port -dir I -type rst resetn ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_LOW} \
@@ -242,25 +230,6 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
  ] $const_gnd
-
-  # Create instance: l_ethernet_0, and set properties
-  set l_ethernet_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:l_ethernet:3.1 l_ethernet_0 ]
-  set_property -dict [ list \
-   CONFIG.BASE_R_KR {BASE-R} \
-   CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp0_161mhz} \
-   CONFIG.ETHERNET_BOARD_INTERFACE {qsfp0_2x} \
-   CONFIG.GT_GROUP_SELECT {Quad_X0Y10} \
-   CONFIG.GT_REF_CLK_FREQ {161.1328125} \
-   CONFIG.LANE1_GT_LOC {X0Y40} \
-   CONFIG.LANE2_GT_LOC {X0Y41} \
-   CONFIG.LANE3_GT_LOC {NA} \
-   CONFIG.LANE4_GT_LOC {NA} \
-   CONFIG.LINE_RATE {50} \
-   CONFIG.USE_BOARD_FLOW {true} \
- ] $l_ethernet_0
-  set_property USER_COMMENTS.comment_1 "PG211: When FIFO is enabled,
-the most preferred mode of operation
-is to connect the tx_clk_out to rx_core_clk" [get_bd_pins /l_ethernet_0/rx_core_clk_0]
 
   # Create instance: mdm_1, and set properties
   set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
@@ -289,7 +258,8 @@ is to connect the tx_clk_out to rx_core_clk" [get_bd_pins /l_ethernet_0/rx_core_
   # Create instance: microblaze_0_axi_periph, and set properties
   set microblaze_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 microblaze_0_axi_periph ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {3} \
+   CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+   CONFIG.NUM_MI {2} \
  ] $microblaze_0_axi_periph
 
   # Create instance: microblaze_0_local_memory
@@ -309,19 +279,8 @@ is to connect the tx_clk_out to rx_core_clk" [get_bd_pins /l_ethernet_0/rx_core_
    CONFIG.USE_BOARD_FLOW {true} \
  ] $rst_clk_wiz_1_100M
 
-  # Create instance: util_vector_logic, and set properties
-  set util_vector_logic [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic ]
-  set_property -dict [ list \
-   CONFIG.C_OPERATION {not} \
-   CONFIG.C_SIZE {1} \
-   CONFIG.LOGO_FILE {data/sym_notgate.png} \
- ] $util_vector_logic
-
   # Create interface connections
-  connect_bd_intf_net -intf_net diff_clock_rtl_1 [get_bd_intf_ports qsfp0_161mhz] [get_bd_intf_pins l_ethernet_0/gt_ref_clk]
-  connect_bd_intf_net -intf_net l_ethernet_0_gt_serial_port [get_bd_intf_ports qsfp0_2x] [get_bd_intf_pins l_ethernet_0/gt_serial_port]
   connect_bd_intf_net -intf_net microblaze_0_axi_dp [get_bd_intf_pins microblaze_0/M_AXI_DP] [get_bd_intf_pins microblaze_0_axi_periph/S00_AXI]
-  connect_bd_intf_net -intf_net microblaze_0_axi_periph_M02_AXI [get_bd_intf_pins l_ethernet_0/s_axi_0] [get_bd_intf_pins microblaze_0_axi_periph/M02_AXI]
   connect_bd_intf_net -intf_net microblaze_0_debug [get_bd_intf_pins mdm_1/MBDEBUG_0] [get_bd_intf_pins microblaze_0/DEBUG]
   connect_bd_intf_net -intf_net microblaze_0_dlmb_1 [get_bd_intf_pins microblaze_0/DLMB] [get_bd_intf_pins microblaze_0_local_memory/DLMB]
   connect_bd_intf_net -intf_net microblaze_0_ilmb_1 [get_bd_intf_pins microblaze_0/ILMB] [get_bd_intf_pins microblaze_0_local_memory/ILMB]
@@ -331,24 +290,21 @@ is to connect the tx_clk_out to rx_core_clk" [get_bd_pins /l_ethernet_0/rx_core_
   connect_bd_intf_net -intf_net sysclk0_1 [get_bd_intf_ports sysclk0] [get_bd_intf_pins clk_wiz_1/CLK_IN1_D]
 
   # Create port connections
-  connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins rst_clk_wiz_1_100M/dcm_locked] [get_bd_pins util_vector_logic/Op1]
-  connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_ports QSFP0_FS] [get_bd_ports QSFP0_OEB] [get_bd_pins const_gnd/dout]
-  connect_bd_net -net l_ethernet_0_tx_clk_out_0 [get_bd_pins l_ethernet_0/rx_core_clk_0] [get_bd_pins l_ethernet_0/tx_clk_out_0]
+  connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins rst_clk_wiz_1_100M/dcm_locked]
+  connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_pins const_gnd/dout]
   connect_bd_net -net mdm_1_Interrupt [get_bd_pins mdm_1/Interrupt] [get_bd_pins microblaze_0_axi_intc/intr]
   connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rst_clk_wiz_1_100M/mb_debug_sys_rst]
-  connect_bd_net -net microblaze_0_Clk [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins l_ethernet_0/dclk] [get_bd_pins l_ethernet_0/s_axi_aclk_0] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/M02_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rst_clk_wiz_1_100M/slowest_sync_clk]
+  connect_bd_net -net microblaze_0_Clk [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rst_clk_wiz_1_100M/slowest_sync_clk]
   connect_bd_net -net resetn_1 [get_bd_ports resetn] [get_bd_pins resetn_inv_0/Op1] [get_bd_pins rst_clk_wiz_1_100M/ext_reset_in]
   connect_bd_net -net resetn_inv_0_Res [get_bd_pins clk_wiz_1/reset] [get_bd_pins resetn_inv_0/Res]
   connect_bd_net -net rst_clk_wiz_1_100M_bus_struct_reset [get_bd_pins microblaze_0_local_memory/SYS_Rst] [get_bd_pins rst_clk_wiz_1_100M/bus_struct_reset]
   connect_bd_net -net rst_clk_wiz_1_100M_interconnect_aresetn [get_bd_pins microblaze_0_axi_periph/ARESETN] [get_bd_pins rst_clk_wiz_1_100M/interconnect_aresetn]
   connect_bd_net -net rst_clk_wiz_1_100M_mb_reset [get_bd_pins microblaze_0/Reset] [get_bd_pins microblaze_0_axi_intc/processor_rst] [get_bd_pins rst_clk_wiz_1_100M/mb_reset]
-  connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins l_ethernet_0/s_axi_aresetn_0] [get_bd_pins mdm_1/S_AXI_ARESETN] [get_bd_pins microblaze_0_axi_intc/s_axi_aresetn] [get_bd_pins microblaze_0_axi_periph/M00_ARESETN] [get_bd_pins microblaze_0_axi_periph/M01_ARESETN] [get_bd_pins microblaze_0_axi_periph/M02_ARESETN] [get_bd_pins microblaze_0_axi_periph/S00_ARESETN] [get_bd_pins rst_clk_wiz_1_100M/peripheral_aresetn]
-  connect_bd_net -net util_vector_logic_Res [get_bd_pins l_ethernet_0/sys_reset] [get_bd_pins util_vector_logic/Res]
+  connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins mdm_1/S_AXI_ARESETN] [get_bd_pins microblaze_0_axi_intc/s_axi_aresetn] [get_bd_pins microblaze_0_axi_periph/M00_ARESETN] [get_bd_pins microblaze_0_axi_periph/M01_ARESETN] [get_bd_pins microblaze_0_axi_periph/S00_ARESETN] [get_bd_pins rst_clk_wiz_1_100M/peripheral_aresetn]
 
   # Create address segments
   assign_bd_address -offset 0x00000000 -range 0x00400000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs microblaze_0_local_memory/dlmb_bram_if_cntlr/SLMB/Mem] -force
   assign_bd_address -offset 0x00000000 -range 0x00400000 -target_address_space [get_bd_addr_spaces microblaze_0/Instruction] [get_bd_addr_segs microblaze_0_local_memory/ilmb_bram_if_cntlr/SLMB/Mem] -force
-  assign_bd_address -offset 0x00809000 -range 0x00001000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs l_ethernet_0/s_axi_0/Reg] -force
   assign_bd_address -offset 0x00800000 -range 0x00008000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs mdm_1/S_AXI/Reg] -force
   assign_bd_address -offset 0x00808000 -range 0x00000400 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs microblaze_0_axi_intc/S_AXI/Reg] -force
 
