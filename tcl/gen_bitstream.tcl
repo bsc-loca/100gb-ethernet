@@ -106,17 +106,17 @@ if { $stepImpl == 1} {
         write_hw_platform -fixed -include_bit -force -file ./project/ethernet_test_wrapper.xsa
 
 		# programming FPGA
-        open_hw_manager
-        connect_hw_server
-        current_hw_target
-        open_hw_target -jtag_mode off
-        current_hw_device [get_hw_devices xcu280_0]
-        refresh_hw_device
-        set_property PROGRAM.FILE {./project/ethernet_test.runs/impl_1/ethernet_test_wrapper.bit} [get_hw_devices xcu280_0]
-        program_hw_devices
-        refresh_hw_device
-        close_hw_target
-        close_hw_manager
+        # open_hw_manager
+        # connect_hw_server
+        # current_hw_target
+        # open_hw_target -jtag_mode off
+        # current_hw_device [get_hw_devices xcu280_0]
+        # refresh_hw_device
+        # set_property PROGRAM.FILE {./project/ethernet_test.runs/impl_1/ethernet_test_wrapper.bit} [get_hw_devices xcu280_0]
+        # program_hw_devices
+        # refresh_hw_device
+        # close_hw_target
+        # close_hw_manager
 	}
 	reportImpl $root_dir
 }
