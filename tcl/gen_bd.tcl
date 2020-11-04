@@ -256,7 +256,11 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.LANE8_GT_LOC {NA} \
    CONFIG.LANE9_GT_LOC {NA} \
    CONFIG.NUM_LANES {4x25} \
+   CONFIG.RX_FLOW_CONTROL {0} \
+   CONFIG.RX_FRAME_CRC_CHECKING {Disable FCS Stripping} \
    CONFIG.RX_GT_BUFFER {1} \
+   CONFIG.TX_FLOW_CONTROL {0} \
+   CONFIG.TX_FRAME_CRC_CHECKING {Disable FCS Insertion} \
    CONFIG.USER_INTERFACE {LBUS} \
    CONFIG.USE_BOARD_FLOW {true} \
  ] $cmac_usplus_0
