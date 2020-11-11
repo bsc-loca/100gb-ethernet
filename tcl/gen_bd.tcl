@@ -252,6 +252,7 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.M15_TDATA_REMAP {tdata[511:480]} \
    CONFIG.M_TDATA_NUM_BYTES {4} \
    CONFIG.NUM_MI {16} \
+   CONFIG.S_TDATA_NUM_BYTES {64} \
  ] $axis_broadcaster_0
 
   # Create instance: axis_combiner_0, and set properties
