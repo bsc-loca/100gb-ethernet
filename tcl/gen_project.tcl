@@ -143,11 +143,12 @@ add_files -norecurse           $root_dir/bd/${g_project_name}/hdl/${g_project_na
 # add_files ${top_module}
 
 # Add Constraint files to project
-add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_pinout.xdc"
-add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_timing.xdc"
-add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_ila.xdc"
-add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_alveo280.xdc"
+# add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_pinout.xdc"
+# add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_timing.xdc"
+# add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_ila.xdc"
 
+add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_alveo280.xdc"
+# set_property PROCESSING_ORDER LATE [get_files "$root_dir/xdc/${g_project_name}_alveo280.xdc"]
 
 puts "Project generation ended successfully"
 

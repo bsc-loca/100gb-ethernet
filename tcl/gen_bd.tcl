@@ -206,10 +206,10 @@ proc create_root_design { parentCell } {
 
 
   # Create interface ports
-  set qsfp0_161mhz [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp0_161mhz ]
+  set qsfp0_156mhz [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp0_156mhz ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {161132812} \
-   ] $qsfp0_161mhz
+   CONFIG.FREQ_HZ {156250000} \
+   ] $qsfp0_156mhz
 
   set qsfp0_4x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp0_4x ]
 
@@ -273,14 +273,15 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   set cmac_usplus_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 cmac_usplus_0 ]
   set_property -dict [ list \
    CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
-   CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp0_161mhz} \
+   CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp0_156mhz} \
    CONFIG.ENABLE_AXI_INTERFACE {1} \
    CONFIG.ENABLE_PIPELINE_REG {0} \
    CONFIG.ETHERNET_BOARD_INTERFACE {qsfp0_4x} \
-   CONFIG.GT_REF_CLK_FREQ {161.1328125} \
+   CONFIG.GT_REF_CLK_FREQ {156.25} \
    CONFIG.GT_RX_BUFFER_BYPASS {0} \
    CONFIG.INCLUDE_RS_FEC {1} \
    CONFIG.INCLUDE_STATISTICS_COUNTERS {1} \
+   CONFIG.PLL_TYPE {QPLL1} \
    CONFIG.RX_FORWARD_CONTROL_FRAMES {0} \
    CONFIG.RX_GT_BUFFER {1} \
    CONFIG.USER_INTERFACE {AXIS} \
@@ -292,6 +293,12 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
  ] $const_gnd
+
+  # Create instance: const_vcc, and set properties
+  set const_vcc [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_vcc ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {1} \
+ ] $const_vcc
 
   # Create instance: mdm_1, and set properties
   set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
@@ -420,7 +427,7 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   connect_bd_intf_net -intf_net microblaze_0_intc_axi [get_bd_intf_pins microblaze_0_axi_intc/s_axi] [get_bd_intf_pins microblaze_0_axi_periph/M00_AXI]
   connect_bd_intf_net -intf_net microblaze_0_interrupt [get_bd_intf_pins microblaze_0/INTERRUPT] [get_bd_intf_pins microblaze_0_axi_intc/interrupt]
   connect_bd_intf_net -intf_net microblaze_0_mdm_axi [get_bd_intf_pins mdm_1/S_AXI] [get_bd_intf_pins microblaze_0_axi_periph/M01_AXI]
-  connect_bd_intf_net -intf_net qsfp0_161mhz_1 [get_bd_intf_ports qsfp0_161mhz] [get_bd_intf_pins cmac_usplus_0/gt_ref_clk]
+  connect_bd_intf_net -intf_net qsfp0_156mhz_1 [get_bd_intf_ports qsfp0_156mhz] [get_bd_intf_pins cmac_usplus_0/gt_ref_clk]
   connect_bd_intf_net -intf_net rx_fifo_M_AXIS [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins rx_fifo/M_AXIS]
   connect_bd_intf_net -intf_net sysclk0_1 [get_bd_intf_ports sysclk0] [get_bd_intf_pins clk_wiz_1/CLK_IN1_D]
   connect_bd_intf_net -intf_net tx_fifo_M_AXIS [get_bd_intf_pins cmac_usplus_0/axis_tx] [get_bd_intf_pins tx_fifo/M_AXIS]
@@ -430,7 +437,8 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   connect_bd_net -net cmac_usplus_0_gt_powergoodout [get_bd_pins cmac_usplus_0/gt_powergoodout] [get_bd_pins util_reduced_logic_0/Op1]
   connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins cmac_usplus_0/gt_rxusrclk2] [get_bd_pins cmac_usplus_0/rx_clk] [get_bd_pins rx_fifo/s_axis_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
   connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins cmac_usplus_0/gt_txusrclk2] [get_bd_pins tx_fifo/m_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
-  connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_ports QSFP0_FS] [get_bd_ports QSFP0_OEB] [get_bd_pins const_gnd/dout]
+  connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_ports QSFP0_OEB] [get_bd_pins const_gnd/dout]
+  connect_bd_net -net const_vcc_dout [get_bd_ports QSFP0_FS] [get_bd_pins const_vcc/dout]
   connect_bd_net -net mdm_1_Interrupt [get_bd_pins mdm_1/Interrupt] [get_bd_pins microblaze_0_axi_intc/intr]
   connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rx_rst_gen/mb_debug_sys_rst] [get_bd_pins sys_rst_gen/mb_debug_sys_rst] [get_bd_pins tx_rst_gen/mb_debug_sys_rst]
   connect_bd_net -net microblaze_0_Clk [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_combiner_0/aclk] [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins cmac_usplus_0/drp_clk] [get_bd_pins cmac_usplus_0/init_clk] [get_bd_pins cmac_usplus_0/s_axi_aclk] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/M02_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rx_fifo/m_axis_aclk] [get_bd_pins sys_rst_gen/slowest_sync_clk] [get_bd_pins tx_fifo/s_axis_aclk]
