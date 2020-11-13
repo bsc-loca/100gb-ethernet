@@ -19,6 +19,12 @@ set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup         [current_design]
 set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
 
 #--------------------------------------------
+# Specifying the placement of QSFP clock domain modules into single SLR to facilitate routing
+set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical cmac_usplus_0/gt_txusrclk2]]]
+set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical cmac_usplus_0/gt_rxusrclk2]]]
+set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_units"]
+
+#--------------------------------------------
 # Create Clock Constraints (whole board)
 #
 # create_clock -period 10.000 -name sysclk0         [get_ports "SYS_CLK0_P"]
