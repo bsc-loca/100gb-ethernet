@@ -274,7 +274,7 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
    CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp0_156mhz} \
    CONFIG.ENABLE_AXI_INTERFACE {1} \
-   CONFIG.ENABLE_PIPELINE_REG {0} \
+   CONFIG.ENABLE_PIPELINE_REG {1} \
    CONFIG.ENABLE_TIME_STAMPING {0} \
    CONFIG.ETHERNET_BOARD_INTERFACE {qsfp0_4x} \
    CONFIG.GT_REF_CLK_FREQ {156.25} \
@@ -429,7 +429,7 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins sys_rst_gen/dcm_locked]
   connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins cmac_usplus_0/gt_rxusrclk2] [get_bd_pins cmac_usplus_0/rx_clk] [get_bd_pins rx_fifo/s_axis_aclk]
   connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins cmac_usplus_0/gt_txusrclk2] [get_bd_pins tx_fifo/m_axis_aclk]
-  connect_bd_net -net cmac_usplus_0_usr_tx_reset [get_bd_pins cmac_usplus_0/usr_tx_reset] [get_bd_pins resetn_inv_1/Op1]
+  connect_bd_net -net cmac_usplus_0_usr_rx_reset [get_bd_pins cmac_usplus_0/usr_rx_reset] [get_bd_pins resetn_inv_1/Op1]
   connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_ports QSFP0_OEB] [get_bd_pins const_gnd/dout]
   connect_bd_net -net const_vcc_dout [get_bd_ports QSFP0_FS] [get_bd_pins const_vcc/dout]
   connect_bd_net -net mdm_1_Interrupt [get_bd_pins mdm_1/Interrupt] [get_bd_pins microblaze_0_axi_intc/intr]
