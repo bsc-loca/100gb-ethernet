@@ -20,6 +20,7 @@ set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
 
 #--------------------------------------------
 # Specifying the placement of QSFP clock domain modules into single SLR to facilitate routing
+# https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug912-vivado-properties.pdf#page=386
 set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical cmac_usplus_0/gt_txusrclk2]]]
 set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical cmac_usplus_0/gt_rxusrclk2]]]
 set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_units"]
