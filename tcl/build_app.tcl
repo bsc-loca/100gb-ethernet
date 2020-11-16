@@ -19,6 +19,8 @@ app report eth_test
 importsources -name eth_test -path ./src/eth_test.cpp
 app config -name eth_test -set build-config release
 app config -name eth_test -get build-config
+app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og}
+app config -name eth_test -get compiler-misc
 
 #Build the app
 app clean all

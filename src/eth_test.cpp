@@ -1,123 +1,122 @@
 
 #include <stdio.h>
-// #include <unistd.h>
+#include <stdlib.h>
+#include <vector>
+#include <string>
+#include <unistd.h>
+// #include <xil_sleeptimer.h>
 // #include <cassert>
-//#include <iostream>
+// #include <iostream>
 // #include <fstream>
 // #include <sstream>
-// #include <vector>
 // #include <thread>
 // #include <chrono>
 // #include <fcntl.h>
 // #include <sys/stat.h>
 
-// #ifdef BAREMETAL
-// #include "xil_cache.h"
-// #else
-
-// #include <sys/mman.h>
-
-// #ifndef PYNQGCC
-// #include "sds_lib.h"
-// extern "C" { // addition to "sds_lib.h"
-// unsigned long xlnkGetBufPhyAddr(void*);
-// void xlnkFlushCache(unsigned int phys_addr, int size);
-// void xlnkInvalidateCache(unsigned int phys_addr, int size);
-// }
-// #endif
-// #endif
-
-// #include "hello.h"
+#include "xparameters.h"
 
 // using namespace std;
 
-// enum HelloMode {
-//   BRAM_CHECK  = 0,
-//   DRAM_CHECK0 = 1,
-//   DRAM_CHECK1 = 2,
-//   DRAM_CHECK2 = 3,
-//   DRAM_CHECK3 = 4
-// };
+enum TestMode {
+  SHORT_LOOPBACK = 0,
+  LONG_LOOPBACK  = 1
+};
 
-// struct UserParam {
-//   bool      fpgaInit;
-//   HelloMode procMode;
-//   uint32_t  wordsNum;
-// };
+struct UserParam {
+  TestMode procMode;
+  uint32_t wordsNum;
+};
 
-// void printParam(UserParam& param) {
-//     cout << endl<<"Current Parameter Settings:"         << endl
-//          << "  FPGA initialization: " << param.fpgaInit << endl
-//          << "  Mode: "                << param.procMode << endl
-//          << "  Words num: "           << param.wordsNum << endl
-//          << endl;
-// }
+void printParam(UserParam& param) {
+    printf("\n\n");
+    printf("------ Ethernet Test App ------\n");
+    printf("Current Parameter Settings:\n");
+    printf("  Mode: %d\n",       param.procMode);
+    printf("  Words num: %ld\n", param.wordsNum);
+    printf("\n");
+}
 
-// void help(UserParam& param) {
-//     cout << "Parameters:\n"
-//          << "  -h               Show this help"    << endl
-//          << "  -init <bool>     If '0': Do not re-load FPGA, If '1': FPGA is re-loaded & initialized with ./base.bit firmware" << endl
-//          << "  -mode <uint8_t>  Test mode:"        << endl
-//          << "                   0    -BRAM_CHECK"  << endl
-//          << "                   1,2,3-DRAM_CHECKs" << endl
-//          << "  -num <uint32_t>  Words num"         << endl
-//          << endl;
-//     printParam(param);
-//     exit(0);
-// }
-
-// void helloHW(uint32_t[], uint32_t[], uint32_t[], uint32_t[], uint32_t[], volatile uint8_t*);
-
+void help(UserParam& param) {
+    printf("Parameters:\n");
+    printf("  -h               Show this help\n"    );
+    printf("  -mode <uint8_t>  Test mode:\n"        );
+    printf("                   0 - SHORT_LOOPBACK\n");
+    printf("                   1 - LONG_LOOPBACK\n" );
+    printf("  -num <uint32_t>  Words num\n"         );
+    printf("\n");
+    printParam(param);
+    exit(0);
+}
 
 int main(int argc, char *argv[])
 {
 
-    // cout << "HELLO world !!!!!" << endl;
-    printf("HELLOOOO!!!! \n");
-
-
     // -------- Setting user parameters -------------
-    // UserParam param;
-    // param.fpgaInit = true;
-    // param.procMode = DRAM_CHECK0;
-    // param.wordsNum = 0x100; //min(BRAM_DATA_SIZE, DRAM_SW_WORDS);
+    UserParam param;
+    param.procMode = SHORT_LOOPBACK;
+    param.wordsNum = 0x100;
 
-    // vector<string> args;
-    // for ( int i = 1; i < argc; ++i ) {
-    //   args.push_back(argv[i]);
-    // }
+    std::vector<std::string> args;
+    for ( int i = 1; i < argc; ++i ) {
+      args.push_back(argv[i]);
+    }
 
-    // for ( uint8_t i = 0; i < args.size(); ++i ) {
-    //   if ( args[i] == "-h" ) {
-    //       help(param);
-    //   }
-    //   if ( args[i] == "-init" && uint8_t(i+1) < args.size() ) {
-    //       param.fpgaInit = atoi(args[++i].c_str());
-    //       continue;
-    //   }
-    //   if ( args[i] == "-mode" && uint8_t(i+1) < args.size() ) {
-    //       param.procMode = HelloMode(atoi(args[++i].c_str()));
-    //       continue;
-    //   }
-    //   if ( args[i] == "-num" && uint8_t(i+1) < args.size() ) {
-    //       param.wordsNum = atoi(args[++i].c_str());
-    //       continue;
-    //   }
-    //   cout << endl << "ERROR: Unknown parameter: " << args[i] << endl;
-    //   help(param);
-    // }
-    // if (param.procMode != BRAM_CHECK  &&
-    //     param.procMode != DRAM_CHECK0 &&
-    //     param.procMode != DRAM_CHECK1 &&
-    //     param.procMode != DRAM_CHECK2 &&
-    //     param.procMode != DRAM_CHECK3) {
-    //   cout << "ERROR: invalid test mode: " << param.procMode << endl;
-    //   exit(1);
-    // }
-    // if (param.wordsNum > 0x100) {
-    //   cout << "ERROR: words number is too much: " << param.wordsNum << endl;
-    //   exit(1);
-    // }
+    for ( uint8_t i = 0; i < args.size(); ++i ) {
+      if ( args[i] == "-h" ) {
+          help(param);
+      }
+      if ( args[i] == "-mode" && uint8_t(i+1) < args.size() ) {
+          param.procMode = TestMode(atoi(args[++i].c_str()));
+          continue;
+      }
+      if ( args[i] == "-num" && uint8_t(i+1) < args.size() ) {
+          param.wordsNum = atoi(args[++i].c_str());
+          continue;
+      }
+      printf("ERROR: Unknown parameter: %s\n", args[i].c_str());
+      help(param);
+    }
+    if (param.procMode != SHORT_LOOPBACK  &&
+        param.procMode != LONG_LOOPBACK) {
+      printf("ERROR: invalid test mode: %d", param.procMode);
+      exit(1);
+    }
+    if (param.wordsNum > 0x100) {
+      printf("ERROR: words number is too much: %ld", param.wordsNum);
+      exit(1);
+    }
+
+    printParam(param);
+
+    uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_XBAR_BASEADDR);
+    uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_XBAR_BASEADDR);
+    uint8_t const outDirOffs = 0x0040/4;
+
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+
+    printf("Setting Loopback Mode\n");
+    txSwitch[outDirOffs+0] = 0;          // Tx: directing to  Out0 (loopback)
+    txSwitch[outDirOffs+1] = 0x80000000; // Tx: switching-off Out1
+    rxSwitch[outDirOffs]   = 0;          // Rx: directing from In0 (loopback)
+
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+    sleep(1); // in seconds
+    printf("\n");
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+
+    printf("Commiting the setting\n");
+    txSwitch[0] = 0x2;
+    rxSwitch[0] = 0x2;
+
+    printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
+    sleep(1); // in seconds
+    printf("\n");
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
 
     return(0) ;
 }
