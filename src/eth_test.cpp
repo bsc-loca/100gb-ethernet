@@ -15,6 +15,7 @@
 // #include <sys/stat.h>
 
 #include "xparameters.h"
+#include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
 // using namespace std;
 
@@ -52,71 +53,158 @@ void help(UserParam& param) {
 int main(int argc, char *argv[])
 {
 
-    // -------- Setting user parameters -------------
-    UserParam param;
-    param.procMode = SHORT_LOOPBACK;
-    param.wordsNum = 0x100;
+  // -------- Setting user parameters -------------
+  UserParam param;
+  param.procMode = SHORT_LOOPBACK;
+  param.wordsNum = 0x100;
 
-    std::vector<std::string> args;
-    for ( int i = 1; i < argc; ++i ) {
-      args.push_back(argv[i]);
-    }
+  std::vector<std::string> args;
+  for ( int i = 1; i < argc; ++i ) {
+    args.push_back(argv[i]);
+  }
 
-    for ( uint8_t i = 0; i < args.size(); ++i ) {
-      if ( args[i] == "-h" ) {
-          help(param);
-      }
-      if ( args[i] == "-mode" && uint8_t(i+1) < args.size() ) {
-          param.procMode = TestMode(atoi(args[++i].c_str()));
-          continue;
-      }
-      if ( args[i] == "-num" && uint8_t(i+1) < args.size() ) {
-          param.wordsNum = atoi(args[++i].c_str());
-          continue;
-      }
-      printf("ERROR: Unknown parameter: %s\n", args[i].c_str());
-      help(param);
+  for ( uint8_t i = 0; i < args.size(); ++i ) {
+    if ( args[i] == "-h" ) {
+        help(param);
     }
-    if (param.procMode != SHORT_LOOPBACK  &&
-        param.procMode != LONG_LOOPBACK) {
+    if ( args[i] == "-mode" && uint8_t(i+1) < args.size() ) {
+        param.procMode = TestMode(atoi(args[++i].c_str()));
+        continue;
+    }
+    if ( args[i] == "-num" && uint8_t(i+1) < args.size() ) {
+        param.wordsNum = atoi(args[++i].c_str());
+        continue;
+    }
+    printf("ERROR: Unknown parameter: %s\n", args[i].c_str());
+    help(param);
+  }
+  if (param.procMode != SHORT_LOOPBACK  &&
+      param.procMode != LONG_LOOPBACK) {
       printf("ERROR: invalid test mode: %d", param.procMode);
       exit(1);
-    }
-    if (param.wordsNum > 0x100) {
+  }
+  if (param.wordsNum > 0x100) {
       printf("ERROR: words number is too much: %ld", param.wordsNum);
       exit(1);
-    }
+  }
 
-    printParam(param);
+  printParam(param);
 
-    uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_XBAR_BASEADDR);
-    uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_XBAR_BASEADDR);
-    uint8_t const outDirOffs = 0x0040/4;
+  uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_XBAR_BASEADDR);
+  uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_XBAR_BASEADDR);
+  uint8_t const outDirOffs = 0x0040/4;
 
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+  if (param.procMode == SHORT_LOOPBACK) {
 
-    printf("Setting Loopback Mode\n");
-    txSwitch[outDirOffs+0] = 0;          // Tx: directing to  Out0 (loopback)
+    // printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
+    // printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+    printf("Setting Short Loopback Mode\n");
+    txSwitch[outDirOffs+0] = 0;          // Tx: switching     Out0 to In0 (loopback)
     txSwitch[outDirOffs+1] = 0x80000000; // Tx: switching-off Out1
-    rxSwitch[outDirOffs]   = 0;          // Rx: directing from In0 (loopback)
-
+    rxSwitch[outDirOffs]   = 0;          // Rx: switching     Out0 to In0 (loopback)
     printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
     printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
-    sleep(1); // in seconds
-    printf("\n");
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
-
     printf("Commiting the setting\n");
     txSwitch[0] = 0x2;
     rxSwitch[0] = 0x2;
-
     printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
-    sleep(1); // in seconds
-    printf("\n");
     printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
     printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+    sleep(1); // in seconds
+    printf("\n");
 
-    return(0) ;
+    uint8_t const LOOPBACK_DEPTH = 3;
+    printf("Transmitting data to loopback with depth %d:\n", LOOPBACK_DEPTH);
+    uint32_t putData = 0xDEADBEEF;
+    uint32_t fslNrdy = 1;
+    uint32_t fslErr  = 1;
+
+    for (uint8_t word = 0; word < LOOPBACK_DEPTH;            word++)
+    for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
+      // channel id goes to macro as literal 
+      if (chan==0)  putfslx(putData,  0, FSL_NONBLOCKING);
+      if (chan==1)  putfslx(putData,  1, FSL_NONBLOCKING);
+      if (chan==2)  putfslx(putData,  2, FSL_NONBLOCKING);
+      if (chan==3)  putfslx(putData,  3, FSL_NONBLOCKING);
+      if (chan==4)  putfslx(putData,  4, FSL_NONBLOCKING);
+      if (chan==5)  putfslx(putData,  5, FSL_NONBLOCKING);
+      if (chan==6)  putfslx(putData,  6, FSL_NONBLOCKING);
+      if (chan==7)  putfslx(putData,  7, FSL_NONBLOCKING);
+      if (chan==8)  putfslx(putData,  8, FSL_NONBLOCKING);
+      if (chan==9)  putfslx(putData,  9, FSL_NONBLOCKING);
+      if (chan==10) putfslx(putData, 10, FSL_NONBLOCKING);
+      if (chan==11) putfslx(putData, 11, FSL_NONBLOCKING);
+      if (chan==12) putfslx(putData, 12, FSL_NONBLOCKING);
+      if (chan==13) putfslx(putData, 13, FSL_NONBLOCKING);
+      if (chan==14) putfslx(putData, 14, FSL_NONBLOCKING);
+      if (chan==15) putfslx(putData, 15, FSL_NONBLOCKING);
+      fsl_isinvalid(fslNrdy);
+      fsl_iserror  (fslErr);
+      printf("Writing word %d to FSL%d = %0lX, Full = %0lX, Err = %0lX \n", word, chan, putData, fslNrdy, fslErr);
+      if (fslNrdy || fslErr) {
+        printf("\nERROR: Failed write of word %d to FSL%d = %0lX, Full = %0lX, Err = %0lX \n", word, chan, putData, fslNrdy, fslErr);
+        exit(1);
+      }
+      putData += chan;
+      putData = ~putData;
+    }
+    printf("\n");
+    // here the loopback should be full
+    putfslx(putData, 0, FSL_NONBLOCKING);
+    fsl_isinvalid(fslNrdy);
+    if (!fslNrdy) {
+      printf("\nERROR: After filling whole loopback it is still not full\n");
+      exit(1);
+    }
+
+
+    printf("Receiving data from loopback with depth %d:\n", LOOPBACK_DEPTH);
+    uint32_t getData = 0;
+    putData = 0xDEADBEEF;
+    fslNrdy = 1;
+    fslErr  = 1;
+
+    for (uint8_t word = 0; word < LOOPBACK_DEPTH;            word++)
+    for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
+      // channel id goes to macro as literal 
+      if (chan==0)  getfslx(getData,  0, FSL_NONBLOCKING);
+      if (chan==1)  getfslx(getData,  1, FSL_NONBLOCKING);
+      if (chan==2)  getfslx(getData,  2, FSL_NONBLOCKING);
+      if (chan==3)  getfslx(getData,  3, FSL_NONBLOCKING);
+      if (chan==4)  getfslx(getData,  4, FSL_NONBLOCKING);
+      if (chan==5)  getfslx(getData,  5, FSL_NONBLOCKING);
+      if (chan==6)  getfslx(getData,  6, FSL_NONBLOCKING);
+      if (chan==7)  getfslx(getData,  7, FSL_NONBLOCKING);
+      if (chan==8)  getfslx(getData,  8, FSL_NONBLOCKING);
+      if (chan==9)  getfslx(getData,  9, FSL_NONBLOCKING);
+      if (chan==10) getfslx(getData, 10, FSL_NONBLOCKING);
+      if (chan==11) getfslx(getData, 11, FSL_NONBLOCKING);
+      if (chan==12) getfslx(getData, 12, FSL_NONBLOCKING);
+      if (chan==13) getfslx(getData, 13, FSL_NONBLOCKING);
+      if (chan==14) getfslx(getData, 14, FSL_NONBLOCKING);
+      if (chan==15) getfslx(getData, 15, FSL_NONBLOCKING);
+      fsl_isinvalid(fslNrdy);
+      fsl_iserror  (fslErr);
+      printf("Reading word %d from FSL%d = %0lX, Empty = %0lX, Err = %0lX \n", word, chan, getData, fslNrdy, fslErr);
+      if (fslNrdy || fslErr || getData!=putData) {
+        printf("\nERROR: Failed read of word %d from FSL%d = %0lX (expected %0lX), Empty = %0lX, Err = %0lX \n",
+               word, chan, getData, putData, fslNrdy, fslErr);
+        exit(1);
+      }
+      putData += chan;
+      putData = ~putData;
+    }
+    printf("\n");
+    // here the loopback should be empty
+    getfslx(getData, 0, FSL_NONBLOCKING);
+    fsl_isinvalid(fslNrdy);
+    if (!fslNrdy) {
+      printf("\nERROR: After reading out whole loopback it is still not empty\n");
+      exit(1);
+    }
+
+    printf("Short Loopback test passed\n");
+  }
+
+  return(0) ;
 }
