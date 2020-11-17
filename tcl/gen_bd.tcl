@@ -49,6 +49,7 @@ xilinx.com:ip:axis_combiner:1.1\
 xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:cmac_usplus:3.1\
 xilinx.com:ip:xlconstant:1.1\
+xilinx.com:ip:axis_data_fifo:2.0\
 xilinx.com:ip:mdm:3.2\
 xilinx.com:ip:microblaze:11.0\
 xilinx.com:ip:axi_intc:4.1\
@@ -306,6 +307,13 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.CONST_VAL {1} \
  ] $const_vcc
 
+  # Create instance: loopback_fifo, and set properties
+  set loopback_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 loopback_fifo ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+   CONFIG.IS_ACLK_ASYNC {1} \
+ ] $loopback_fifo
+
   # Create instance: mdm_1, and set properties
   set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
   set_property -dict [ list \
@@ -358,6 +366,8 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {2} \
    CONFIG.ROUTING_MODE {1} \
+   CONFIG.S00_HAS_REGSLICE {0} \
+   CONFIG.S01_HAS_REGSLICE {0} \
  ] $rx_axis_switch
 
   # Create instance: rx_rst_gen, and set properties
@@ -381,7 +391,9 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.ENABLE_FIFO_COUNT_PORTS {0} \
    CONFIG.HAS_ACLKEN {0} \
    CONFIG.M00_HAS_REGSLICE {0} \
+   CONFIG.M01_HAS_REGSLICE {0} \
    CONFIG.ROUTING_MODE {1} \
+   CONFIG.S00_HAS_REGSLICE {0} \
  ] $tx_axis_switch
 
   # Create instance: tx_rst_gen, and set properties
@@ -398,7 +410,6 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
  ] $util_reduced_logic_0
 
   # Create interface connections
-  connect_bd_intf_net -intf_net S00_AXIS_1 [get_bd_intf_pins rx_axis_switch/S00_AXIS] [get_bd_intf_pins tx_axis_switch/M00_AXIS]
   connect_bd_intf_net -intf_net S01_AXIS_1 [get_bd_intf_pins cmac_usplus_0/axis_rx] [get_bd_intf_pins rx_axis_switch/S01_AXIS]
   connect_bd_intf_net -intf_net S_AXI_CTRL_1 [get_bd_intf_pins microblaze_0_axi_periph/M03_AXI] [get_bd_intf_pins tx_axis_switch/S_AXI_CTRL]
   connect_bd_intf_net -intf_net axis_broadcaster_0_M00_AXIS [get_bd_intf_pins axis_broadcaster_0/M00_AXIS] [get_bd_intf_pins microblaze_0/S0_AXIS]
@@ -418,6 +429,7 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   connect_bd_intf_net -intf_net axis_broadcaster_0_M14_AXIS [get_bd_intf_pins axis_broadcaster_0/M14_AXIS] [get_bd_intf_pins microblaze_0/S14_AXIS]
   connect_bd_intf_net -intf_net axis_broadcaster_0_M15_AXIS [get_bd_intf_pins axis_broadcaster_0/M15_AXIS] [get_bd_intf_pins microblaze_0/S15_AXIS]
   connect_bd_intf_net -intf_net axis_combiner_0_M_AXIS [get_bd_intf_pins axis_combiner_0/M_AXIS] [get_bd_intf_pins tx_axis_switch/S00_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins loopback_fifo/M_AXIS] [get_bd_intf_pins rx_axis_switch/S00_AXIS]
   connect_bd_intf_net -intf_net cmac_usplus_0_gt_serial_port [get_bd_intf_ports qsfp0_4x] [get_bd_intf_pins cmac_usplus_0/gt_serial_port]
   connect_bd_intf_net -intf_net microblaze_0_M0_AXIS [get_bd_intf_pins axis_combiner_0/S00_AXIS] [get_bd_intf_pins microblaze_0/M0_AXIS]
   connect_bd_intf_net -intf_net microblaze_0_M10_AXIS [get_bd_intf_pins axis_combiner_0/S10_AXIS] [get_bd_intf_pins microblaze_0/M10_AXIS]
@@ -447,30 +459,29 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
   connect_bd_intf_net -intf_net qsfp0_156mhz_1 [get_bd_intf_ports qsfp0_156mhz] [get_bd_intf_pins cmac_usplus_0/gt_ref_clk]
   connect_bd_intf_net -intf_net rx_axis_switch_M00_AXIS [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins rx_axis_switch/M00_AXIS]
   connect_bd_intf_net -intf_net sysclk0_1 [get_bd_intf_ports sysclk0] [get_bd_intf_pins clk_wiz_1/CLK_IN1_D]
+  connect_bd_intf_net -intf_net tx_axis_switch_M00_AXIS [get_bd_intf_pins loopback_fifo/S_AXIS] [get_bd_intf_pins tx_axis_switch/M00_AXIS]
   connect_bd_intf_net -intf_net tx_axis_switch_M01_AXIS [get_bd_intf_pins cmac_usplus_0/axis_tx] [get_bd_intf_pins tx_axis_switch/M01_AXIS]
 
   # Create port connections
   connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins sys_rst_gen/dcm_locked]
   connect_bd_net -net cmac_usplus_0_gt_powergoodout [get_bd_pins cmac_usplus_0/gt_powergoodout] [get_bd_pins util_reduced_logic_0/Op1]
-  connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins cmac_usplus_0/gt_rxusrclk2] [get_bd_pins cmac_usplus_0/rx_clk] [get_bd_pins rx_axis_switch/ACLK] [get_bd_pins rx_axis_switch/S01_AXIS_ACLK] [get_bd_pins rx_rst_gen/slowest_sync_clk]
-  connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins cmac_usplus_0/gt_txusrclk2] [get_bd_pins tx_axis_switch/ACLK] [get_bd_pins tx_axis_switch/M01_AXIS_ACLK] [get_bd_pins tx_rst_gen/slowest_sync_clk]
+  connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins cmac_usplus_0/gt_rxusrclk2] [get_bd_pins cmac_usplus_0/rx_clk] [get_bd_pins loopback_fifo/m_axis_aclk] [get_bd_pins rx_axis_switch/S00_AXIS_ACLK] [get_bd_pins rx_axis_switch/S01_AXIS_ACLK] [get_bd_pins rx_rst_gen/slowest_sync_clk]
+  connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins cmac_usplus_0/gt_txusrclk2] [get_bd_pins loopback_fifo/s_axis_aclk] [get_bd_pins tx_axis_switch/M00_AXIS_ACLK] [get_bd_pins tx_axis_switch/M01_AXIS_ACLK] [get_bd_pins tx_rst_gen/slowest_sync_clk]
   connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_ports QSFP0_OEB] [get_bd_pins const_gnd/dout] [get_bd_pins rx_axis_switch/S00_ARB_REQ_SUPPRESS] [get_bd_pins rx_axis_switch/S01_ARB_REQ_SUPPRESS]
   connect_bd_net -net const_vcc_dout [get_bd_ports QSFP0_FS] [get_bd_pins const_vcc/dout]
   connect_bd_net -net mdm_1_Interrupt [get_bd_pins mdm_1/Interrupt] [get_bd_pins microblaze_0_axi_intc/intr]
   connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rx_rst_gen/mb_debug_sys_rst] [get_bd_pins sys_rst_gen/mb_debug_sys_rst] [get_bd_pins tx_rst_gen/mb_debug_sys_rst]
-  connect_bd_net -net microblaze_0_Clk [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_combiner_0/aclk] [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins cmac_usplus_0/drp_clk] [get_bd_pins cmac_usplus_0/init_clk] [get_bd_pins cmac_usplus_0/s_axi_aclk] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/M02_ACLK] [get_bd_pins microblaze_0_axi_periph/M03_ACLK] [get_bd_pins microblaze_0_axi_periph/M04_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rx_axis_switch/M00_AXIS_ACLK] [get_bd_pins rx_axis_switch/S00_AXIS_ACLK] [get_bd_pins rx_axis_switch/S_AXI_CTRL_ACLK] [get_bd_pins sys_rst_gen/slowest_sync_clk] [get_bd_pins tx_axis_switch/M00_AXIS_ACLK] [get_bd_pins tx_axis_switch/S00_AXIS_ACLK] [get_bd_pins tx_axis_switch/S_AXI_CTRL_ACLK]
+  connect_bd_net -net microblaze_0_Clk [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_combiner_0/aclk] [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins cmac_usplus_0/drp_clk] [get_bd_pins cmac_usplus_0/init_clk] [get_bd_pins cmac_usplus_0/s_axi_aclk] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/M02_ACLK] [get_bd_pins microblaze_0_axi_periph/M03_ACLK] [get_bd_pins microblaze_0_axi_periph/M04_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rx_axis_switch/ACLK] [get_bd_pins rx_axis_switch/M00_AXIS_ACLK] [get_bd_pins rx_axis_switch/S_AXI_CTRL_ACLK] [get_bd_pins sys_rst_gen/slowest_sync_clk] [get_bd_pins tx_axis_switch/ACLK] [get_bd_pins tx_axis_switch/S00_AXIS_ACLK] [get_bd_pins tx_axis_switch/S_AXI_CTRL_ACLK]
   connect_bd_net -net resetn_1 [get_bd_ports resetn] [get_bd_pins resetn_inv_0/Op1] [get_bd_pins rx_rst_gen/ext_reset_in] [get_bd_pins sys_rst_gen/ext_reset_in] [get_bd_pins tx_rst_gen/ext_reset_in]
   connect_bd_net -net resetn_inv_0_Res [get_bd_pins clk_wiz_1/reset] [get_bd_pins cmac_usplus_0/gtwiz_reset_rx_datapath] [get_bd_pins cmac_usplus_0/gtwiz_reset_tx_datapath] [get_bd_pins cmac_usplus_0/sys_reset] [get_bd_pins resetn_inv_0/Res]
   connect_bd_net -net rst_clk_wiz_1_100M_bus_struct_reset [get_bd_pins microblaze_0_local_memory/SYS_Rst] [get_bd_pins sys_rst_gen/bus_struct_reset]
-  connect_bd_net -net rst_clk_wiz_1_100M_interconnect_aresetn [get_bd_pins microblaze_0_axi_periph/ARESETN] [get_bd_pins sys_rst_gen/interconnect_aresetn]
+  connect_bd_net -net rst_clk_wiz_1_100M_interconnect_aresetn [get_bd_pins microblaze_0_axi_periph/ARESETN] [get_bd_pins rx_axis_switch/ARESETN] [get_bd_pins sys_rst_gen/interconnect_aresetn] [get_bd_pins tx_axis_switch/ARESETN]
   connect_bd_net -net rst_clk_wiz_1_100M_mb_reset [get_bd_pins microblaze_0/Reset] [get_bd_pins microblaze_0_axi_intc/processor_rst] [get_bd_pins sys_rst_gen/mb_reset]
-  connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_combiner_0/aresetn] [get_bd_pins mdm_1/S_AXI_ARESETN] [get_bd_pins microblaze_0_axi_intc/s_axi_aresetn] [get_bd_pins microblaze_0_axi_periph/M00_ARESETN] [get_bd_pins microblaze_0_axi_periph/M01_ARESETN] [get_bd_pins microblaze_0_axi_periph/M02_ARESETN] [get_bd_pins microblaze_0_axi_periph/M03_ARESETN] [get_bd_pins microblaze_0_axi_periph/M04_ARESETN] [get_bd_pins microblaze_0_axi_periph/S00_ARESETN] [get_bd_pins rx_axis_switch/M00_AXIS_ARESETN] [get_bd_pins rx_axis_switch/S00_AXIS_ARESETN] [get_bd_pins rx_axis_switch/S_AXI_CTRL_ARESETN] [get_bd_pins sys_rst_gen/peripheral_aresetn] [get_bd_pins tx_axis_switch/M00_AXIS_ARESETN] [get_bd_pins tx_axis_switch/S00_AXIS_ARESETN] [get_bd_pins tx_axis_switch/S_AXI_CTRL_ARESETN]
+  connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_combiner_0/aresetn] [get_bd_pins mdm_1/S_AXI_ARESETN] [get_bd_pins microblaze_0_axi_intc/s_axi_aresetn] [get_bd_pins microblaze_0_axi_periph/M00_ARESETN] [get_bd_pins microblaze_0_axi_periph/M01_ARESETN] [get_bd_pins microblaze_0_axi_periph/M02_ARESETN] [get_bd_pins microblaze_0_axi_periph/M03_ARESETN] [get_bd_pins microblaze_0_axi_periph/M04_ARESETN] [get_bd_pins microblaze_0_axi_periph/S00_ARESETN] [get_bd_pins rx_axis_switch/M00_AXIS_ARESETN] [get_bd_pins rx_axis_switch/S_AXI_CTRL_ARESETN] [get_bd_pins sys_rst_gen/peripheral_aresetn] [get_bd_pins tx_axis_switch/S00_AXIS_ARESETN] [get_bd_pins tx_axis_switch/S_AXI_CTRL_ARESETN]
   connect_bd_net -net rst_clk_wiz_1_100M_peripheral_reset [get_bd_pins cmac_usplus_0/core_drp_reset] [get_bd_pins cmac_usplus_0/s_axi_sreset] [get_bd_pins sys_rst_gen/peripheral_reset]
-  connect_bd_net -net rx_rst_gen_interconnect_aresetn [get_bd_pins rx_axis_switch/ARESETN] [get_bd_pins rx_rst_gen/interconnect_aresetn]
-  connect_bd_net -net rx_rst_gen_peripheral_aresetn [get_bd_pins rx_axis_switch/S01_AXIS_ARESETN] [get_bd_pins rx_rst_gen/peripheral_aresetn]
+  connect_bd_net -net rx_rst_gen_peripheral_aresetn [get_bd_pins rx_axis_switch/S00_AXIS_ARESETN] [get_bd_pins rx_axis_switch/S01_AXIS_ARESETN] [get_bd_pins rx_rst_gen/peripheral_aresetn]
   connect_bd_net -net rx_rst_gen_peripheral_reset [get_bd_pins cmac_usplus_0/core_rx_reset] [get_bd_pins rx_rst_gen/peripheral_reset]
-  connect_bd_net -net tx_rst_gen_interconnect_aresetn [get_bd_pins tx_axis_switch/ARESETN] [get_bd_pins tx_rst_gen/interconnect_aresetn]
-  connect_bd_net -net tx_rst_gen_peripheral_aresetn [get_bd_pins tx_axis_switch/M01_AXIS_ARESETN] [get_bd_pins tx_rst_gen/peripheral_aresetn]
+  connect_bd_net -net tx_rst_gen_peripheral_aresetn [get_bd_pins loopback_fifo/s_axis_aresetn] [get_bd_pins tx_axis_switch/M00_AXIS_ARESETN] [get_bd_pins tx_axis_switch/M01_AXIS_ARESETN] [get_bd_pins tx_rst_gen/peripheral_aresetn]
   connect_bd_net -net tx_rst_gen_peripheral_reset [get_bd_pins cmac_usplus_0/core_tx_reset] [get_bd_pins tx_rst_gen/peripheral_reset]
   connect_bd_net -net util_reduced_logic_0_Res [get_bd_pins rx_rst_gen/dcm_locked] [get_bd_pins tx_rst_gen/dcm_locked] [get_bd_pins util_reduced_logic_0/Res]
 
