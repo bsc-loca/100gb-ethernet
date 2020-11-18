@@ -52,6 +52,8 @@ void help(UserParam& param) {
 
 int main(int argc, char *argv[])
 {
+  sleep(1); // in seconds
+  printf("\n");
 
   // -------- Setting user parameters -------------
   UserParam param;
@@ -90,15 +92,30 @@ int main(int argc, char *argv[])
 
   printParam(param);
 
+  // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
   uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR);
   uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
   uint8_t const outDirOffs = 0x0040/4;
 
+  //100Gb Ethernet subsystem control: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+  uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
+  uint16_t const GT_RESET_REG = 0x0;
+  uint16_t const RESET_REG    = 0x0004/4;
+
   if (param.procMode == SHORT_LOOPBACK) {
 
+    printf("Resetting Ethernet core:\n");
+    printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+    ethCore[GT_RESET_REG] = 0x1;
+    ethCore[RESET_REG]    = 0xC00003FF;
+    printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+    sleep(2); // in seconds
+    printf("\n");
+    printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+
+    printf("Setting Short Loopback Mode:\n");
     // printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
     // printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
-    printf("Setting Short Loopback Mode:\n");
     txSwitch[outDirOffs+0] = 0;          // Tx: switching     Out0 to In0 (loopback)
     txSwitch[outDirOffs+1] = 0x80000000; // Tx: switching-off Out1
     rxSwitch[outDirOffs]   = 0;          // Rx: switching     Out0 to In0 (loopback)
@@ -204,6 +221,7 @@ int main(int argc, char *argv[])
     }
 
     printf("Short Loopback test passed\n");
+
   }
 
   return(0) ;
