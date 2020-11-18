@@ -90,15 +90,15 @@ int main(int argc, char *argv[])
 
   printParam(param);
 
-  uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_XBAR_BASEADDR);
-  uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_XBAR_BASEADDR);
+  uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR);
+  uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
   uint8_t const outDirOffs = 0x0040/4;
 
   if (param.procMode == SHORT_LOOPBACK) {
 
     // printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
     // printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
-    printf("Setting Short Loopback Mode\n");
+    printf("Setting Short Loopback Mode:\n");
     txSwitch[outDirOffs+0] = 0;          // Tx: switching     Out0 to In0 (loopback)
     txSwitch[outDirOffs+1] = 0x80000000; // Tx: switching-off Out1
     rxSwitch[outDirOffs]   = 0;          // Rx: switching     Out0 to In0 (loopback)
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     sleep(1); // in seconds
     printf("\n");
 
-    uint8_t const LOOPBACK_DEPTH = 3;
+    uint8_t const LOOPBACK_DEPTH = 52;
     printf("Transmitting data to loopback with depth %d:\n", LOOPBACK_DEPTH);
     uint32_t putData = 0xDEADBEEF;
     uint32_t fslNrdy = 1;
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
       if (chan==15) putfslx(putData, 15, FSL_NONBLOCKING);
       fsl_isinvalid(fslNrdy);
       fsl_iserror  (fslErr);
-      printf("Writing word %d to FSL%d = %0lX, Full = %0lX, Err = %0lX \n", word, chan, putData, fslNrdy, fslErr);
+      // printf("Writing word %d to FSL%d = %0lX, Full = %0lX, Err = %0lX \n", word, chan, putData, fslNrdy, fslErr);
       if (fslNrdy || fslErr) {
         printf("\nERROR: Failed write of word %d to FSL%d = %0lX, Full = %0lX, Err = %0lX \n", word, chan, putData, fslNrdy, fslErr);
         exit(1);
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
       if (chan==15) getfslx(getData, 15, FSL_NONBLOCKING);
       fsl_isinvalid(fslNrdy);
       fsl_iserror  (fslErr);
-      printf("Reading word %d from FSL%d = %0lX, Empty = %0lX, Err = %0lX \n", word, chan, getData, fslNrdy, fslErr);
+      // printf("Reading word %d from FSL%d = %0lX, Empty = %0lX, Err = %0lX \n", word, chan, getData, fslNrdy, fslErr);
       if (fslNrdy || fslErr || getData!=putData) {
         printf("\nERROR: Failed read of word %d from FSL%d = %0lX (expected %0lX), Empty = %0lX, Err = %0lX \n",
                word, chan, getData, putData, fslNrdy, fslErr);
