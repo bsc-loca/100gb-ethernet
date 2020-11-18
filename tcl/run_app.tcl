@@ -16,7 +16,7 @@ fpga -state
 targets
 
 # ---- Programming FPGA
-fpga -file ./project/ethernet_test.runs/impl_1/ethernet_test_wrapper.bit
+fpga -file ./project/ethernet_test_wrapper.bit
 fpga -boot-status
 fpga -config-status
 fpga -state
