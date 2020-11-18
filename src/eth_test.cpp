@@ -95,12 +95,12 @@ int main(int argc, char *argv[])
   // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
   uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR);
   uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
-  uint8_t const outDirOffs = 0x0040/4;
+  uint8_t const outDirOffs = 0x0040/sizeof(uint32_t);
 
   //100Gb Ethernet subsystem control: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
   uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
   uint16_t const GT_RESET_REG = 0x0;
-  uint16_t const RESET_REG    = 0x0004/4;
+  uint16_t const RESET_REG    = 0x0004/sizeof(uint32_t);
 
   if (param.procMode == SHORT_LOOPBACK) {
 
