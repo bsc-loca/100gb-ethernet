@@ -16,7 +16,7 @@
 
 #include "xparameters.h"
 //100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
-#include "../../../bd/ethernet_test/ip/ethernet_test_cmac_usplus_0_0/ethernet_test_cmac_usplus_0_0/header_files/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h"
+#include "../../../project/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h"
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
 // using namespace std;
@@ -108,8 +108,10 @@ int main(int argc, char *argv[])
 
     printf("Resetting Ethernet core:\n");
     printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
-    ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
+    ethCore[GT_RESET_REG] = ethCore[GT_RESET_REG] |
+                            GT_RESET_REG_GT_RESET_ALL_MASK;
+    ethCore[RESET_REG]    = ethCore[RESET_REG] |
+                            RESET_REG_USR_RX_SERDES_RESET_MASK |
                             RESET_REG_USR_RX_RESET_MASK        |
                             RESET_REG_USR_TX_RESET_MASK;
     printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
