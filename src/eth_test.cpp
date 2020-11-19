@@ -15,6 +15,8 @@
 // #include <sys/stat.h>
 
 #include "xparameters.h"
+//100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+#include "../../../bd/ethernet_test/ip/ethernet_test_cmac_usplus_0_0/ethernet_test_cmac_usplus_0_0/header_files/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h"
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
 // using namespace std;
@@ -97,17 +99,19 @@ int main(int argc, char *argv[])
   uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
   uint8_t const outDirOffs = 0x0040/sizeof(uint32_t);
 
-  //100Gb Ethernet subsystem control: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+  //100Gb Ethernet subsystem bring-up: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
   uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
-  uint16_t const GT_RESET_REG = 0x0;
-  uint16_t const RESET_REG    = 0x0004/sizeof(uint32_t);
+  uint16_t const GT_RESET_REG = GT_RESET_REG_OFFSET/sizeof(uint32_t);
+  uint16_t const RESET_REG    = RESET_REG_OFFSET   /sizeof(uint32_t);
 
   if (param.procMode == SHORT_LOOPBACK) {
 
     printf("Resetting Ethernet core:\n");
     printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    ethCore[GT_RESET_REG] = 0x1;
-    ethCore[RESET_REG]    = 0xC00003FF;
+    ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
+    ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
+                            RESET_REG_USR_RX_RESET_MASK        |
+                            RESET_REG_USR_TX_RESET_MASK;
     printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
     sleep(2); // in seconds
     printf("\n");
