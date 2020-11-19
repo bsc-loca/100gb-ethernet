@@ -145,25 +145,8 @@ int main(int argc, char *argv[])
     for (uint8_t word = 0; word < LOOPBACK_DEPTH;            word++)
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
       // channel id goes to macro as literal
-      if (word%2) { // transmitting TLAST in odd words
+      if (word%2) { // transmitting TLAST in odd words (channel 0 only is used to pass this control)
         if (chan==0)  putfslx(putData,  0, FSL_NONBLOCKING_CONTROL);
-        if (chan==1)  putfslx(putData,  1, FSL_NONBLOCKING_CONTROL);
-        if (chan==2)  putfslx(putData,  2, FSL_NONBLOCKING_CONTROL);
-        if (chan==3)  putfslx(putData,  3, FSL_NONBLOCKING_CONTROL);
-        if (chan==4)  putfslx(putData,  4, FSL_NONBLOCKING_CONTROL);
-        if (chan==5)  putfslx(putData,  5, FSL_NONBLOCKING_CONTROL);
-        if (chan==6)  putfslx(putData,  6, FSL_NONBLOCKING_CONTROL);
-        if (chan==7)  putfslx(putData,  7, FSL_NONBLOCKING_CONTROL);
-        if (chan==8)  putfslx(putData,  8, FSL_NONBLOCKING_CONTROL);
-        if (chan==9)  putfslx(putData,  9, FSL_NONBLOCKING_CONTROL);
-        if (chan==10) putfslx(putData, 10, FSL_NONBLOCKING_CONTROL);
-        if (chan==11) putfslx(putData, 11, FSL_NONBLOCKING_CONTROL);
-        if (chan==12) putfslx(putData, 12, FSL_NONBLOCKING_CONTROL);
-        if (chan==13) putfslx(putData, 13, FSL_NONBLOCKING_CONTROL);
-        if (chan==14) putfslx(putData, 14, FSL_NONBLOCKING_CONTROL);
-        if (chan==15) putfslx(putData, 15, FSL_NONBLOCKING_CONTROL);
-      } else {
-        if (chan==0)  putfslx(putData,  0, FSL_NONBLOCKING);
         if (chan==1)  putfslx(putData,  1, FSL_NONBLOCKING);
         if (chan==2)  putfslx(putData,  2, FSL_NONBLOCKING);
         if (chan==3)  putfslx(putData,  3, FSL_NONBLOCKING);
@@ -179,6 +162,23 @@ int main(int argc, char *argv[])
         if (chan==13) putfslx(putData, 13, FSL_NONBLOCKING);
         if (chan==14) putfslx(putData, 14, FSL_NONBLOCKING);
         if (chan==15) putfslx(putData, 15, FSL_NONBLOCKING);
+      } else {
+        if (chan==0)  putfslx(putData,  0, FSL_NONBLOCKING);
+        if (chan==1)  putfslx(putData,  1, FSL_NONBLOCKING_CONTROL);
+        if (chan==2)  putfslx(putData,  2, FSL_NONBLOCKING_CONTROL);
+        if (chan==3)  putfslx(putData,  3, FSL_NONBLOCKING_CONTROL);
+        if (chan==4)  putfslx(putData,  4, FSL_NONBLOCKING_CONTROL);
+        if (chan==5)  putfslx(putData,  5, FSL_NONBLOCKING_CONTROL);
+        if (chan==6)  putfslx(putData,  6, FSL_NONBLOCKING_CONTROL);
+        if (chan==7)  putfslx(putData,  7, FSL_NONBLOCKING_CONTROL);
+        if (chan==8)  putfslx(putData,  8, FSL_NONBLOCKING_CONTROL);
+        if (chan==9)  putfslx(putData,  9, FSL_NONBLOCKING_CONTROL);
+        if (chan==10) putfslx(putData, 10, FSL_NONBLOCKING_CONTROL);
+        if (chan==11) putfslx(putData, 11, FSL_NONBLOCKING_CONTROL);
+        if (chan==12) putfslx(putData, 12, FSL_NONBLOCKING_CONTROL);
+        if (chan==13) putfslx(putData, 13, FSL_NONBLOCKING_CONTROL);
+        if (chan==14) putfslx(putData, 14, FSL_NONBLOCKING_CONTROL);
+        if (chan==15) putfslx(putData, 15, FSL_NONBLOCKING_CONTROL);
       }
       fsl_isinvalid(fslNrdy);
       fsl_iserror  (fslErr);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
     for (uint8_t word = 0; word < LOOPBACK_DEPTH;            word++)
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
       // channel id goes to macro as literal 
-      if (word%2) { // expecting TLAST in odd words
+      if (word%2) { // expecting TLAST in odd words (populated to all channels)
         if (chan==0)  getfslx(getData,  0, FSL_NONBLOCKING_CONTROL);
         if (chan==1)  getfslx(getData,  1, FSL_NONBLOCKING_CONTROL);
         if (chan==2)  getfslx(getData,  2, FSL_NONBLOCKING_CONTROL);
