@@ -15,8 +15,7 @@
 // #include <sys/stat.h>
 
 #include "xparameters.h"
-//100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
-#include "../../../project/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h"
+#include "../../../src/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h"
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
 // using namespace std;
@@ -97,42 +96,59 @@ int main(int argc, char *argv[])
   // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
   uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR);
   uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
-  uint8_t const outDirOffs = 0x0040/sizeof(uint32_t);
+  enum {MI_MUX = 0x0040 / sizeof(uint32_t)};
 
-  //100Gb Ethernet subsystem bring-up: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
-  uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
-  uint16_t const GT_RESET_REG = GT_RESET_REG_OFFSET/sizeof(uint32_t);
-  uint16_t const RESET_REG    = RESET_REG_OFFSET   /sizeof(uint32_t);
+  //100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+  // uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
+  enum {
+    GT_RESET_REG          = GT_RESET_REG_OFFSET          / sizeof(uint32_t),
+    RESET_REG             = RESET_REG_OFFSET             / sizeof(uint32_t),
+    CORE_VERSION_REG      = CORE_VERSION_REG_OFFSET      / sizeof(uint32_t),
+    CORE_MODE_REG         = CORE_MODE_REG_OFFSET         / sizeof(uint32_t),
+    SWITCH_CORE_MODE_REG  = SWITCH_CORE_MODE_REG_OFFSET  / sizeof(uint32_t),
+    CONFIGURATION_TX_REG1 = CONFIGURATION_TX_REG1_OFFSET / sizeof(uint32_t),
+    CONFIGURATION_RX_REG1 = CONFIGURATION_RX_REG1_OFFSET / sizeof(uint32_t),
+    GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
+  };
+
+  uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
+  enum {
+    TX_CTRL = 0x0000 / sizeof(uint32_t),
+    RX_CTRL = 0x0008 / sizeof(uint32_t)
+  };
+  uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
 
   if (param.procMode == SHORT_LOOPBACK) {
 
-    printf("Resetting Ethernet core:\n");
-    printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    ethCore[GT_RESET_REG] = ethCore[GT_RESET_REG] |
-                            GT_RESET_REG_GT_RESET_ALL_MASK;
-    ethCore[RESET_REG]    = ethCore[RESET_REG] |
-                            RESET_REG_USR_RX_SERDES_RESET_MASK |
-                            RESET_REG_USR_RX_RESET_MASK        |
-                            RESET_REG_USR_TX_RESET_MASK;
-    printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    sleep(2); // in seconds
-    printf("\n");
-    printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+    // printf("Resetting Ethernet core:\n");
+    // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+    // ethCore[GT_RESET_REG] = ethCore[GT_RESET_REG] |
+    //                         GT_RESET_REG_GT_RESET_ALL_MASK;
+    // ethCore[RESET_REG]    = ethCore[RESET_REG] |
+    //                         RESET_REG_USR_RX_SERDES_RESET_MASK |
+    //                         RESET_REG_USR_RX_RESET_MASK        |
+    //                         RESET_REG_USR_TX_RESET_MASK;
+    // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+    // sleep(2); // in seconds
+    // printf("\n");
+    // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
 
+    //-----------------------------------------
+    printf("Tx/Rx streams switches state:\n");
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
     printf("Setting Short Loopback Mode:\n");
-    // printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
-    // printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
-    txSwitch[outDirOffs+0] = 0;          // Tx: switching     Out0 to In0 (loopback)
-    txSwitch[outDirOffs+1] = 0x80000000; // Tx: switching-off Out1
-    rxSwitch[outDirOffs]   = 0;          // Rx: switching     Out0 to In0 (loopback)
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+    txSwitch[MI_MUX+0] = 0;          // Tx: switching     Out0 to In0 (loopback)
+    txSwitch[MI_MUX+1] = 0x80000000; // Tx: switching-off Out1
+    rxSwitch[MI_MUX]   = 0;          // Rx: switching     Out0 to In0 (loopback)
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
     printf("Commiting the setting\n");
     txSwitch[0] = 0x2;
     rxSwitch[0] = 0x2;
     printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[outDirOffs], txSwitch[outDirOffs+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[outDirOffs]);
+    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
+    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
     sleep(1); // in seconds
     printf("\n");
 
@@ -264,7 +280,27 @@ int main(int argc, char *argv[])
       exit(1);
     }
 
-    printf("Short Loopback test passed\n");
+    printf("Short Loopback test passed\n\n");
+
+
+    //-----------------------------------------
+    printf("Ethernet core bring-up:\n");
+    //100Gb Ethernet subsystem bring-up: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+    // printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
+    // printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
+    // printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
+
+    // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
+    // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // sleep(1); // in seconds
+    // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
+
+    printf("TX_status: %0lX \n", rxtxCtrl[TX_CTRL]);
+    printf("Rx_status: %0lX \n", rxtxCtrl[RX_CTRL]);
+    printf("GT_ststus: %0lX \n", gtCtrl[0]);
 
   }
 

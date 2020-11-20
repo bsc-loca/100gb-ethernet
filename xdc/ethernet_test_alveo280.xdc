@@ -41,20 +41,20 @@ set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_
 # create_clock -period 6.206  -name gt1refclk1      [get_ports "QSFP1_CLOCK_P"]
 
 #--------------------------------------------
-# Timing constraints for domains crossing
+# Timing constraints for domains crossings, which didn't apply automatically (e.g. for GPIO)
 #
-# set sys_clk [get_clocks -of_objects [get_pins -hierarchical clk_wiz_1/clk_out1 ]]
-# set tx_clk  [get_clocks -of_objects [get_pins -hierarchical cmac_usplus_0/gt_txusrclk2]]
-# set rx_clk  [get_clocks -of_objects [get_pins -hierarchical cmac_usplus_0/gt_rxusrclk2]]
+set sys_clk [get_clocks -of_objects [get_pins -hierarchical clk_wiz_1/clk_out1 ]]
+set tx_clk  [get_clocks -of_objects [get_pins -hierarchical cmac_usplus_0/gt_txusrclk2]]
+set rx_clk  [get_clocks -of_objects [get_pins -hierarchical cmac_usplus_0/gt_rxusrclk2]]
 # set_false_path -from $xxx_clk -to $yyy_clk
 # controlling resync paths to be less than source clock period
 # (-datapath_only to exclude clock paths)
-# set_max_delay -datapath_only -from $sys_clk -to $tx_clk  [expr [get_property -min period $sys_clk] * 0.9]
-# set_max_delay -datapath_only -from $sys_clk -to $rx_clk  [expr [get_property -min period $sys_clk] * 0.9]
-# set_max_delay -datapath_only -from $tx_clk  -to $sys_clk [expr [get_property -min period $tx_clk ] * 0.9]
-# set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -min period $tx_clk ] * 0.9]
-# set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
-# set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
+set_max_delay -datapath_only -from $sys_clk -to $tx_clk  [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $sys_clk -to $rx_clk  [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $tx_clk  -to $sys_clk [expr [get_property -min period $tx_clk ] * 0.9]
+set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -min period $tx_clk ] * 0.9]
+set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
+set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
 
 #--------------------------------------------
 # On-board system clock

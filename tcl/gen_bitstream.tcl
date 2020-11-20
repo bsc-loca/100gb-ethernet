@@ -104,7 +104,7 @@ if { $stepImpl == 1} {
 
 		# creating platform for sw development
         write_hw_platform -fixed -include_bit -force -file ./project/ethernet_test_wrapper.xsa
-        file copy -force ./bd/ethernet_test/ip/ethernet_test_cmac_usplus_0_0/ethernet_test_cmac_usplus_0_0/header_files/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h  ./project/
+        # file copy -force ./bd/ethernet_test/ip/ethernet_test_cmac_usplus_0_0/ethernet_test_cmac_usplus_0_0/header_files/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h  ./project/
 
 		# programming FPGA
         # open_hw_manager
