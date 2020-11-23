@@ -243,6 +243,8 @@ int main(int argc, char *argv[])
     SWITCH_CORE_MODE_REG  = SWITCH_CORE_MODE_REG_OFFSET  / sizeof(uint32_t),
     CONFIGURATION_TX_REG1 = CONFIGURATION_TX_REG1_OFFSET / sizeof(uint32_t),
     CONFIGURATION_RX_REG1 = CONFIGURATION_RX_REG1_OFFSET / sizeof(uint32_t),
+    STAT_TX_STATUS_REG    = STAT_TX_STATUS_REG_OFFSET    / sizeof(uint32_t),
+    STAT_RX_STATUS_REG    = STAT_RX_STATUS_REG_OFFSET    / sizeof(uint32_t),
     GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
   };
 
@@ -260,7 +262,7 @@ int main(int argc, char *argv[])
     printf("Tx/Rx streams switches state:\n");
     printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
     printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    printf("Setting switches to Short Loopback Mode:\n");
+    printf("Setting switches to Short Loopback mode:\n");
     txSwitch[MI_MUX+0] = 0;          // Tx: switching     Out0(Short loopback) to In0
     txSwitch[MI_MUX+1] = 0x80000000; // Tx: switching-off Out1(Ethernet core)
     rxSwitch[MI_MUX]   = 0;          // Rx: switching     Out0 to In0(Short loopback)
@@ -286,7 +288,7 @@ int main(int argc, char *argv[])
     printf("Tx/Rx streams switches state:\n");
     printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
     printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    printf("Setting switches to Near-End Loopback Mode:\n");
+    printf("Setting switches to Ethernet core mode:\n");
     txSwitch[MI_MUX+0] = 0x80000000; // Tx: switching-off Out0(Short loopback)
     txSwitch[MI_MUX+1] = 0;          // Tx: switching     Out1(Ethernet core) to In0
     rxSwitch[MI_MUX]   = 1;          // Rx: switching     Out0 to In1(Ethernet core)
@@ -301,57 +303,94 @@ int main(int argc, char *argv[])
     sleep(1); // in seconds
     printf("\n");
 
-    // printf("Resetting Ethernet core:\n");
+    // printf("Soft reset of Ethernet core:\n");
     // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    // ethCore[GT_RESET_REG] = ethCore[GT_RESET_REG] |
-    //                         GT_RESET_REG_GT_RESET_ALL_MASK;
-    // ethCore[RESET_REG]    = ethCore[RESET_REG] |
-    //                         RESET_REG_USR_RX_SERDES_RESET_MASK |
+    // ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
+    // ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
     //                         RESET_REG_USR_RX_RESET_MASK        |
     //                         RESET_REG_USR_TX_RESET_MASK;
     // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    // sleep(2); // in seconds
-    // printf("\n");
     // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+    // sleep(1); // in seconds
+    // printf("\n");
 
-    //100Gb Ethernet subsystem bring-up: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+    // Reading status via GPIO
+    printf("GT_STATUS: %0lX \n", gtCtrl[0]);
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    // Reading status and other regs via AXI
+    // printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
+    // printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
     // printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
     // printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
     // printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
     // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     // printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
-
-    // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
-    // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
-    // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
-    // sleep(1); // in seconds
+    // printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
+    // printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
     // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
 
-    printf("GT_STATUS: %0lX \n", gtCtrl[0]);
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-
-    printf("Enabling Near-End PMA Loopback, Ethernet core bring-up.\n");
+    printf("Enabling Near-End PMA Loopback\n");
+    // via GPIO
     gtCtrl[0] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
-    //100Gb Ethernet subsystem bring-up: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+    // via AXI
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+
+    printf("Ethernet core bring-up.\n");
+    // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+    // via GPIO
     rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
     rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+    // via AXI
+    // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+    //                                                   ethCore[CONFIGURATION_RX_REG1]);
+    // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+    // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+    // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+    //                                                   ethCore[CONFIGURATION_RX_REG1]);
+    // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+    //                                                   ethCore[CONFIGURATION_RX_REG1]);
+                                               
     printf("Waiting for Rx is aligned:\n");
     while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK)) {
       printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+      // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+      //                                                ethCore[STAT_RX_STATUS_REG]);
     }
     printf("Rx is aligned:\n");
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+    //                                                ethCore[STAT_RX_STATUS_REG]);
+
     printf("Disabling TX_SEND_RFI:\n");
+    // via GPIO
     rxtxCtrl[TX_CTRL] = 0;
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    // via AXI
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // ethCore[CONFIGURATION_TX_REG1] = 0;
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+    //                                                ethCore[STAT_RX_STATUS_REG]);
 
     enum {TRANSMIT_DEPTH = 38};
     transmitToChan(TRANSMIT_DEPTH);
-    printf("Enabling Transmit:\n");
+
+    printf("Enabling Ethernet transmit:\n");
+    // via GPIO
     rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    // via AXI
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+
     receiveFrChan (TRANSMIT_DEPTH);
 
     printf("------- Near-end Loopback test passed -------\n\n");
