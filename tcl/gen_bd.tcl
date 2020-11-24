@@ -234,16 +234,22 @@ to avoid the SC shutting down the card (UG1314)" [get_bd_ports /HBM_CATTRIP]
    CONFIG.POLARITY {ACTIVE_LOW} \
  ] $resetn
 
+  # Create instance: GT_STATUS, and set properties
+  set GT_STATUS [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 GT_STATUS ]
+  set_property -dict [ list \
+   CONFIG.NUM_PORTS {2} \
+ ] $GT_STATUS
+
   # Create instance: STAT_RX_STATUS_REG, and set properties
   set STAT_RX_STATUS_REG [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 STAT_RX_STATUS_REG ]
   set_property -dict [ list \
-   CONFIG.NUM_PORTS {13} \
+   CONFIG.NUM_PORTS {14} \
  ] $STAT_RX_STATUS_REG
 
   # Create instance: STAT_TX_STATUS_REG, and set properties
   set STAT_TX_STATUS_REG [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 STAT_TX_STATUS_REG ]
   set_property -dict [ list \
-   CONFIG.NUM_PORTS {1} \
+   CONFIG.NUM_PORTS {2} \
  ] $STAT_TX_STATUS_REG
 
   # Create instance: axis_broadcaster_0, and set properties
@@ -321,6 +327,27 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
  ] $const_gnd
+
+  # Create instance: const_gndx17, and set properties
+  set const_gndx17 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_gndx17 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {17} \
+ ] $const_gndx17
+
+  # Create instance: const_gndx28, and set properties
+  set const_gndx28 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_gndx28 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {28} \
+ ] $const_gndx28
+
+  # Create instance: const_gndx31, and set properties
+  set const_gndx31 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_gndx31 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {31} \
+ ] $const_gndx31
 
   # Create instance: const_gndx56, and set properties
   set const_gndx56 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_gndx56 ]
@@ -613,12 +640,13 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   connect_bd_intf_net -intf_net tx_switch_M01_AXIS [get_bd_intf_pins cmac_usplus_0/axis_tx] [get_bd_intf_pins tx_axis_switch/M01_AXIS]
 
   # Create port connections
+  connect_bd_net -net GT_STATUS_dout [get_bd_pins GT_STATUS/dout] [get_bd_pins gt_ctl/gpio_io_i]
   connect_bd_net -net STAT_RX_STATUS_REG_dout [get_bd_pins STAT_RX_STATUS_REG/dout] [get_bd_pins tx_rx_ctl_stat/gpio2_io_i]
   connect_bd_net -net STAT_TX_STATUS_REG1_dout [get_bd_pins cmac_usplus_0/gt_loopback_in] [get_bd_pins gt_loopback/dout]
   connect_bd_net -net axi_gpio_0_gpio2_io_o [get_bd_pins ctl_rx_enable/Din] [get_bd_pins ctl_rx_force_resync/Din] [get_bd_pins ctl_rx_test_pattern/Din] [get_bd_pins tx_rx_ctl_stat/gpio2_io_o]
   connect_bd_net -net axi_gpio_0_gpio_io_o [get_bd_pins ctl_tx_enable/Din] [get_bd_pins ctl_tx_send_idle/Din] [get_bd_pins ctl_tx_send_lfi/Din] [get_bd_pins ctl_tx_send_rfi/Din] [get_bd_pins ctl_tx_test_pattern/Din] [get_bd_pins tx_rx_ctl_stat/gpio_io_o]
   connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins sys_rst_gen/dcm_locked]
-  connect_bd_net -net cmac_usplus_0_gt_powergoodout [get_bd_pins cmac_usplus_0/gt_powergoodout] [get_bd_pins gt_ctl/gpio_io_i] [get_bd_pins util_reduced_logic_0/Op1]
+  connect_bd_net -net cmac_usplus_0_gt_powergoodout [get_bd_pins GT_STATUS/In0] [get_bd_pins cmac_usplus_0/gt_powergoodout] [get_bd_pins util_reduced_logic_0/Op1]
   connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins cmac_usplus_0/gt_rxusrclk2] [get_bd_pins cmac_usplus_0/rx_clk] [get_bd_pins loopback_fifo/m_axis_aclk] [get_bd_pins rx_axis_switch/aclk] [get_bd_pins rx_fifo/s_axis_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
   connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins cmac_usplus_0/gt_txusrclk2] [get_bd_pins loopback_fifo/s_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/m_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
   connect_bd_net -net cmac_usplus_0_stat_rx_aligned [get_bd_pins STAT_RX_STATUS_REG/In1] [get_bd_pins cmac_usplus_0/stat_rx_aligned]
@@ -636,6 +664,9 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   connect_bd_net -net cmac_usplus_0_stat_rx_test_pattern_mismatch [get_bd_pins STAT_RX_STATUS_REG/In9] [get_bd_pins cmac_usplus_0/stat_rx_test_pattern_mismatch]
   connect_bd_net -net cmac_usplus_0_stat_tx_local_fault [get_bd_pins STAT_TX_STATUS_REG/In0] [get_bd_pins cmac_usplus_0/stat_tx_local_fault]
   connect_bd_net -net const_gnd_dout [get_bd_ports HBM_CATTRIP] [get_bd_ports QSFP0_OEB] [get_bd_pins cmac_usplus_0/drp_en] [get_bd_pins cmac_usplus_0/drp_we] [get_bd_pins cmac_usplus_0/tx_axis_tuser] [get_bd_pins const_gnd/dout]
+  connect_bd_net -net const_gndx17_dout [get_bd_pins STAT_RX_STATUS_REG/In13] [get_bd_pins const_gndx17/dout]
+  connect_bd_net -net const_gndx18_dout [get_bd_pins STAT_TX_STATUS_REG/In1] [get_bd_pins const_gndx31/dout]
+  connect_bd_net -net const_gndx28_dout [get_bd_pins GT_STATUS/In1] [get_bd_pins const_gndx28/dout]
   connect_bd_net -net const_gndx56_dout [get_bd_pins cmac_usplus_0/tx_preamblein] [get_bd_pins const_gndx56/dout]
   connect_bd_net -net const_vcc_dout [get_bd_ports QSFP0_FS] [get_bd_pins const_vcc/dout]
   connect_bd_net -net const_vccx64_dout [get_bd_pins cmac_usplus_0/tx_axis_tkeep] [get_bd_pins const_vccx64/dout]
