@@ -15,7 +15,7 @@
 // #include <sys/stat.h>
 
 #include "xparameters.h"
-#include "../../../src/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h"
+#include "../../../src/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h" // this header is generated if AXI-Lite is enabled in Ethernet core
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
 // using namespace std;
