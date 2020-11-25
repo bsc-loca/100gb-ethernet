@@ -1,9 +1,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <vector>
-#include <string>
 #include <unistd.h>
+// #include <vector>
+// #include <string>
 // #include <xil_sleeptimer.h>
 // #include <cassert>
 // #include <iostream>
@@ -20,49 +20,25 @@
 
 // using namespace std;
 
-enum TestMode {
-  LOOPBACK_MODE = 0
-};
-
-struct UserParam {
-  TestMode procMode;
-  // uint32_t wordsNum;
-};
-
-void printParam(UserParam& param) {
-    printf("\n\n");
-    printf("------ Ethernet Test App ------\n");
-    printf("Current Parameter Settings:\n");
-    printf("  Mode: %d\n",       param.procMode);
-    // printf("  Words num: %ld\n", param.wordsNum);
-    printf("\n");
-}
-
-void help(UserParam& param) {
-    printf("Parameters:\n");
-    printf("  -h               Show this help\n"   );
-    printf("  -mode <uint8_t>  Test mode:\n"       );
-    printf("                   0 - LOOPBACK_MODE\n");
-    // printf("  -num <uint32_t>  Words num\n"         );
-    printf("\n");
-    printParam(param);
-    exit(0);
-}
-
-void transmitToChan(uint8_t chanDepth) {
+void transmitToChan(uint8_t chanDepth, bool rxCheck) {
     printf("Transmitting data to channel with depth %d:\n", chanDepth);
     uint32_t putData = 0xDEADBEEF;
     uint32_t getData = 0;
     bool fslNrdy = true;
     bool fslErr  = true;
 
-    // initially the channel should be empty
-    getfslx(getData, 0, FSL_NONBLOCKING);
-    fsl_isinvalid(fslNrdy);
-    if (!fslNrdy) {
-      printf("\nERROR: Before starting filling the channel it is not empty\n");
-      exit(1);
+    if (rxCheck) {
+      // if initially Rx channel should be empty
+      getfslx(getData, 0, FSL_NONBLOCKING);
+      fsl_isinvalid(fslNrdy);
+      fsl_iserror  (fslErr);
+      if (!fslNrdy) {
+        printf("\nERROR: Before starting filling Tx channel Rx channel is not empty: FSL0 = %0lX, Empty = %d, Err = %d \n",
+                 getData, fslNrdy, fslErr);
+        exit(1);
+      }
     }
+
     for (uint8_t word = 0; word < chanDepth;                 word++)
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
       // FSL id goes to macro as literal
@@ -112,11 +88,11 @@ void transmitToChan(uint8_t chanDepth) {
       putData = ~putData;
     }
     printf("\n");
-    // here the channel should be full
+    // here Tx channel should be full
     putfslx(putData, 0, FSL_NONBLOCKING);
     fsl_isinvalid(fslNrdy);
     if (!fslNrdy) {
-      printf("\nERROR: After filling whole channel it is still not full\n");
+      printf("\nERROR: After filling Tx channel it is still not full\n");
       exit(1);
     }
 }
@@ -178,60 +154,51 @@ void receiveFrChan(uint8_t chanDepth) {
       putData = ~putData;
     }
     printf("\n");
-    // here the channel should be empty
+    // here Rx channel should be empty
     getfslx(getData, 0, FSL_NONBLOCKING);
     fsl_isinvalid(fslNrdy);
+    fsl_iserror  (fslErr);
     if (!fslNrdy) {
-      printf("\nERROR: After reading out whole channel it is still not empty\n");
+      printf("\nERROR: After reading out Rx channel it is still not empty: FSL0 = %0lX, Empty = %d, Err = %d \n",
+               getData, fslNrdy, fslErr);
       exit(1);
     }
 }
 
-int main(int argc, char *argv[])
-{
-  sleep(1); // in seconds
-  printf("\n");
-
-  // -------- Setting user parameters -------------
-  UserParam param;
-  param.procMode = LOOPBACK_MODE;
-  // param.wordsNum = 0x100;
-
-  std::vector<std::string> args;
-  for ( int i = 1; i < argc; ++i ) {
-    args.push_back(argv[i]);
-  }
-
-  for ( uint8_t i = 0; i < args.size(); ++i ) {
-    if ( args[i] == "-h" ) {
-        help(param);
-    }
-    if ( args[i] == "-mode" && uint8_t(i+1) < args.size() ) {
-        param.procMode = TestMode(atoi(args[++i].c_str()));
-        continue;
-    }
-    // if ( args[i] == "-num" && uint8_t(i+1) < args.size() ) {
-    //     param.wordsNum = atoi(args[++i].c_str());
-    //     continue;
-    // }
-    printf("ERROR: Unknown parameter: %s\n", args[i].c_str());
-    help(param);
-  }
-  if (param.procMode != LOOPBACK_MODE) {
-      printf("ERROR: invalid test mode: %d", param.procMode);
-      exit(1);
-  }
-  // if (param.wordsNum > 0x100) {
-  //     printf("ERROR: words number is too much: %ld", param.wordsNum);
-  //     exit(1);
-  // }
-
-  printParam(param);
-
+void switch_EthTrue_LBFalse(bool EthNLB) {
   // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
   uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR);
   uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
   enum {MI_MUX = 0x0040 / sizeof(uint32_t)};
+
+  printf("Tx/Rx streams switches state:\n");
+  printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
+  printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
+  printf("Setting switches to Ethernet core mode:\n");
+  if (EthNLB) {
+    txSwitch[MI_MUX+0] = 0x80000000; // Tx: switching-off Out0(Short loopback)
+    txSwitch[MI_MUX+1] = 0;          // Tx: switching     Out1(Ethernet core) to In0
+    rxSwitch[MI_MUX]   = 1;          // Rx: switching     Out0 to In1(Ethernet core)
+  } else {
+    txSwitch[MI_MUX+0] = 0;          // Tx: switching     Out0(Short loopback) to In0
+    txSwitch[MI_MUX+1] = 0x80000000; // Tx: switching-off Out1(Ethernet core)
+    rxSwitch[MI_MUX]   = 0;          // Rx: switching     Out0 to In0(Short loopback)
+  }
+  printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
+  printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
+  printf("Commiting the setting\n");
+  txSwitch[0] = 0x2;
+  rxSwitch[0] = 0x2;
+  printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
+  printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
+  printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
+  sleep(1); // in seconds
+  printf("\n");
+}
+
+
+int main(int argc, char *argv[])
+{
 
   //100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
   // uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
@@ -256,52 +223,36 @@ int main(int argc, char *argv[])
   };
   uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
 
-  if (param.procMode == LOOPBACK_MODE) {
+  enum {SHORT_LOOPBACK_DEPTH = 100,
+        TRANSMIT_FIFO_DEPTH  = 38
+       };
+
+
+  while (true) {
+
+    printf("\n");
+    printf("------ Ethernet Test App ------\n");
+    printf("Please enter test mode:\n");
+    printf("  Loopback:                       l\n");
+    printf("  Communication with other board: c\n");
+    printf("  Finish:                         f\n");
+    char choice;
+    scanf("%s", &choice);
+    printf("You have entered: %c\n", choice);
+
+
+    switch (choice) {
+      case 'l': // Loopback test
 
     printf("------- Running Short Loopback test -------\n");
-    printf("Tx/Rx streams switches state:\n");
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    printf("Setting switches to Short Loopback mode:\n");
-    txSwitch[MI_MUX+0] = 0;          // Tx: switching     Out0(Short loopback) to In0
-    txSwitch[MI_MUX+1] = 0x80000000; // Tx: switching-off Out1(Ethernet core)
-    rxSwitch[MI_MUX]   = 0;          // Rx: switching     Out0 to In0(Short loopback)
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    printf("Commiting the setting\n");
-    txSwitch[0] = 0x2;
-    rxSwitch[0] = 0x2;
-    printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    sleep(1); // in seconds
-    printf("\n");
-
-    enum {SHORT_LOOPBACK_DEPTH = 100};
-    transmitToChan(SHORT_LOOPBACK_DEPTH);
+    switch_EthTrue_LBFalse(false);
+    transmitToChan(SHORT_LOOPBACK_DEPTH, true);
     receiveFrChan (SHORT_LOOPBACK_DEPTH);
-
     printf("------- Short Loopback test passed -------\n\n");
 
 
     printf("------- Running Near-end Loopback test -------\n");
-    printf("Tx/Rx streams switches state:\n");
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    printf("Setting switches to Ethernet core mode:\n");
-    txSwitch[MI_MUX+0] = 0x80000000; // Tx: switching-off Out0(Short loopback)
-    txSwitch[MI_MUX+1] = 0;          // Tx: switching     Out1(Ethernet core) to In0
-    rxSwitch[MI_MUX]   = 1;          // Rx: switching     Out0 to In1(Ethernet core)
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    printf("Commiting the setting\n");
-    txSwitch[0] = 0x2;
-    rxSwitch[0] = 0x2;
-    printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
-    printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-    printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-    sleep(1); // in seconds
-    printf("\n");
+    switch_EthTrue_LBFalse(true);
 
     // printf("Soft reset of Ethernet core:\n");
     // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
@@ -353,7 +304,7 @@ int main(int argc, char *argv[])
     // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
     //                                                   ethCore[CONFIGURATION_RX_REG1]);
                                                
-    printf("Waiting for Rx is aligned:\n");
+    printf("Waiting for RX is aligned:\n");
     while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK)) {
       printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
       // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
@@ -367,20 +318,22 @@ int main(int argc, char *argv[])
     printf("Disabling TX_SEND_RFI:\n");
     // via GPIO
     rxtxCtrl[TX_CTRL] = 0;
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     // via AXI
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     // ethCore[CONFIGURATION_TX_REG1] = 0;
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    printf("Waiting for RFI is stopped:\n");
+    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+           (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+      // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+      //                                                ethCore[STAT_RX_STATUS_REG]);
+    }
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
     //                                                ethCore[STAT_RX_STATUS_REG]);
 
-    enum {TRANSMIT_DEPTH = 38};
-    transmitToChan(TRANSMIT_DEPTH);
+    transmitToChan(TRANSMIT_FIFO_DEPTH, true);
 
-    printf("Enabling Ethernet transmit:\n");
+    printf("Enabling Ethernet TX:\n");
     // via GPIO
     rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
@@ -391,11 +344,84 @@ int main(int argc, char *argv[])
     // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
 
-    receiveFrChan (TRANSMIT_DEPTH);
+    receiveFrChan (TRANSMIT_FIFO_DEPTH);
+    
+    // Disabling Tx/Rx
+    // via GPIO
+    rxtxCtrl[TX_CTRL] = 0;
+    rxtxCtrl[RX_CTRL] = 0;
+    // via AXI
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // ethCore[CONFIGURATION_TX_REG1] = 0;
+    // ethCore[CONFIGURATION_RX_REG1] = 0;
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
 
     printf("------- Near-end Loopback test passed -------\n\n");
+    break;
 
+
+      case 'c':
+    printf("------- Running 2 cards communication test -------\n");
+    printf("Please make sure that the app is running on the other side and confirm with 'y'...\n");
+    char confirm;
+    scanf("%s", &confirm);
+    printf("%c\n", confirm);
+    if (confirm != 'y') break;
+
+    switch_EthTrue_LBFalse(true);
+
+    printf("GT_STATUS: %0lX \n", gtCtrl[0]);
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+
+    printf("Enabling GT normal operation with no loopback\n");
+    gtCtrl[0] = 0; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+    printf("Ethernet core bring-up.\n");
+    // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+    rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+    rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+
+    printf("Waiting for RX is aligned and sync-up with other side:\n");
+    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+          !(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+      sleep(1); // in seconds, user wait process
+    }
+    printf("RX is aligned and RFI is got from the other side:\n");
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+
+    printf("Disabling TX_SEND_RFI:\n");
+    sleep(1); // in seconds, timeout to make sure opposite side got RFI
+    rxtxCtrl[TX_CTRL] = 0;
+
+    printf("Waiting for RFI is stopped:\n");
+    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+           (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+      sleep(1); // in seconds, user wait process
+    }
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+
+    transmitToChan(TRANSMIT_FIFO_DEPTH, false);
+    printf("Enabling Ethernet TX:\n");
+    rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    sleep(1); // in seconds, delay not to use blocking read in receive process
+    receiveFrChan (TRANSMIT_FIFO_DEPTH);
+    // Disabling Tx/Rx
+    rxtxCtrl[TX_CTRL] = 0;
+    rxtxCtrl[RX_CTRL] = 0;
+
+    printf("------- 2 cards communication test passed -------\n\n");
+    break;
+
+      case 'f':
+        printf("------- Exiting the app -------\n");
+        return(0) ;
+
+      default:
+        printf("Please choose right option\n");
+    }
   }
-
-  return(0) ;
 }

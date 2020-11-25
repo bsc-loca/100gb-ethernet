@@ -32,10 +32,6 @@ rst -system
 after 3000
 state
 
-# ---- Opening Stdin/Stdout
-# jtagterminal -start
-readjtaguart -start
-
 # ---- Loading app
 dow    ./xsct_ws/eth_test/Release/eth_test.elf
 verify ./xsct_ws/eth_test/Release/eth_test.elf
@@ -43,9 +39,23 @@ state
 rst
 state
 
+# ---- Opening Stdin/Stdout
+put ""
+put "-----------------------"
+put "Please run manually: jtagterminal, and wait for the launched terminal window..."
+# jtagterminal -start
+# readjtaguart -start
+
 # ---- Running app
-con
-state
+put "After that run manually the app: con"
+put "Other further actions: state, stop, rst"
+put "-----------------------"
+put ""
+# state
+# rst
+# state
+# con
+# state
 
 # ---- Closing Stdin/Stdout
 # jtagterminal -stop
