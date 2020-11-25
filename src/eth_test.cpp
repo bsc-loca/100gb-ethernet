@@ -304,13 +304,13 @@ int main(int argc, char *argv[])
     // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
     //                                                   ethCore[CONFIGURATION_RX_REG1]);
                                                
-    printf("Waiting for RX is aligned:\n");
+    printf("Waiting for RX is aligned...\n");
     while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK)) {
       printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
       // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
       //                                                ethCore[STAT_RX_STATUS_REG]);
     }
-    printf("Rx is aligned:\n");
+    printf("RX is aligned:\n");
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
     //                                                ethCore[STAT_RX_STATUS_REG]);
@@ -320,13 +320,14 @@ int main(int argc, char *argv[])
     rxtxCtrl[TX_CTRL] = 0;
     // via AXI
     // ethCore[CONFIGURATION_TX_REG1] = 0;
-    printf("Waiting for RFI is stopped:\n");
+    printf("Waiting for RFI is stopped...\n");
     while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
            (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
       printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
       // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
       //                                                ethCore[STAT_RX_STATUS_REG]);
     }
+    printf("RFI is stopped:\n");
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
     //                                                ethCore[STAT_RX_STATUS_REG]);
@@ -381,7 +382,7 @@ int main(int argc, char *argv[])
     rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
     rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
 
-    printf("Waiting for RX is aligned and sync-up with other side:\n");
+    printf("Waiting for RX is aligned and sync-up with other side...\n");
     while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
           !(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
       printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
@@ -394,12 +395,13 @@ int main(int argc, char *argv[])
     sleep(1); // in seconds, timeout to make sure opposite side got RFI
     rxtxCtrl[TX_CTRL] = 0;
 
-    printf("Waiting for RFI is stopped:\n");
+    printf("Waiting for RFI is stopped...\n");
     while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
            (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
       printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
       sleep(1); // in seconds, user wait process
     }
+    printf("RFI is stopped:\n");
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
 
     transmitToChan(TRANSMIT_FIFO_DEPTH, false);
