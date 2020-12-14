@@ -1,6 +1,6 @@
 
 # script to build bare-metal application
-# XSCT reference: https://www.xilinx.com/html_docs/xilinx2020_1/vitis_doc/upu1569395223804.html
+# XSCT reference: http://www.xilinx.com/html_docs/xilinx2020_2/vitis_doc/obi1585821551850.html
 
 #Set Vitis workspace
 setws ./xsct_ws
@@ -23,16 +23,16 @@ domain list
 domain active
 domain report
 
+#config the BSP
+bsp setlib -name lwip211 
+# bsp regenerate
 #Report created BSP
 bsp listparams -proc
 bsp getos
 bsp listparams -os
 bsp getdrivers
-#config the BSP
-# bsp setlib -name lwip211 
-# bsp regenerate
-# bsp getlibs
-# bsp listparams -lib lwip211
+bsp getlibs
+bsp listparams -lib lwip211
 
 #Report created project
 sysproj list
@@ -45,7 +45,8 @@ app report eth_test
 importsources -name eth_test -path ./src/eth_test.cpp
 app config -name eth_test -set build-config release
 app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og}
-# app config -name eth_test -add libraries lwip211
+# app config -name eth_test -add libraries xil
+# app config -name eth_test -add libraries lwip4
 #report app configs
 app config -name eth_test
 app config -name eth_test -get build-config
