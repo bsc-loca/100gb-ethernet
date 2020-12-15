@@ -4,9 +4,12 @@
 
 #Set Vitis workspace
 setws ./xsct_ws
+#Checking available apps as templates
+repo -apps
 #Create application project (combined creation of platform, domain/bsp, project/app)
 app create -name eth_test -hw ./project/ethernet_test_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone -lang c++ -template {Empty Application (C++)}
-# -os freertos10_xilinx
+# -os freertos10_xilinx                # tested option to create app under simple OS
+# -lang c -template {lwIP Echo Server} # tested option to create simple lwIP-based app (further importsources command should be commented)
 
 #Create platform and domain/bsp
 # platform create -name eth_test_platform -hw ./project/ethernet_test_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone
@@ -45,8 +48,8 @@ app report eth_test
 importsources -name eth_test -path ./src/eth_test.cpp
 app config -name eth_test -set build-config release
 app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og}
-# app config -name eth_test -add libraries xil
-# app config -name eth_test -add libraries lwip4
+# app config -name eth_test -add libraries xil   # (-l for lib of drivers for components from the platform (XSA), linked automatically (-L,-l))
+# app config -name eth_test -add libraries lwip4 # (-l for lwIP lib, linked automatically (-L,-l))
 #report app configs
 app config -name eth_test
 app config -name eth_test -get build-config
