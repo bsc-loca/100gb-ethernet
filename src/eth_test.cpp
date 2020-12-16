@@ -165,34 +165,28 @@ void receiveFrChan(uint8_t chanDepth) {
     }
 }
 
-void switch_EthTrue_LBFalse(bool EthNLB) {
+void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
   // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
-  uint32_t* txSwitch = reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR);
-  uint32_t* rxSwitch = reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
+  uint32_t* strSwitch = txNrx ? reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR) :
+                                reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
   enum {MI_MUX = 0x0040 / sizeof(uint32_t)};
 
-  printf("Tx/Rx streams switches state:\n");
-  printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-  printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-  printf("Setting switches to Ethernet core mode:\n");
-  if (EthNLB) {
-    txSwitch[MI_MUX+0] = 0x80000000; // Tx: switching-off Out0(Short loopback)
-    txSwitch[MI_MUX+1] = 0;          // Tx: switching     Out1(Ethernet core) to In0
-    rxSwitch[MI_MUX]   = 1;          // Rx: switching     Out0 to In1(Ethernet core)
+  printf("Stream switch state:\n");
+  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[0], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  if (cpu2eth_dma2lb) {
+    printf("Connecting CPU to Ethernet core, DMA to Short LB:\n");
+    strSwitch[MI_MUX+0] = 1; // connect Out0(Tx:LB /Rx:CPU) to In1(Tx:DMA/Rx:Eth)
+    strSwitch[MI_MUX+1] = 0; // connect Out1(Tx:Eth/Rx:DMA) to In0(Tx:CPU/Rx:LB)
   } else {
-    txSwitch[MI_MUX+0] = 0;          // Tx: switching     Out0(Short loopback) to In0
-    txSwitch[MI_MUX+1] = 0x80000000; // Tx: switching-off Out1(Ethernet core)
-    rxSwitch[MI_MUX]   = 0;          // Rx: switching     Out0 to In0(Short loopback)
+    printf("Connecting DMA to Ethernet core, CPU to Short LB\n");
+    strSwitch[MI_MUX+0] = 0; // connect Out0(Tx:LB /Rx:CPU) to In0(Tx:CPU/Rx:LB)
+    strSwitch[MI_MUX+1] = 1; // connect Out1(Tx:Eth/Rx:DMA) to In1(Tx:DMA/Rx:Eth)
   }
-  printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-  printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
+  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[0], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   printf("Commiting the setting\n");
-  txSwitch[0] = 0x2;
-  rxSwitch[0] = 0x2;
-  printf("TX Control = %0lX, RX Control = %0lX\n", txSwitch[0], rxSwitch[0]);
-  printf("TX Switch: Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txSwitch[0], txSwitch[MI_MUX], txSwitch[MI_MUX+1]);
-  printf("RX Switch: Control = %0lX, Out0 = %0lX \n",              rxSwitch[0], rxSwitch[MI_MUX]);
-  sleep(1); // in seconds
+  strSwitch[0] = 0x2;
+  printf("Control = %0lX \n", strSwitch[0]);
+  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[0], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   printf("\n");
 }
 
@@ -245,14 +239,18 @@ int main(int argc, char *argv[])
       case 'l': // Loopback test
 
     printf("------- Running Short Loopback test -------\n");
-    switch_EthTrue_LBFalse(false);
+    switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
+    switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
+    sleep(1); // in seconds
     transmitToChan(SHORT_LOOPBACK_DEPTH, true);
     receiveFrChan (SHORT_LOOPBACK_DEPTH);
     printf("------- Short Loopback test passed -------\n\n");
 
 
     printf("------- Running Near-end Loopback test -------\n");
-    switch_EthTrue_LBFalse(true);
+    switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
+    switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
+    sleep(1); // in seconds
 
     // printf("Soft reset of Ethernet core:\n");
     // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
@@ -370,7 +368,9 @@ int main(int argc, char *argv[])
     printf("%c\n", confirm);
     if (confirm != 'y') break;
 
-    switch_EthTrue_LBFalse(true);
+    switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
+    switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
+    sleep(1); // in seconds
 
     printf("GT_STATUS: %0lX \n", gtCtrl[0]);
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
