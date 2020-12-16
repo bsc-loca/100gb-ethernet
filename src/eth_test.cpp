@@ -223,8 +223,8 @@ int main(int argc, char *argv[])
   };
   uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
 
-  enum {SHORT_LOOPBACK_DEPTH = 100,
-        TRANSMIT_FIFO_DEPTH  = 38
+  enum {SHORT_LOOPBACK_DEPTH = 104,
+        TRANSMIT_FIFO_DEPTH  = 40
        };
 
 
