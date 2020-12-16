@@ -450,6 +450,8 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   # Create instance: eth_dma, and set properties
   set eth_dma [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 eth_dma ]
   set_property -dict [ list \
+   CONFIG.c_include_mm2s_dre {1} \
+   CONFIG.c_include_s2mm_dre {1} \
    CONFIG.c_include_sg {0} \
    CONFIG.c_m_axi_mm2s_data_width {512} \
    CONFIG.c_m_axis_mm2s_tdata_width {512} \
@@ -632,6 +634,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   set tx_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 tx_fifo ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {16} \
+   CONFIG.HAS_TKEEP {1} \
    CONFIG.IS_ACLK_ASYNC {1} \
  ] $tx_fifo
 
@@ -790,7 +793,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   connect_bd_net -net const_gndx28_dout [get_bd_pins GT_STATUS/In1] [get_bd_pins const_gndx28/dout]
   connect_bd_net -net const_gndx56_dout [get_bd_pins cmac_usplus_0/tx_preamblein] [get_bd_pins const_gndx56/dout]
   connect_bd_net -net const_vcc_dout [get_bd_ports QSFP0_FS] [get_bd_pins const_vcc/dout]
-  connect_bd_net -net const_vccx64_dout [get_bd_pins cmac_usplus_0/tx_axis_tkeep] [get_bd_pins const_vccx64/dout]
+  connect_bd_net -net const_vccx64_dout [get_bd_pins const_vccx64/dout] [get_bd_pins tx_fifo/s_axis_tkeep]
   connect_bd_net -net ctl_rx_enable_Dout [get_bd_pins cmac_usplus_0/ctl_rx_enable] [get_bd_pins ctl_rx_enable/Dout]
   connect_bd_net -net ctl_rx_force_resync_Dout [get_bd_pins cmac_usplus_0/ctl_rx_force_resync] [get_bd_pins ctl_rx_force_resync/Dout]
   connect_bd_net -net ctl_rx_test_pattern_Dout [get_bd_pins cmac_usplus_0/ctl_rx_test_pattern] [get_bd_pins ctl_rx_test_pattern/Dout]
