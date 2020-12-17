@@ -21,8 +21,8 @@
 // using namespace std;
 
 void transmitToChan(uint8_t chanDepth, bool rxCheck) {
-    printf("Transmitting data to channel with depth %d:\n", chanDepth);
-    uint32_t putData = 0xDEADBEEF;
+    printf("Transmitting random data (%0X...%0X) to channel with depth %d:\n", 0, RAND_MAX, chanDepth);
+    uint32_t putData = 0;
     uint32_t getData = 0;
     bool fslNrdy = true;
     bool fslErr  = true;
@@ -39,8 +39,10 @@ void transmitToChan(uint8_t chanDepth, bool rxCheck) {
       }
     }
 
+    srand(1);
     for (uint8_t word = 0; word < chanDepth;                 word++)
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
+      putData = rand();
       // FSL id goes to macro as literal
       if (word%2) { // transmitting TLAST in odd words (FSL 0 only is used to pass this control)
         if (chan==0)  putfslx(putData,  0, FSL_NONBLOCKING_CONTROL);
@@ -84,8 +86,6 @@ void transmitToChan(uint8_t chanDepth, bool rxCheck) {
         printf("\nERROR: Failed write of word %d to FSL%d = %0lX, Full = %d, Err = %d \n", word, chan, putData, fslNrdy, fslErr);
         exit(1);
       }
-      putData += chan;
-      putData = ~putData;
     }
     printf("\n");
     // here Tx channel should be full
@@ -98,14 +98,16 @@ void transmitToChan(uint8_t chanDepth, bool rxCheck) {
 }
 
 void receiveFrChan(uint8_t chanDepth) {
-    printf("Receiving data from channel with depth %d:\n", chanDepth);
-    uint32_t putData = 0xDEADBEEF;
+    printf("Receiving random data (%0X...%0X) from channel with depth %d:\n", 0, RAND_MAX, chanDepth);
+    uint32_t putData = 0;
     uint32_t getData = 0;
     bool fslNrdy = true;
     bool fslErr  = true;
 
+    srand(1);
     for (uint8_t word = 0; word < chanDepth     ;            word++)
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
+      putData = rand();
       // FSL id goes to macro as literal 
       if (word%2) { // expecting TLAST in odd words (populated to all FSLs)
         if (chan==0)  getfslx(getData,  0, FSL_NONBLOCKING_CONTROL);
@@ -150,8 +152,6 @@ void receiveFrChan(uint8_t chanDepth) {
                word, chan, getData, putData, fslNrdy, fslErr);
         exit(1);
       }
-      putData += chan;
-      putData = ~putData;
     }
     printf("\n");
     // here Rx channel should be empty
@@ -229,6 +229,7 @@ int main(int argc, char *argv[])
     printf("Please enter test mode:\n");
     printf("  Loopback:                       l\n");
     printf("  Communication with other board: c\n");
+    printf("  Mmemory test:                   m\n");
     printf("  Finish:                         f\n");
     char choice;
     scanf("%s", &choice);
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
     sleep(1); // in seconds
     transmitToChan(SHORT_LOOPBACK_DEPTH, true);
     receiveFrChan (SHORT_LOOPBACK_DEPTH);
-    printf("------- Short Loopback test passed -------\n\n");
+    printf("------- Short Loopback test PASSED -------\n\n");
 
 
     printf("------- Running Near-end Loopback test -------\n");
@@ -356,7 +357,7 @@ int main(int argc, char *argv[])
     // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
 
-    printf("------- Near-end Loopback test passed -------\n\n");
+    printf("------- Near-end Loopback test PASSED -------\n\n");
     break;
 
 
@@ -415,12 +416,43 @@ int main(int argc, char *argv[])
     rxtxCtrl[TX_CTRL] = 0;
     rxtxCtrl[RX_CTRL] = 0;
 
-    printf("------- 2 cards communication test passed -------\n\n");
+    printf("------- 2 cards communication test PASSED -------\n\n");
     break;
+
+      case 'm': {
+        printf("------- Running Tx/Rx memory test -------\n");
+        uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
+        uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
+        size_t const txMemWords = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                                   XPAR_TX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
+        size_t const rxMemWords = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                                   XPAR_RX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
+        printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = rand();
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) {
+          uint32_t expectVal = rand(); 
+          if (txMem[addr] != expectVal) {
+            printf("\nERROR: Incorret readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, txMem[addr], expectVal);
+            exit(1);
+          }
+        }
+        for (size_t addr = 0; addr < rxMemWords; ++addr) {
+          uint32_t expectVal = rand(); 
+          if (rxMem[addr] != expectVal) {
+            printf("\nERROR: Incorret readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+            exit(1);
+          }
+        }
+      }
+      printf("------- Tx/Rx memory test PASSED -------\n\n");
+      break;
 
       case 'f':
         printf("------- Exiting the app -------\n");
-        return(0) ;
+        return(0);
 
       default:
         printf("Please choose right option\n");
