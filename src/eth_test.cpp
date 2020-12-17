@@ -15,6 +15,8 @@
 // #include <sys/stat.h>
 
 #include "xparameters.h"
+#include "xaxis_switch.h"
+#include "xgpio.h"
 #include "../../../src/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h" // this header is generated if AXI-Lite is enabled in Ethernet core
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
@@ -169,10 +171,12 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
   // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
   uint32_t* strSwitch = txNrx ? reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR) :
                                 reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
-  enum {MI_MUX = 0x0040 / sizeof(uint32_t)};
+  enum {SW_CTR = XAXIS_SCR_CTRL_OFFSET         / sizeof(uint32_t),
+        MI_MUX = XAXIS_SCR_MI_MUX_START_OFFSET / sizeof(uint32_t)
+       };
 
   printf("Stream switch state:\n");
-  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[0], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   if (cpu2eth_dma2lb) {
     printf("Connecting CPU to Ethernet core, DMA to Short LB:\n");
     strSwitch[MI_MUX+0] = 1; // connect Out0(Tx:LB /Rx:CPU) to In1(Tx:DMA/Rx:Eth)
@@ -182,11 +186,11 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
     strSwitch[MI_MUX+0] = 0; // connect Out0(Tx:LB /Rx:CPU) to In0(Tx:CPU/Rx:LB)
     strSwitch[MI_MUX+1] = 1; // connect Out1(Tx:Eth/Rx:DMA) to In1(Tx:DMA/Rx:Eth)
   }
-  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[0], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   printf("Commiting the setting\n");
-  strSwitch[0] = 0x2;
-  printf("Control = %0lX \n", strSwitch[0]);
-  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[0], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  strSwitch[SW_CTR] = XAXIS_SCR_CTRL_REG_UPDATE_MASK;
+  printf("Control = %0lX \n", strSwitch[SW_CTR]);
+  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   printf("\n");
 }
 
@@ -212,14 +216,23 @@ int main(int argc, char *argv[])
   // Ethernet core control via GPIO 
   uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
   enum {
-    TX_CTRL = 0x0000 / sizeof(uint32_t),
-    RX_CTRL = 0x0008 / sizeof(uint32_t)
+    TX_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t),
+    RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
   };
   uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
+  enum { GT_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t) };
 
   enum {SHORT_LOOPBACK_DEPTH = 104,
         TRANSMIT_FIFO_DEPTH  = 40
        };
+
+  // Tx/Rx memories 
+  uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
+  uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
+  size_t const txMemWords = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                             XPAR_TX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
+  size_t const rxMemWords = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                             XPAR_RX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
 
 
   while (true) {
@@ -227,10 +240,11 @@ int main(int argc, char *argv[])
     printf("\n");
     printf("------ Ethernet Test App ------\n");
     printf("Please enter test mode:\n");
-    printf("  Loopback:                       l\n");
-    printf("  Communication with other board: c\n");
-    printf("  Mmemory test:                   m\n");
-    printf("  Finish:                         f\n");
+    printf("  Loopback test:                l\n");
+    printf("  2-boards communication test:  c\n");
+    printf("  Tx/Rx memory test:            m\n");
+    printf("  DMA loopback test:            d\n");
+    printf("  Finish:                       f\n");
     char choice;
     scanf("%s", &choice);
     printf("You have entered: %c\n", choice);
@@ -265,7 +279,7 @@ int main(int argc, char *argv[])
     // printf("\n");
 
     // Reading status via GPIO
-    printf("GT_STATUS: %0lX \n", gtCtrl[0]);
+    printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     // Reading status and other regs via AXI
     // printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
@@ -281,7 +295,7 @@ int main(int argc, char *argv[])
 
     printf("Enabling Near-End PMA Loopback\n");
     // via GPIO
-    gtCtrl[0] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+    gtCtrl[GT_CTRL] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
     // via AXI
     // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
@@ -373,11 +387,11 @@ int main(int argc, char *argv[])
     switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
     sleep(1); // in seconds
 
-    printf("GT_STATUS: %0lX \n", gtCtrl[0]);
+    printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
     printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
 
     printf("Enabling GT normal operation with no loopback\n");
-    gtCtrl[0] = 0; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+    gtCtrl[GT_CTRL] = 0; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
     printf("Ethernet core bring-up.\n");
     // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
     rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
@@ -421,12 +435,6 @@ int main(int argc, char *argv[])
 
       case 'm': {
         printf("------- Running Tx/Rx memory test -------\n");
-        uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
-        uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
-        size_t const txMemWords = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                                   XPAR_TX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
-        size_t const rxMemWords = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                                   XPAR_RX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
         printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
@@ -446,8 +454,26 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
+        printf("------- Tx/Rx memory test PASSED -------\n\n");
       }
-      printf("------- Tx/Rx memory test PASSED -------\n\n");
+      break;
+
+      case 'd': {
+        printf("------- Running DMA loopback test -------\n");
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
+
+        switch_CPU_DMAxEth_LB(true,  true);  // Tx switch: DMA->LB, CPU->Eth
+        switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
+        sleep(1); // in seconds
+
+        // AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
+        uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
+
+        receiveFrChan(SHORT_LOOPBACK_DEPTH);
+        printf("------- DMA loopback test PASSED -------\n\n");
+      }
       break;
 
       case 'f':
