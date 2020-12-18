@@ -23,8 +23,6 @@
 
 // using namespace std;
 
-XAxiDma AxiDma;  // AXI DMA instance definitions
-
 void transmitToChan(uint8_t chanDepth, bool rxCheck) {
     printf("Transmitting random data (%0X...%0X) to channel with depth %d:\n", 0, RAND_MAX, chanDepth);
     uint32_t putData = 0;
@@ -199,6 +197,7 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
   printf("\n");
 }
 
+XAxiDma AxiDma; // AXI DMA instance definitions
 
 int main(int argc, char *argv[])
 {
@@ -256,187 +255,187 @@ int main(int argc, char *argv[])
 
 
     switch (choice) {
-      case 'l': // Loopback test
-
-    printf("------- Running Short Loopback test -------\n");
-    switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
-    switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
-    sleep(1); // in seconds
-    transmitToChan(SHORT_LOOPBACK_DEPTH, true);
-    receiveFrChan (SHORT_LOOPBACK_DEPTH);
-    printf("------- Short Loopback test PASSED -------\n\n");
-
-
-    printf("------- Running Near-end Loopback test -------\n");
-    switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
-    switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
-    sleep(1); // in seconds
-
-    // printf("Soft reset of Ethernet core:\n");
-    // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    // ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
-    // ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
-    //                         RESET_REG_USR_RX_RESET_MASK        |
-    //                         RESET_REG_USR_TX_RESET_MASK;
-    // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-    // sleep(1); // in seconds
-    // printf("\n");
-
-    // Reading status via GPIO
-    printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    // Reading status and other regs via AXI
-    // printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
-    // printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
-    // printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
-    // printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
-    // printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-    // printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
-    // printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
-    // printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
-    // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
-
-    printf("Enabling Near-End PMA Loopback\n");
-    // via GPIO
-    gtCtrl[GT_CTRL] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
-    // via AXI
-    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
-    // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
-    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
-    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
-
-    printf("Ethernet core bring-up.\n");
-    // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
-    // via GPIO
-    rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-    rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-    // via AXI
-    // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
-    //                                                   ethCore[CONFIGURATION_RX_REG1]);
-    // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-    // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-    // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
-    //                                                   ethCore[CONFIGURATION_RX_REG1]);
-    // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
-    //                                                   ethCore[CONFIGURATION_RX_REG1]);
-                                               
-    printf("Waiting for RX is aligned...\n");
-    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK)) {
-      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-      // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-      //                                                ethCore[STAT_RX_STATUS_REG]);
-    }
-    printf("RX is aligned:\n");
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-    //                                                ethCore[STAT_RX_STATUS_REG]);
-
-    printf("Disabling TX_SEND_RFI:\n");
-    // via GPIO
-    rxtxCtrl[TX_CTRL] = 0;
-    // via AXI
-    // ethCore[CONFIGURATION_TX_REG1] = 0;
-    printf("Waiting for RFI is stopped...\n");
-    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
-           (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-      // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-      //                                                ethCore[STAT_RX_STATUS_REG]);
-    }
-    printf("RFI is stopped:\n");
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-    //                                                ethCore[STAT_RX_STATUS_REG]);
-
-    transmitToChan(TRANSMIT_FIFO_DEPTH, true);
-
-    printf("Enabling Ethernet TX:\n");
-    // via GPIO
-    rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    // via AXI
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-    // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-
-    receiveFrChan (TRANSMIT_FIFO_DEPTH);
+      case 'l': // ---- Loopback test
+        printf("------- Running Short Loopback test -------\n");
+        switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
+        switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
+        sleep(1); // in seconds
+        transmitToChan(SHORT_LOOPBACK_DEPTH, true);
+        receiveFrChan (SHORT_LOOPBACK_DEPTH);
+        printf("------- Short Loopback test PASSED -------\n\n");
     
-    // Disabling Tx/Rx
-    // via GPIO
-    rxtxCtrl[TX_CTRL] = 0;
-    rxtxCtrl[RX_CTRL] = 0;
-    // via AXI
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-    // ethCore[CONFIGURATION_TX_REG1] = 0;
-    // ethCore[CONFIGURATION_RX_REG1] = 0;
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-    // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-
-    printf("------- Near-end Loopback test PASSED -------\n\n");
-    break;
+    
+        printf("------- Running Near-end Loopback test -------\n");
+        switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
+        switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
+        sleep(1); // in seconds
+    
+        // printf("Soft reset of Ethernet core:\n");
+        // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+        // ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
+        // ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
+        //                         RESET_REG_USR_RX_RESET_MASK        |
+        //                         RESET_REG_USR_TX_RESET_MASK;
+        // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+        // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+        // sleep(1); // in seconds
+        // printf("\n");
+    
+        // Reading status via GPIO
+        printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        // Reading status and other regs via AXI
+        // printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
+        // printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
+        // printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
+        // printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
+        // printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
+        // printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
+        // printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
+        // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    
+        printf("Enabling Near-End PMA Loopback\n");
+        // via GPIO
+        gtCtrl[GT_CTRL] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+        // via AXI
+        // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+        // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
+        // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+        // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    
+        printf("Ethernet core bring-up.\n");
+        // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+        // via GPIO
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+        // via AXI
+        // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+        //                                                   ethCore[CONFIGURATION_RX_REG1]);
+        // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+        // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+        //                                                   ethCore[CONFIGURATION_RX_REG1]);
+        // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+        //                                                   ethCore[CONFIGURATION_RX_REG1]);
+                                                   
+        printf("Waiting for RX is aligned...\n");
+        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK)) {
+          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+          // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+          //                                                ethCore[STAT_RX_STATUS_REG]);
+        }
+        printf("RX is aligned:\n");
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+        //                                                ethCore[STAT_RX_STATUS_REG]);
+    
+        printf("Disabling TX_SEND_RFI:\n");
+        // via GPIO
+        rxtxCtrl[TX_CTRL] = 0;
+        // via AXI
+        // ethCore[CONFIGURATION_TX_REG1] = 0;
+        printf("Waiting for RFI is stopped...\n");
+        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+               (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+          // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+          //                                                ethCore[STAT_RX_STATUS_REG]);
+        }
+        printf("RFI is stopped:\n");
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+        //                                                ethCore[STAT_RX_STATUS_REG]);
+    
+        transmitToChan(TRANSMIT_FIFO_DEPTH, true);
+    
+        printf("Enabling Ethernet TX:\n");
+        // via GPIO
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        // via AXI
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    
+        receiveFrChan (TRANSMIT_FIFO_DEPTH);
+        
+        // Disabling Tx/Rx
+        // via GPIO
+        rxtxCtrl[TX_CTRL] = 0;
+        rxtxCtrl[RX_CTRL] = 0;
+        // via AXI
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // ethCore[CONFIGURATION_TX_REG1] = 0;
+        // ethCore[CONFIGURATION_RX_REG1] = 0;
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+    
+        printf("------- Near-end Loopback test PASSED -------\n\n");
+        break;
 
 
       case 'c':
-    printf("------- Running 2 cards communication test -------\n");
-    printf("Please make sure that the app is running on the other side and confirm with 'y'...\n");
-    char confirm;
-    scanf("%s", &confirm);
-    printf("%c\n", confirm);
-    if (confirm != 'y') break;
+        printf("------- Running 2 cards communication test -------\n");
+        printf("Please make sure that the app is running on the other side and confirm with 'y'...\n");
+        char confirm;
+        scanf("%s", &confirm);
+        printf("%c\n", confirm);
+        if (confirm != 'y') break;
+    
+        switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
+        switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
+        sleep(1); // in seconds
+    
+        printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    
+        printf("Enabling GT normal operation with no loopback\n");
+        gtCtrl[GT_CTRL] = 0; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+        printf("Ethernet core bring-up.\n");
+        // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+    
+        printf("Waiting for RX is aligned and sync-up with other side...\n");
+        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+              !(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+          sleep(1); // in seconds, user wait process
+        }
+        printf("RX is aligned and RFI is got from the other side:\n");
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    
+        printf("Disabling TX_SEND_RFI:\n");
+        sleep(1); // in seconds, timeout to make sure opposite side got RFI
+        rxtxCtrl[TX_CTRL] = 0;
+    
+        printf("Waiting for RFI is stopped...\n");
+        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+               (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+          sleep(1); // in seconds, user wait process
+        }
+        printf("RFI is stopped:\n");
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    
+        transmitToChan(TRANSMIT_FIFO_DEPTH, false);
+        printf("Enabling Ethernet TX:\n");
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        sleep(1); // in seconds, delay not to use blocking read in receive process
+        receiveFrChan (TRANSMIT_FIFO_DEPTH);
+        // Disabling Tx/Rx
+        rxtxCtrl[TX_CTRL] = 0;
+        rxtxCtrl[RX_CTRL] = 0;
+    
+        printf("------- 2 cards communication test PASSED -------\n\n");
+        break;
 
-    switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
-    switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
-    sleep(1); // in seconds
-
-    printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-
-    printf("Enabling GT normal operation with no loopback\n");
-    gtCtrl[GT_CTRL] = 0; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
-    printf("Ethernet core bring-up.\n");
-    // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
-    rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-    rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-
-    printf("Waiting for RX is aligned and sync-up with other side...\n");
-    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
-          !(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-      sleep(1); // in seconds, user wait process
-    }
-    printf("RX is aligned and RFI is got from the other side:\n");
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-
-    printf("Disabling TX_SEND_RFI:\n");
-    sleep(1); // in seconds, timeout to make sure opposite side got RFI
-    rxtxCtrl[TX_CTRL] = 0;
-
-    printf("Waiting for RFI is stopped...\n");
-    while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
-           (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-      printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-      sleep(1); // in seconds, user wait process
-    }
-    printf("RFI is stopped:\n");
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-
-    transmitToChan(TRANSMIT_FIFO_DEPTH, false);
-    printf("Enabling Ethernet TX:\n");
-    rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    sleep(1); // in seconds, delay not to use blocking read in receive process
-    receiveFrChan (TRANSMIT_FIFO_DEPTH);
-    // Disabling Tx/Rx
-    rxtxCtrl[TX_CTRL] = 0;
-    rxtxCtrl[RX_CTRL] = 0;
-
-    printf("------- 2 cards communication test PASSED -------\n\n");
-    break;
 
       case 'm': {
         printf("------- Running Tx/Rx memory test -------\n");
@@ -462,6 +461,7 @@ int main(int argc, char *argv[])
         printf("------- Tx/Rx memory test PASSED -------\n\n");
       }
       break;
+
 
       case 'd': {
         printf("------- Running DMA loopback test -------\n");
@@ -497,6 +497,7 @@ int main(int argc, char *argv[])
         printf("------- DMA loopback test PASSED -------\n\n");
       }
       break;
+
 
       case 'f':
         printf("------- Exiting the app -------\n");
