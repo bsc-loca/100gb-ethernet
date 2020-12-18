@@ -27,7 +27,8 @@ domain active
 domain report
 
 #config the BSP
-bsp setlib -name lwip211 
+bsp setlib -name lwip211
+bsp config -append extra_compiler_flags {-DDEBUG}
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc
