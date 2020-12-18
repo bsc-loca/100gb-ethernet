@@ -17,10 +17,13 @@
 #include "xparameters.h"
 #include "xaxis_switch.h"
 #include "xgpio.h"
+#include "xaxidma.h"
 #include "../../../src/ethernet_test_cmac_usplus_0_0_axi4_lite_registers.h" // this header is generated if AXI-Lite is enabled in Ethernet core
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 
 // using namespace std;
+
+XAxiDma AxiDma;  // AXI DMA instance definitions
 
 void transmitToChan(uint8_t chanDepth, bool rxCheck) {
     printf("Transmitting random data (%0X...%0X) to channel with depth %d:\n", 0, RAND_MAX, chanDepth);
@@ -175,22 +178,24 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
         MI_MUX = XAXIS_SCR_MI_MUX_START_OFFSET / sizeof(uint32_t)
        };
 
-  printf("Stream switch state:\n");
-  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  if (txNrx) printf("TX ");
+  else       printf("RX ");
+  printf("Stream Switch state:\n");
+  printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   if (cpu2eth_dma2lb) {
-    printf("Connecting CPU to Ethernet core, DMA to Short LB:\n");
+    printf("Connecting CPU to Ethernet core, DMA to Short LB, ");
     strSwitch[MI_MUX+0] = 1; // connect Out0(Tx:LB /Rx:CPU) to In1(Tx:DMA/Rx:Eth)
     strSwitch[MI_MUX+1] = 0; // connect Out1(Tx:Eth/Rx:DMA) to In0(Tx:CPU/Rx:LB)
   } else {
-    printf("Connecting DMA to Ethernet core, CPU to Short LB\n");
+    printf("Connecting DMA to Ethernet core, CPU to Short LB, ");
     strSwitch[MI_MUX+0] = 0; // connect Out0(Tx:LB /Rx:CPU) to In0(Tx:CPU/Rx:LB)
     strSwitch[MI_MUX+1] = 1; // connect Out1(Tx:Eth/Rx:DMA) to In1(Tx:DMA/Rx:Eth)
   }
-  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  // printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   printf("Commiting the setting\n");
   strSwitch[SW_CTR] = XAXIS_SCR_CTRL_REG_UPDATE_MASK;
-  printf("Control = %0lX \n", strSwitch[SW_CTR]);
-  printf("Tx/Rx:%d Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", txNrx, strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   printf("\n");
 }
 
@@ -444,14 +449,14 @@ int main(int argc, char *argv[])
           uint32_t expectVal = rand(); 
           if (txMem[addr] != expectVal) {
             printf("\nERROR: Incorret readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, txMem[addr], expectVal);
-            exit(1);
+            break;
           }
         }
         for (size_t addr = 0; addr < rxMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (rxMem[addr] != expectVal) {
             printf("\nERROR: Incorret readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
-            exit(1);
+            break;
           }
         }
         printf("------- Tx/Rx memory test PASSED -------\n\n");
@@ -468,10 +473,27 @@ int main(int argc, char *argv[])
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
 
-        // AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
-        uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
+        // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
+        // uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
 
-        receiveFrChan(SHORT_LOOPBACK_DEPTH);
+        // Controlling DMA via driver by Xilinx
+       	XAxiDma_Config *CfgPtr = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
+	      if (!CfgPtr || CfgPtr->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
+          printf("\nERROR: CfgPtr DMA \n");
+          break;
+	      }
+        // DMA definitions initialization
+	      if (XST_SUCCESS != XAxiDma_CfgInitialize(&AxiDma, CfgPtr)) {
+          printf("\nERROR: CfgInitialize DMA \n");
+          break;
+	      }
+      	// DMA reset with checking if reset is done 
+       	if (XST_SUCCESS != XAxiDma_Selftest(&AxiDma)) {
+          printf("\nERROR: Selftest(reset) DMA \n");
+          break;
+	      }
+
+        // receiveFrChan(SHORT_LOOPBACK_DEPTH);
         printf("------- DMA loopback test PASSED -------\n\n");
       }
       break;
