@@ -236,12 +236,14 @@ int main(int argc, char *argv[])
   };
 
   enum {ETH_WORD_LEN = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
-        CPU_PACKET_LEN   = 512, // ETH_WORD_LEN * 8
-        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN,
+        CPU_PACKET_LEN   = ETH_WORD_LEN * 8, // the parameter to play with
+        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN
+  };
+  enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
         TRANSMIT_FIFO_DEPTH   = 40,
         DMA_TX_LOOPBACK_DEPTH = CPU_PACKET_WORDS==1 ? 95 : 96
-       };
+  };
 
   // Tx/Rx memories 
   uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
