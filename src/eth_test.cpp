@@ -23,7 +23,7 @@
 
 // using namespace std;
 
-void transmitToChan(uint8_t chanDepth, bool rxCheck) {
+void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck) {
     printf("Transmitting random data (%0X...%0X) to channel with depth %d:\n", 0, RAND_MAX, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
@@ -47,7 +47,7 @@ void transmitToChan(uint8_t chanDepth, bool rxCheck) {
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
       putData = rand();
       // FSL id goes to macro as literal
-      if (word%2) { // transmitting TLAST in odd words (FSL 0 only is used to pass this control)
+      if (word%packetWords == (packetWords-1)) { // transmitting TLAST in last words (FSL 0 only is used to pass this control)
         if (chan==0)  putfslx(putData,  0, FSL_NONBLOCKING_CONTROL);
         if (chan==1)  putfslx(putData,  1, FSL_NONBLOCKING);
         if (chan==2)  putfslx(putData,  2, FSL_NONBLOCKING);
@@ -100,7 +100,7 @@ void transmitToChan(uint8_t chanDepth, bool rxCheck) {
     }
 }
 
-void receiveFrChan(uint8_t chanDepth) {
+void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
     printf("Receiving random data (%0X...%0X) from channel with depth %d:\n", 0, RAND_MAX, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
@@ -108,11 +108,11 @@ void receiveFrChan(uint8_t chanDepth) {
     bool fslErr  = true;
 
     srand(1);
-    for (uint8_t word = 0; word < chanDepth     ;            word++)
+    for (uint8_t word = 0; word < chanDepth;                 word++)
     for (uint8_t chan = 0; chan < XPAR_MICROBLAZE_FSL_LINKS; chan++) {
       putData = rand();
       // FSL id goes to macro as literal 
-      if (word%2) { // expecting TLAST in odd words (populated to all FSLs)
+      if (word%packetWords == (packetWords-1)) { // expecting TLAST in last words (populated to all FSLs)
         if (chan==0)  getfslx(getData,  0, FSL_NONBLOCKING_CONTROL);
         if (chan==1)  getfslx(getData,  1, FSL_NONBLOCKING_CONTROL);
         if (chan==2)  getfslx(getData,  2, FSL_NONBLOCKING_CONTROL);
@@ -197,7 +197,7 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
   printf("\n");
 }
 
-XAxiDma AxiDma; // AXI DMA instance definitions
+XAxiDma axiDma; // AXI DMA instance definitions
 
 int main(int argc, char *argv[])
 {
@@ -226,8 +226,21 @@ int main(int argc, char *argv[])
   uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
   enum { GT_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t) };
 
-  enum {SHORT_LOOPBACK_DEPTH = 104,
-        TRANSMIT_FIFO_DEPTH  = 40
+  // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
+  uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
+  enum {
+    MM2S_DMACR = (XAXIDMA_CR_OFFSET + XAXIDMA_TX_OFFSET) / sizeof(uint32_t),
+    MM2S_DMASR = (XAXIDMA_SR_OFFSET + XAXIDMA_TX_OFFSET) / sizeof(uint32_t),
+    S2MM_DMACR = (XAXIDMA_CR_OFFSET + XAXIDMA_RX_OFFSET) / sizeof(uint32_t),
+    S2MM_DMASR = (XAXIDMA_SR_OFFSET + XAXIDMA_RX_OFFSET) / sizeof(uint32_t)
+  };
+
+  enum {ETH_WORD_LEN = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
+        CPU_PACKET_LEN   = 512, // ETH_WORD_LEN * 8
+        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN,
+        SHORT_LOOPBACK_DEPTH  = 104,
+        TRANSMIT_FIFO_DEPTH   = 40,
+        DMA_TX_LOOPBACK_DEPTH = CPU_PACKET_WORDS==1 ? 95 : 96
        };
 
   // Tx/Rx memories 
@@ -260,8 +273,8 @@ int main(int argc, char *argv[])
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
-        transmitToChan(SHORT_LOOPBACK_DEPTH, true);
-        receiveFrChan (SHORT_LOOPBACK_DEPTH);
+        transmitToChan(CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH, true);
+        receiveFrChan (CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH);
         printf("------- Short Loopback test PASSED -------\n\n");
     
     
@@ -348,7 +361,7 @@ int main(int argc, char *argv[])
         // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
         //                                                ethCore[STAT_RX_STATUS_REG]);
     
-        transmitToChan(TRANSMIT_FIFO_DEPTH, true);
+        transmitToChan(CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH, true);
     
         printf("Enabling Ethernet TX:\n");
         // via GPIO
@@ -361,7 +374,7 @@ int main(int argc, char *argv[])
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     
-        receiveFrChan (TRANSMIT_FIFO_DEPTH);
+        receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
         
         // Disabling Tx/Rx
         // via GPIO
@@ -422,13 +435,13 @@ int main(int argc, char *argv[])
         printf("RFI is stopped:\n");
         printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     
-        transmitToChan(TRANSMIT_FIFO_DEPTH, false);
+        transmitToChan(CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH, false);
         printf("Enabling Ethernet TX:\n");
         rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
         printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
         printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
         sleep(1); // in seconds, delay not to use blocking read in receive process
-        receiveFrChan (TRANSMIT_FIFO_DEPTH);
+        receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
         // Disabling Tx/Rx
         rxtxCtrl[TX_CTRL] = 0;
         rxtxCtrl[RX_CTRL] = 0;
@@ -440,6 +453,9 @@ int main(int argc, char *argv[])
       case 'm': {
         printf("------- Running Tx/Rx memory test -------\n");
         printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
+        // first clearing previously stored values
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = rand();
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = rand();
@@ -448,14 +464,14 @@ int main(int argc, char *argv[])
           uint32_t expectVal = rand(); 
           if (txMem[addr] != expectVal) {
             printf("\nERROR: Incorret readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, txMem[addr], expectVal);
-            break;
+            exit(1);
           }
         }
         for (size_t addr = 0; addr < rxMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (rxMem[addr] != expectVal) {
             printf("\nERROR: Incorret readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
-            break;
+            exit(1);
           }
         }
         printf("------- Tx/Rx memory test PASSED -------\n\n");
@@ -465,35 +481,85 @@ int main(int argc, char *argv[])
 
       case 'd': {
         printf("------- Running DMA loopback test -------\n");
-        srand(1);
-        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
-        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
-
         switch_CPU_DMAxEth_LB(true,  true);  // Tx switch: DMA->LB, CPU->Eth
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
 
-        // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
-        // uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
 
-        // Controlling DMA via driver by Xilinx
-       	XAxiDma_Config *CfgPtr = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
-	      if (!CfgPtr || CfgPtr->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
-          printf("\nERROR: CfgPtr DMA \n");
+        // Controlling DMA via Xilinx driver.
+	      // Initialize the XAxiDma device.
+       	XAxiDma_Config *cfgPtr = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
+	      if (!cfgPtr || cfgPtr->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
+          printf("\nERROR: No config found for XAxiDma %d\n", XPAR_ETH_DMA_DEVICE_ID);
           break;
 	      }
-        // DMA definitions initialization
-	      if (XST_SUCCESS != XAxiDma_CfgInitialize(&AxiDma, CfgPtr)) {
-          printf("\nERROR: CfgInitialize DMA \n");
+        // XAxiDma definitions initialization
+        int status = XAxiDma_CfgInitialize(&axiDma, cfgPtr);
+	      if (XST_SUCCESS != status) {
+          printf("\nERROR: XAxiDma initialization failed with status %d\n", status);
           break;
 	      }
-      	// DMA reset with checking if reset is done 
-       	if (XST_SUCCESS != XAxiDma_Selftest(&AxiDma)) {
-          printf("\nERROR: Selftest(reset) DMA \n");
+      	// XAxiDma reset with checking if reset is done 
+        status = XAxiDma_Selftest(&axiDma);
+       	if (XST_SUCCESS != status) {
+          printf("\nERROR: XAxiDma selftest(reset) failed with status %d\n", status);
           break;
 	      }
+        printf("XAxiDma is initialized and reset: \n");
+        printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
+        printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
+        printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
+        printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
+        printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
+        printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
+        printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
+        printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
+        printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
+        printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
+        printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
+        printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
+        printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
+        printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
+        printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
 
-        // receiveFrChan(SHORT_LOOPBACK_DEPTH);
+
+        // Confirming XAxiDma is not in Scatter-Gather mode
+      	if(XAxiDma_HasSg(&axiDma)) {
+		      printf("\nERROR: XAxiDma configured as Scatter-Gather mode \n");
+          break;
+	      }
+      	// Disable interrupts, we use polling mode
+	      XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
+	      XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
+
+        // Make a transfer
+        // axiDma.HasSg = true; // checking debug messages work in driver call
+
+     		// status = XAxiDma_SimpleTransfer(&axiDma,(UINTPTR) 0, 64, XAXIDMA_DEVICE_TO_DMA);
+       	// if (XST_SUCCESS != status) {
+        //   printf("\nERROR: XAxiDma recieve failed: %d\n", status);
+        //   break;
+	      // }
+
+        size_t dmaMemPtr = 0;
+        for (uint8_t packet = 0; packet < DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma transfer failed with status %d\n", status);
+            exit(1);
+	        }
+		      while (//(XAxiDma_Busy(&AxiDma,XAXIDMA_DEVICE_TO_DMA)) ||
+		               (XAxiDma_Busy(&axiDma, XAXIDMA_DMA_TO_DEVICE))) {
+            printf("Waiting untill transfer %d finishes \n", packet);
+            sleep(1); // in seconds, user wait process
+    		  }
+          dmaMemPtr += CPU_PACKET_LEN;
+        }
+
+        receiveFrChan(CPU_PACKET_WORDS, (DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS)*CPU_PACKET_WORDS);
         printf("------- DMA loopback test PASSED -------\n\n");
       }
       break;

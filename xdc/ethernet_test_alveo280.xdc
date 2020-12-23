@@ -21,8 +21,8 @@ set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
 #--------------------------------------------
 # Specifying the placement of QSFP clock domain modules into single SLR to facilitate routing
 # https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug912-vivado-properties.pdf#page=386
-set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical cmac_usplus_0/gt_txusrclk2]]]
-set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical cmac_usplus_0/gt_rxusrclk2]]]
+set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]]
+set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]]
 set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_units"]
 
 #--------------------------------------------
@@ -43,9 +43,9 @@ set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_
 #--------------------------------------------
 # Timing constraints for domains crossings, which didn't apply automatically (e.g. for GPIO)
 #
-set sys_clk [get_clocks -of_objects [get_pins -hierarchical clk_wiz_1/clk_out1 ]]
-set tx_clk  [get_clocks -of_objects [get_pins -hierarchical cmac_usplus_0/gt_txusrclk2]]
-set rx_clk  [get_clocks -of_objects [get_pins -hierarchical cmac_usplus_0/gt_rxusrclk2]]
+set sys_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out1 ]]
+set tx_clk  [get_clocks -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]
+set rx_clk  [get_clocks -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]
 # set_false_path -from $xxx_clk -to $yyy_clk
 # controlling resync paths to be less than source clock period
 # (-datapath_only to exclude clock paths)
