@@ -449,7 +449,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
    CONFIG.c_mm2s_burst_size {2} \
    CONFIG.c_s2mm_burst_size {2} \
    CONFIG.c_sg_include_stscntrl_strm {0} \
-   CONFIG.c_sg_length_width {26} \
+   CONFIG.c_sg_length_width {22} \
  ] $eth_dma
 
   # Create instance: ext_rstn_inv, and set properties
