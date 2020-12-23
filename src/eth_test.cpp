@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <algorithm>
 // #include <vector>
 // #include <string>
 // #include <xil_sleeptimer.h>
@@ -237,7 +238,8 @@ int main(int argc, char *argv[])
 
   enum {ETH_WORD_LEN = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
         CPU_PACKET_LEN   = ETH_WORD_LEN * 8, // the parameter to play with
-        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN
+        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN,
+        DMA_PACKET_LEN   = 1024
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
@@ -249,10 +251,12 @@ int main(int argc, char *argv[])
   // Tx/Rx memories 
   uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
   uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
-  size_t const txMemWords = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_TX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
-  size_t const rxMemWords = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_RX_MEM_CPU_S_AXI_BASEADDR) / sizeof(uint32_t);
+  size_t const txMemSize  = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                             XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
+  size_t const rxMemSize  = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                             XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
+  size_t const txMemWords = txMemSize / sizeof(uint32_t);
+  size_t const rxMemWords = rxMemSize / sizeof(uint32_t);
 
 
   while (true) {
@@ -557,6 +561,7 @@ int main(int argc, char *argv[])
         receiveFrChan(CPU_PACKET_WORDS, (DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS)*CPU_PACKET_WORDS);
         printf("------- TX DMA loopback test PASSED -------\n");
 
+
         printf("\n------- Running RX DMA loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         switch_CPU_DMAxEth_LB(false, true);  // Rx switch: LB->DMA, Eth->CPU
@@ -586,11 +591,54 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < ((DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS)*CPU_PACKET_LEN)/sizeof(uint32_t); ++addr) {
           uint32_t expectVal = rand(); 
           if (rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorret data recieved by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+            printf("\nERROR: Incorrect data recieved by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
             exit(1);
           }
         }
         printf("------- RX DMA loopback test PASSED -------\n\n");
+
+
+        printf("\n------- Running TX/RX DMA loopback test -------\n");
+        switch_CPU_DMAxEth_LB(true,  true); // Tx switch: DMA->LB, CPU->Eth
+        switch_CPU_DMAxEth_LB(false, true); // Rx switch: LB->DMA, Eth->CPU
+        sleep(1); // in seconds
+
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
+
+        size_t txrxMemSize = DMA_PACKET_LEN; //std::min(txMemSize, rxMemSize);
+        printf("DMA: Transmitting/receiving random data packets with length %d bytes between memories with common size %d bytes \n", DMA_PACKET_LEN, txrxMemSize);
+        // axiDma.HasSg = true; // checking debug messages work in driver call
+        dmaMemPtr = 0;
+        for (uint8_t packet = 0; packet < txrxMemSize/DMA_PACKET_LEN; packet++) {
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
+            exit(1);
+	        }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Tx transfer failed with status %d\n", status);
+            exit(1);
+	        }
+		      while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
+			           (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
+            printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
+            sleep(1); // in seconds, user wait process
+    		  }
+          dmaMemPtr += CPU_PACKET_LEN;
+        }
+
+        srand(1);
+        for (size_t addr = 0; addr < ((txrxMemSize/DMA_PACKET_LEN)*DMA_PACKET_LEN)/sizeof(uint32_t); ++addr) {
+          uint32_t expectVal = rand(); 
+          if (rxMem[addr] != expectVal) {
+            printf("\nERROR: Incorrect data transmitted/recieved by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+            exit(1);
+          }
+        }
+        printf("------- TX/RX DMA loopback test PASSED -------\n\n");
       }
       break;
 
