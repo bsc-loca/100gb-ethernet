@@ -25,7 +25,8 @@
 // using namespace std;
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
-    printf("Transmitting random data packets with length %d words to channel with depth %d words \n", packetWords, chanDepth);
+    printf("Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
+            chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
     bool fslNrdy = true;
@@ -103,7 +104,8 @@ void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool t
 }
 
 void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
-    printf("Receiving random data packets with length %d words from channel with depth %d words \n", packetWords, chanDepth);
+    printf("Receiving %d whole packets with length %d words (+%d words) from channel with depth %d words \n",
+            chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
     bool fslNrdy = true;
@@ -239,7 +241,7 @@ int main(int argc, char *argv[])
   enum {ETH_WORD_LEN = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
         CPU_PACKET_LEN   = ETH_WORD_LEN * 8, // the parameter to play with
         CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN,
-        DMA_PACKET_LEN   = 1024
+        DMA_PACKET_LEN   = ETH_WORD_LEN * 64 // the parameter to play with
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
@@ -542,10 +544,11 @@ int main(int argc, char *argv[])
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
 
-        printf("DMA: Transmitting random data packets with length %d bytes to channel with depth %d words\n", CPU_PACKET_LEN, DMA_TX_LOOPBACK_DEPTH);
+        printf("DMA: Transmitting %d whole packets with length %d bytes to channel with depth %d words\n",
+                DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS, CPU_PACKET_LEN, DMA_TX_LOOPBACK_DEPTH);
         // axiDma.HasSg = true; // checking debug messages work in driver call
         size_t dmaMemPtr = 0;
-        for (uint8_t packet = 0; packet < DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
+        for (size_t packet = 0; packet < DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
 		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer failed with status %d\n", status);
@@ -553,7 +556,7 @@ int main(int argc, char *argv[])
 	        }
 		      while (XAxiDma_Busy(&axiDma, XAXIDMA_DMA_TO_DEVICE)) {
             printf("Waiting untill Tx transfer %d finishes \n", packet);
-            sleep(1); // in seconds, user wait process
+            // sleep(1); // in seconds, user wait process
     		  }
           dmaMemPtr += CPU_PACKET_LEN;
         }
@@ -571,10 +574,11 @@ int main(int argc, char *argv[])
 
         transmitToChan(CPU_PACKET_WORDS, (DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS)*CPU_PACKET_WORDS, true, CPU_PACKET_WORDS==1);
 
-        printf("DMA: Receiving random data packets with length %d bytes from channel with depth %d words \n", CPU_PACKET_LEN, DMA_RX_LOOPBACK_DEPTH);
+        printf("DMA: Receiving %d whole packets with length %d bytes from channel with depth %d words \n",
+                DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS, CPU_PACKET_LEN, DMA_RX_LOOPBACK_DEPTH);
         // axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
-        for (uint8_t packet = 0; packet < DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
+        for (size_t packet = 0; packet < DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
 		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
@@ -582,7 +586,7 @@ int main(int argc, char *argv[])
 	        }
 		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) {
             printf("Waiting untill Rx transfer %d finishes \n", packet);
-            sleep(1); // in seconds, user wait process
+            // sleep(1); // in seconds, user wait process
     		  }
           dmaMemPtr += CPU_PACKET_LEN;
         }
@@ -607,11 +611,12 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
 
-        size_t txrxMemSize = DMA_PACKET_LEN; //std::min(txMemSize, rxMemSize);
-        printf("DMA: Transmitting/receiving random data packets with length %d bytes between memories with common size %d bytes \n", DMA_PACKET_LEN, txrxMemSize);
+        size_t txrxMemSize = std::min(txMemSize, rxMemSize);
+        printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
+                txrxMemSize/DMA_PACKET_LEN, DMA_PACKET_LEN, txrxMemSize);
         // axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
-        for (uint8_t packet = 0; packet < txrxMemSize/DMA_PACKET_LEN; packet++) {
+        for (size_t packet = 0; packet < txrxMemSize/DMA_PACKET_LEN; packet++) {
 		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
@@ -624,17 +629,17 @@ int main(int argc, char *argv[])
 	        }
 		      while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
 			           (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
-            printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
-            sleep(1); // in seconds, user wait process
+            // printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
+            // sleep(1); // in seconds, user wait process
     		  }
-          dmaMemPtr += CPU_PACKET_LEN;
+          dmaMemPtr += DMA_PACKET_LEN;
         }
 
         srand(1);
         for (size_t addr = 0; addr < ((txrxMemSize/DMA_PACKET_LEN)*DMA_PACKET_LEN)/sizeof(uint32_t); ++addr) {
           uint32_t expectVal = rand(); 
           if (rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect data transmitted/recieved by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+            printf("\nERROR: Incorrect data transferred by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
             exit(1);
           }
         }
