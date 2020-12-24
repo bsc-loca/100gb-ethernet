@@ -25,7 +25,7 @@
 // using namespace std;
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
-    printf("Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
+    printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
             chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
@@ -104,7 +104,7 @@ void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool t
 }
 
 void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
-    printf("Receiving %d whole packets with length %d words (+%d words) from channel with depth %d words \n",
+    printf("CPU: Receiving %d whole packets with length %d words (+%d words) from channel with depth %d words \n",
             chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
@@ -238,10 +238,10 @@ int main(int argc, char *argv[])
     S2MM_DMASR = (XAXIDMA_SR_OFFSET + XAXIDMA_RX_OFFSET) / sizeof(uint32_t)
   };
 
-  enum {ETH_WORD_LEN = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
-        CPU_PACKET_LEN   = ETH_WORD_LEN * 8, // the parameter to play with
-        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_LEN - 1) / ETH_WORD_LEN,
-        DMA_PACKET_LEN   = ETH_WORD_LEN * 64 // the parameter to play with
+  enum {ETH_WORD_SIZE = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
+        CPU_PACKET_LEN   = ETH_WORD_SIZE * 8, // the parameter to play with
+        CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_SIZE - 1) / ETH_WORD_SIZE,
+        DMA_PACKET_LEN   = ETH_WORD_SIZE * 64 + ETH_WORD_SIZE/4 + 3 // the parameter to play with
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
