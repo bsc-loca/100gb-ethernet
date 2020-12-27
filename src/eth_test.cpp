@@ -323,6 +323,17 @@ XAxiDma axiDma; // AXI DMA instance definitions
 
 int main(int argc, char *argv[])
 {
+  // Tx/Rx memories 
+  uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
+  uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
+  size_t const txMemSize  = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                             XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
+  size_t const rxMemSize  = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
+                             XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
+  size_t const txrxMemSize = std::min(txMemSize, rxMemSize);
+  size_t const txMemWords = txMemSize / sizeof(uint32_t);
+  size_t const rxMemWords = rxMemSize / sizeof(uint32_t);
+
   // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
   uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
   enum {
@@ -335,7 +346,8 @@ int main(int argc, char *argv[])
   enum {ETH_WORD_SIZE = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
         CPU_PACKET_LEN   = ETH_WORD_SIZE * 8, // the parameter to play with
         CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_SIZE - 1) / ETH_WORD_SIZE,
-        DMA_PACKET_LEN   = ETH_WORD_SIZE * 64 + ETH_WORD_SIZE/4 + 3 // the parameter to play with
+        DMA_PACKET_LEN   = ETH_WORD_SIZE*(64*3+3) + ETH_WORD_SIZE/4 + 3, // the parameter to play with
+        ETH_PACKET_LEN   = ETH_WORD_SIZE*128 // the parameter to play with (factors equal to powers of 2 up-to 128 are successful only)
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
@@ -343,16 +355,6 @@ int main(int argc, char *argv[])
         DMA_TX_LOOPBACK_DEPTH = CPU_PACKET_WORDS==1 ? 95 : 96,
         DMA_RX_LOOPBACK_DEPTH = CPU_PACKET_WORDS==1 ? 43 : 40
   };
-
-  // Tx/Rx memories 
-  uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
-  uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
-  size_t const txMemSize  = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
-  size_t const rxMemSize  = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
-  size_t const txMemWords = txMemSize / sizeof(uint32_t);
-  size_t const rxMemWords = rxMemSize / sizeof(uint32_t);
 
 
   while (true) {
@@ -598,7 +600,6 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
 
-        size_t txrxMemSize = std::min(txMemSize, rxMemSize);
         printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
                 txrxMemSize/DMA_PACKET_LEN, DMA_PACKET_LEN, txrxMemSize);
         // axiDma.HasSg = true; // checking debug messages work in driver call
@@ -630,7 +631,74 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
-        printf("------- TX/RX DMA loopback test PASSED -------\n\n");
+        printf("------- TX/RX DMA loopback test PASSED -------\n");
+
+
+        printf("\n------- Running TX/RX DMA Near-end loopback test -------\n");
+        ethCoreSetup(true);
+
+        switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
+        switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        sleep(1); // in seconds
+
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
+
+        printf("Enabling Ethernet TX:\n");
+        // via GPIO
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        // via AXI
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+
+        printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
+                txrxMemSize/ETH_PACKET_LEN, ETH_PACKET_LEN, txrxMemSize);
+        // axiDma.HasSg = true; // checking debug messages work in driver call
+        dmaMemPtr = 0;
+        for (size_t packet = 0; packet < txrxMemSize/ETH_PACKET_LEN; packet++) {
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
+            exit(1);
+	        }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Tx transfer failed with status %d\n", status);
+            exit(1);
+	        }
+		      while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
+			           (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
+            // printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
+            // sleep(1); // in seconds, user wait process
+    		  }
+          dmaMemPtr += ETH_PACKET_LEN;
+        }
+
+        srand(1);
+        for (size_t addr = 0; addr < ((txrxMemSize/ETH_PACKET_LEN)*ETH_PACKET_LEN)/sizeof(uint32_t); ++addr) {
+          uint32_t expectVal = rand(); 
+          if (rxMem[addr] != expectVal) {
+            printf("\nERROR: Incorrect data transferred by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+            exit(1);
+          }
+        }
+
+        // Disabling Tx/Rx
+        // via GPIO
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
+        // via AXI
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        printf("------- TX/RX DMA Near-end loopback test PASSED -------\n\n");
       }
       break;
 
