@@ -200,35 +200,129 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
   printf("\n");
 }
 
+
+//100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+// uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
+enum {
+  GT_RESET_REG          = GT_RESET_REG_OFFSET          / sizeof(uint32_t),
+  RESET_REG             = RESET_REG_OFFSET             / sizeof(uint32_t),
+  CORE_VERSION_REG      = CORE_VERSION_REG_OFFSET      / sizeof(uint32_t),
+  CORE_MODE_REG         = CORE_MODE_REG_OFFSET         / sizeof(uint32_t),
+  SWITCH_CORE_MODE_REG  = SWITCH_CORE_MODE_REG_OFFSET  / sizeof(uint32_t),
+  CONFIGURATION_TX_REG1 = CONFIGURATION_TX_REG1_OFFSET / sizeof(uint32_t),
+  CONFIGURATION_RX_REG1 = CONFIGURATION_RX_REG1_OFFSET / sizeof(uint32_t),
+  STAT_TX_STATUS_REG    = STAT_TX_STATUS_REG_OFFSET    / sizeof(uint32_t),
+  STAT_RX_STATUS_REG    = STAT_RX_STATUS_REG_OFFSET    / sizeof(uint32_t),
+  GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
+};
+// Ethernet core control via GPIO 
+uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
+enum {
+  TX_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t),
+  RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
+};
+void ethCoreSetup(bool gtLoopback) {
+  // GT control via GPIO 
+  uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
+  enum { GT_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t) };
+
+  // printf("Soft reset of Ethernet core:\n");
+  // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  // ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
+  // ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
+  //                         RESET_REG_USR_RX_RESET_MASK        |
+  //                         RESET_REG_USR_TX_RESET_MASK;
+  // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  // sleep(1); // in seconds
+  // printf("\n");
+  
+  // Reading status via GPIO
+  printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
+  printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+  // Reading status and other regs via AXI
+  // printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
+  // printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
+  // printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
+  // printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
+  // printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
+  // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+  // printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
+  // printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
+  // printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
+  // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
+  
+  if (gtLoopback) {
+    printf("Enabling Near-End PMA Loopback\n");
+    // via GPIO
+    gtCtrl[GT_CTRL] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+    // via AXI
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+  } else {
+    printf("Enabling GT normal operation with no loopback\n");
+    gtCtrl[GT_CTRL] = 0;
+    // via AXI
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT;
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+  }
+  
+  printf("Ethernet core bring-up.\n");
+  // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+  // via GPIO
+  rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+  rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+  // via AXI
+  // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+  //                                                   ethCore[CONFIGURATION_RX_REG1]);
+  // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
+  // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
+  // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+  //                                                   ethCore[CONFIGURATION_RX_REG1]);
+  // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
+  //                                                   ethCore[CONFIGURATION_RX_REG1]);
+                                                 
+  printf("Waiting for RX is aligned and RFI is got from TX side...\n");
+  while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+        !(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+    //                                                ethCore[STAT_RX_STATUS_REG]);
+    sleep(1); // in seconds, user wait process
+  }
+  printf("RX is aligned and RFI is got from TX side:\n");
+  printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+  // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+  //                                                ethCore[STAT_RX_STATUS_REG]);
+
+  printf("Disabling TX_SEND_RFI:\n");
+  if (!gtLoopback) sleep(1); // in seconds, timeout to make sure opposite side also got RFI
+  // via GPIO
+  rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_DEFAULT;
+  // via AXI
+  // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_DEFAULT;
+  printf("Waiting for RFI is stopped...\n");
+  while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
+         (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
+    printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+    //                                                ethCore[STAT_RX_STATUS_REG]);
+    sleep(1); // in seconds, user wait process
+  }
+  printf("RFI is stopped:\n");
+  printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+  // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
+  //                                                ethCore[STAT_RX_STATUS_REG]);
+}
+
 XAxiDma axiDma; // AXI DMA instance definitions
 
 int main(int argc, char *argv[])
 {
-
-  //100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
-  // uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_CMAC_USPLUS_0_BASEADDR);
-  enum {
-    GT_RESET_REG          = GT_RESET_REG_OFFSET          / sizeof(uint32_t),
-    RESET_REG             = RESET_REG_OFFSET             / sizeof(uint32_t),
-    CORE_VERSION_REG      = CORE_VERSION_REG_OFFSET      / sizeof(uint32_t),
-    CORE_MODE_REG         = CORE_MODE_REG_OFFSET         / sizeof(uint32_t),
-    SWITCH_CORE_MODE_REG  = SWITCH_CORE_MODE_REG_OFFSET  / sizeof(uint32_t),
-    CONFIGURATION_TX_REG1 = CONFIGURATION_TX_REG1_OFFSET / sizeof(uint32_t),
-    CONFIGURATION_RX_REG1 = CONFIGURATION_RX_REG1_OFFSET / sizeof(uint32_t),
-    STAT_TX_STATUS_REG    = STAT_TX_STATUS_REG_OFFSET    / sizeof(uint32_t),
-    STAT_RX_STATUS_REG    = STAT_RX_STATUS_REG_OFFSET    / sizeof(uint32_t),
-    GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
-  };
-
-  // Ethernet core control via GPIO 
-  uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
-  enum {
-    TX_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t),
-    RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
-  };
-  uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
-  enum { GT_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t) };
-
   // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
   uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
   enum {
@@ -288,90 +382,13 @@ int main(int argc, char *argv[])
     
     
         printf("------- Running Near-end Loopback test -------\n");
+        ethCoreSetup(true);
+
         switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
         switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
         sleep(1); // in seconds
-    
-        // printf("Soft reset of Ethernet core:\n");
-        // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-        // ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
-        // ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
-        //                         RESET_REG_USR_RX_RESET_MASK        |
-        //                         RESET_REG_USR_TX_RESET_MASK;
-        // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-        // printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
-        // sleep(1); // in seconds
-        // printf("\n");
-    
-        // Reading status via GPIO
-        printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-        // Reading status and other regs via AXI
-        // printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
-        // printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
-        // printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
-        // printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
-        // printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
-        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-        // printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
-        // printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
-        // printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
-        // printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
-    
-        printf("Enabling Near-End PMA Loopback\n");
-        // via GPIO
-        gtCtrl[GT_CTRL] = 0x2222; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
-        // via AXI
-        // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
-        // ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
-        // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
-        // printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
-    
-        printf("Ethernet core bring-up.\n");
-        // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
-        // via GPIO
-        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-        // via AXI
-        // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
-        //                                                   ethCore[CONFIGURATION_RX_REG1]);
-        // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-        // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
-        //                                                   ethCore[CONFIGURATION_RX_REG1]);
-        // printf("CONFIGURATION_TX(RX)_REG1: %0lX, %0lX\n", ethCore[CONFIGURATION_TX_REG1],
-        //                                                   ethCore[CONFIGURATION_RX_REG1]);
-                                                   
-        printf("Waiting for RX is aligned...\n");
-        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK)) {
-          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-          // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-          //                                                ethCore[STAT_RX_STATUS_REG]);
-        }
-        printf("RX is aligned:\n");
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-        // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-        //                                                ethCore[STAT_RX_STATUS_REG]);
-    
-        printf("Disabling TX_SEND_RFI:\n");
-        // via GPIO
-        rxtxCtrl[TX_CTRL] = 0;
-        // via AXI
-        // ethCore[CONFIGURATION_TX_REG1] = 0;
-        printf("Waiting for RFI is stopped...\n");
-        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
-               (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-          // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-          //                                                ethCore[STAT_RX_STATUS_REG]);
-        }
-        printf("RFI is stopped:\n");
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-        // printf("STAT_TX(RX)_STATUS_REG: %0lX, %0lX\n", ethCore[STAT_TX_STATUS_REG],
-        //                                                ethCore[STAT_RX_STATUS_REG]);
-    
+
         transmitToChan(CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH, true, true);
-    
         printf("Enabling Ethernet TX:\n");
         // via GPIO
         rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
@@ -384,15 +401,14 @@ int main(int argc, char *argv[])
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     
         receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
-        
         // Disabling Tx/Rx
         // via GPIO
-        rxtxCtrl[TX_CTRL] = 0;
-        rxtxCtrl[RX_CTRL] = 0;
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
         // via AXI
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-        // ethCore[CONFIGURATION_TX_REG1] = 0;
-        // ethCore[CONFIGURATION_RX_REG1] = 0;
+        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     
@@ -407,53 +423,24 @@ int main(int argc, char *argv[])
         scanf("%s", &confirm);
         printf("%c\n", confirm);
         if (confirm != 'y') break;
-    
+
+        ethCoreSetup(false);
+
         switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
         switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
         sleep(1); // in seconds
-    
-        printf("GT_STATUS: %0lX \n", gtCtrl[GT_CTRL]);
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    
-        printf("Enabling GT normal operation with no loopback\n");
-        gtCtrl[GT_CTRL] = 0; // https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
-        printf("Ethernet core bring-up.\n");
-        // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
-        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-    
-        printf("Waiting for RX is aligned and sync-up with other side...\n");
-        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
-              !(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-          sleep(1); // in seconds, user wait process
-        }
-        printf("RX is aligned and RFI is got from the other side:\n");
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    
-        printf("Disabling TX_SEND_RFI:\n");
-        sleep(1); // in seconds, timeout to make sure opposite side got RFI
-        rxtxCtrl[TX_CTRL] = 0;
-    
-        printf("Waiting for RFI is stopped...\n");
-        while(!(rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
-               (rxtxCtrl[RX_CTRL] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-          printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-          sleep(1); // in seconds, user wait process
-        }
-        printf("RFI is stopped:\n");
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    
+
         transmitToChan(CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH, false, true);
         printf("Enabling Ethernet TX:\n");
         rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
         printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
         printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+
         sleep(1); // in seconds, delay not to use blocking read in receive process
         receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
         // Disabling Tx/Rx
-        rxtxCtrl[TX_CTRL] = 0;
-        rxtxCtrl[RX_CTRL] = 0;
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
     
         printf("------- 2 cards communication test PASSED -------\n\n");
         break;
