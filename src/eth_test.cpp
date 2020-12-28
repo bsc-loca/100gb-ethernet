@@ -344,10 +344,16 @@ int main(int argc, char *argv[])
   };
 
   enum {ETH_WORD_SIZE = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
+        DMA_AXI_BURST = ETH_WORD_SIZE*64, // the parameter set in Vivado AXI_DMA IP
         CPU_PACKET_LEN   = ETH_WORD_SIZE * 8, // the parameter to play with
         CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_SIZE - 1) / ETH_WORD_SIZE,
-        DMA_PACKET_LEN   = ETH_WORD_SIZE*(64*3+3) + ETH_WORD_SIZE/4 + 3, // the parameter to play with
-        ETH_PACKET_LEN   = ETH_WORD_SIZE*128 // the parameter to play with (factors equal to powers of 2 up-to 128 are successful only)
+        DMA_PACKET_LEN   = ETH_WORD_SIZE*(64*3+3) + sizeof(uint32_t) + 3, // the parameter to play with (no issies noticed for any values and granularities)
+        ETH_PACKET_LEN   = ETH_WORD_SIZE*(64*2-3) - sizeof(uint32_t), // the parameter to play with (no issues for range=[(1...128)*ETH_WORD_SIZE] and granularity=sizeof(uint32_t))
+        ETH_MEMPACK_SIZE = ETH_PACKET_LEN > DMA_AXI_BURST/2  ? ((ETH_PACKET_LEN + DMA_AXI_BURST-1) / DMA_AXI_BURST) * DMA_AXI_BURST :
+                           ETH_PACKET_LEN > DMA_AXI_BURST/4  ? DMA_AXI_BURST/2  :
+                           ETH_PACKET_LEN > DMA_AXI_BURST/8  ? DMA_AXI_BURST/4  :
+                           ETH_PACKET_LEN > DMA_AXI_BURST/16 ? DMA_AXI_BURST/8  :
+                           ETH_PACKET_LEN > DMA_AXI_BURST/32 ? DMA_AXI_BURST/16 : ETH_PACKET_LEN
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
@@ -623,11 +629,9 @@ int main(int argc, char *argv[])
           dmaMemPtr += DMA_PACKET_LEN;
         }
 
-        srand(1);
         for (size_t addr = 0; addr < ((txrxMemSize/DMA_PACKET_LEN)*DMA_PACKET_LEN)/sizeof(uint32_t); ++addr) {
-          uint32_t expectVal = rand(); 
-          if (rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect data transferred by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+          if (rxMem[addr] != txMem[addr]) {
+            printf("\nERROR: Incorrect data transferred by DMA at addr %d: %0lX, expected: %0lX \n", addr, rxMem[addr], txMem[addr]);
             exit(1);
           }
         }
@@ -657,10 +661,10 @@ int main(int argc, char *argv[])
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
 
         printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
-                txrxMemSize/ETH_PACKET_LEN, ETH_PACKET_LEN, txrxMemSize);
+                txrxMemSize/ETH_MEMPACK_SIZE, ETH_PACKET_LEN, txrxMemSize);
         // axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
-        for (size_t packet = 0; packet < txrxMemSize/ETH_PACKET_LEN; packet++) {
+        for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++) {
 		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
@@ -676,14 +680,15 @@ int main(int argc, char *argv[])
             // printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
-          dmaMemPtr += ETH_PACKET_LEN;
+          dmaMemPtr += ETH_MEMPACK_SIZE;
         }
 
-        srand(1);
-        for (size_t addr = 0; addr < ((txrxMemSize/ETH_PACKET_LEN)*ETH_PACKET_LEN)/sizeof(uint32_t); ++addr) {
-          uint32_t expectVal = rand(); 
-          if (rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect data transferred by DMA at addr %0X: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+        for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++)
+        for (size_t word   = 0; word < ETH_PACKET_LEN/sizeof(uint32_t); word++) {
+          size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
+          if (rxMem[addr] != txMem[addr]) {
+            printf("\nERROR: Incorrect data transferred by DMA in packet %d at addr %d: %0lX, expected: %0lX \n",
+                    packet, addr, rxMem[addr], txMem[addr]);
             exit(1);
           }
         }
