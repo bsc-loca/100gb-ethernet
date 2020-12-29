@@ -344,10 +344,11 @@ int main(int argc, char *argv[])
   };
 
   enum {ETH_WORD_SIZE = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
-        DMA_AXI_BURST = ETH_WORD_SIZE*64, // the parameter set in Vivado AXI_DMA IP
+        DMA_AXI_BURST = ETH_WORD_SIZE * std::max(XPAR_ETH_DMA_MM2S_BURST_SIZE, // the parameter set in Vivado AXI_DMA IP
+                                                 XPAR_ETH_DMA_S2MM_BURST_SIZE),
         CPU_PACKET_LEN   = ETH_WORD_SIZE * 8, // the parameter to play with
         CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_SIZE - 1) / ETH_WORD_SIZE,
-        DMA_PACKET_LEN   = ETH_WORD_SIZE*(64*3+3) + sizeof(uint32_t) + 3, // the parameter to play with (no issies noticed for any values and granularities)
+        DMA_PACKET_LEN   = ETH_WORD_SIZE*(64*3+3) + sizeof(uint32_t) + 3, // the parameter to play with (no issies met for any values and granularities)
         ETH_PACKET_LEN   = ETH_WORD_SIZE*(64*2-3) - sizeof(uint32_t), // the parameter to play with (no issues for range=[(1...128)*ETH_WORD_SIZE] and granularity=sizeof(uint32_t))
         ETH_MEMPACK_SIZE = ETH_PACKET_LEN > DMA_AXI_BURST/2  ? ((ETH_PACKET_LEN + DMA_AXI_BURST-1) / DMA_AXI_BURST) * DMA_AXI_BURST :
                            ETH_PACKET_LEN > DMA_AXI_BURST/4  ? DMA_AXI_BURST/2  :
@@ -368,30 +369,30 @@ int main(int argc, char *argv[])
     printf("\n");
     printf("------ Ethernet Test App ------\n");
     printf("Please enter test mode:\n");
-    printf("  Loopback test:                l\n");
-    printf("  2-boards communication test:  c\n");
-    printf("  Tx/Rx memory test:            m\n");
-    printf("  DMA loopback test:            d\n");
-    printf("  Finish:                       f\n");
+    printf("  Series of Loopback tests:        l\n");
+    printf("  CPU 2-boards communication test: c\n");
+    printf("  DMA 2-boards communication test: d\n");
+    printf("  Finish:                          f\n");
     char choice;
     scanf("%s", &choice);
-    printf("You have entered: %c\n", choice);
+    printf("You have entered: %c\n\n", choice);
 
 
     switch (choice) {
-      case 'l': // ---- Loopback test
-        printf("------- Running Short Loopback test -------\n");
+      case 'l': {
+        printf("------- Running CPU Short Loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
         transmitToChan(CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH, true, true);
         receiveFrChan (CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH);
-        printf("------- Short Loopback test PASSED -------\n\n");
-    
-    
-        printf("------- Running Near-end Loopback test -------\n");
+        printf("------- CPU Short Loopback test PASSED -------\n\n");
+
+
+        printf("------- Initializing Ethernet Core in loopback mode -------\n");
         ethCoreSetup(true);
 
+        printf("\n------- Running CPU Near-end Loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
         switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
         sleep(1); // in seconds
@@ -409,53 +410,19 @@ int main(int argc, char *argv[])
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     
         receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
-        // Disabling Tx/Rx
+        // Disabling Tx
         // via GPIO
         rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
-        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
         // via AXI
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
-        // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
     
-        printf("------- Near-end Loopback test PASSED -------\n\n");
-        break;
+        printf("------- CPU Near-end Loopback test PASSED -------\n\n");
 
 
-      case 'c':
-        printf("------- Running 2 cards communication test -------\n");
-        printf("Please make sure that the app is running on the other side and confirm with 'y'...\n");
-        char confirm;
-        scanf("%s", &confirm);
-        printf("%c\n", confirm);
-        if (confirm != 'y') break;
-
-        ethCoreSetup(false);
-
-        switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
-        switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
-        sleep(1); // in seconds
-
-        transmitToChan(CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH, false, true);
-        printf("Enabling Ethernet TX:\n");
-        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-
-        sleep(1); // in seconds, delay not to use blocking read in receive process
-        receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
-        // Disabling Tx/Rx
-        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
-        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
-    
-        printf("------- 2 cards communication test PASSED -------\n\n");
-        break;
-
-
-      case 'm': {
-        printf("------- Running Tx/Rx memory test -------\n");
+        printf("------- Running DMA Tx/Rx memory test -------\n");
         printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
         // first clearing previously stored values
         for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = 0;
@@ -478,12 +445,9 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
-        printf("------- Tx/Rx memory test PASSED -------\n\n");
-      }
-      break;
+        printf("------- DMA Tx/Rx memory test PASSED -------\n\n");
 
 
-      case 'd': {
         printf("------- Initializing DMA -------\n");
         // Controlling DMA via Xilinx driver.
 	      // Initialize the XAxiDma device.
@@ -531,7 +495,7 @@ int main(int argc, char *argv[])
         printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
 
 
-        printf("\n------- Running TX DMA loopback test -------\n");
+        printf("\n------- Running DMA-CPU Short Loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  true);  // Tx switch: DMA->LB, CPU->Eth
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
@@ -546,7 +510,7 @@ int main(int argc, char *argv[])
         for (size_t packet = 0; packet < DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
 		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Tx transfer failed with status %d\n", status);
+            printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
 		      while (XAxiDma_Busy(&axiDma, XAXIDMA_DMA_TO_DEVICE)) {
@@ -557,10 +521,10 @@ int main(int argc, char *argv[])
         }
 
         receiveFrChan(CPU_PACKET_WORDS, (DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS)*CPU_PACKET_WORDS);
-        printf("------- TX DMA loopback test PASSED -------\n");
+        printf("------- DMA-CPU Short Loopback test PASSED -------\n\n");
 
 
-        printf("\n------- Running RX DMA loopback test -------\n");
+        printf("------- Running CPU-DMA Short Loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         switch_CPU_DMAxEth_LB(false, true);  // Rx switch: LB->DMA, Eth->CPU
         sleep(1); // in seconds
@@ -576,7 +540,7 @@ int main(int argc, char *argv[])
         for (size_t packet = 0; packet < DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
 		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
+            printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
 		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) {
@@ -594,10 +558,10 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
-        printf("------- RX DMA loopback test PASSED -------\n\n");
+        printf("------- CPU-DMA Short Loopback test PASSED -------\n\n");
 
 
-        printf("\n------- Running TX/RX DMA loopback test -------\n");
+        printf("------- Running DMA Short Loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  true); // Tx switch: DMA->LB, CPU->Eth
         switch_CPU_DMAxEth_LB(false, true); // Rx switch: LB->DMA, Eth->CPU
         sleep(1); // in seconds
@@ -611,23 +575,31 @@ int main(int argc, char *argv[])
         // axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
         for (size_t packet = 0; packet < txrxMemSize/DMA_PACKET_LEN; packet++) {
-		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
-         	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
-            exit(1);
-	        }
-		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
-         	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Tx transfer failed with status %d\n", status);
-            exit(1);
-	        }
-		      while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
-			           (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
-            // printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
+		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) {
+            // printf("Waiting untill Rx transfer %d is ready to start \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+	        }
+		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE)) {
+            // printf("Waiting untill Tx transfer %d is ready to start \n", packet);
+            // sleep(1); // in seconds, user wait process
+    		  }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+	        }
           dmaMemPtr += DMA_PACKET_LEN;
         }
+		    while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
+			         (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
+            printf("Waiting untill last Tx/Rx transfer finishes \n");
+            // sleep(1); // in seconds, user wait process
+    		}
 
         for (size_t addr = 0; addr < ((txrxMemSize/DMA_PACKET_LEN)*DMA_PACKET_LEN)/sizeof(uint32_t); ++addr) {
           if (rxMem[addr] != txMem[addr]) {
@@ -635,12 +607,10 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
-        printf("------- TX/RX DMA loopback test PASSED -------\n");
+        printf("------- DMA Short Loopback test PASSED -------\n\n");
 
 
-        printf("\n------- Running TX/RX DMA Near-end loopback test -------\n");
-        ethCoreSetup(true);
-
+        printf("------- Running DMA Near-end loopback test -------\n");
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
         sleep(1); // in seconds
@@ -665,23 +635,31 @@ int main(int argc, char *argv[])
         // axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
         for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++) {
-		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
-         	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Rx transfer failed with status %d\n", status);
-            exit(1);
-	        }
-		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
-         	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Tx transfer failed with status %d\n", status);
-            exit(1);
-	        }
-		      while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
-			           (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
-            // printf("Waiting untill Tx/Rx transfer %d finishes \n", packet);
+		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) {
+            // printf("Waiting untill Rx transfer %d is ready to start \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+	        }
+		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE)) {
+            // printf("Waiting untill Tx transfer %d is ready to start \n", packet);
+            // sleep(1); // in seconds, user wait process
+    		  }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+	        }
           dmaMemPtr += ETH_MEMPACK_SIZE;
         }
+		    while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
+			         (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
+            printf("Waiting untill last Tx/Rx transfer finishes \n");
+            // sleep(1); // in seconds, user wait process
+    		}
 
         for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++)
         for (size_t word   = 0; word < ETH_PACKET_LEN/sizeof(uint32_t); word++) {
@@ -703,7 +681,118 @@ int main(int argc, char *argv[])
         // ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-        printf("------- TX/RX DMA Near-end loopback test PASSED -------\n\n");
+        printf("------- DMA Near-end loopback test PASSED -------\n\n");
+      }
+      break;
+
+
+      case 'c': {
+        printf("------- Running CPU 2-boards communication test -------\n");
+        printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
+        char confirm;
+        scanf("%s", &confirm);
+        printf("%c\n", confirm);
+        if (confirm != 'y') break;
+
+        ethCoreSetup(false);
+
+        switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
+        switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
+        sleep(1); // in seconds
+
+        transmitToChan(CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH, false, true);
+        printf("Enabling Ethernet TX:\n");
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+
+        sleep(1); // in seconds, delay not to use blocking read in receive process
+        receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
+        // Disabling Tx/Rx
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
+    
+        printf("------- CPU 2-boards communication test PASSED -------\n\n");
+      }
+      break;
+
+
+      case 'd': {
+        printf("------- Running DMA 2-boards communication test -------\n");
+        printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
+        char confirm;
+        scanf("%s", &confirm);
+        printf("%c\n", confirm);
+        if (confirm != 'y') break;
+
+        ethCoreSetup(false);
+
+        switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
+        switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        sleep(1); // in seconds
+
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) rxMem[addr] = 0;
+
+        printf("Enabling Ethernet TX:\n");
+        // via GPIO
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        printf("TX_STATUS: %0lX, RX_STATUS: %0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+        // via AXI
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        // printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+
+        printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
+                txrxMemSize/ETH_MEMPACK_SIZE, ETH_PACKET_LEN, txrxMemSize);
+        // axiDma.HasSg = true; // checking debug messages work in driver call
+        size_t dmaMemPtr = 0;
+        for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++) {
+		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) {
+            // printf("Waiting untill Rx transfer %d is ready to start \n", packet);
+            // sleep(1); // in seconds, user wait process
+    		  }
+		      int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+	        }
+          if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
+		      while (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE)) {
+            // printf("Waiting untill Tx transfer %d is ready to start \n", packet);
+            // sleep(1); // in seconds, user wait process
+    		  }
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+         	if (XST_SUCCESS != status) {
+            printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+	        }
+          dmaMemPtr += ETH_MEMPACK_SIZE;
+        }
+		    while ((XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA)) ||
+			         (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
+            printf("Waiting untill last Tx/Rx transfer finishes \n");
+            // sleep(1); // in seconds, user wait process
+    		}
+
+        for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++)
+        for (size_t word   = 0; word < ETH_PACKET_LEN/sizeof(uint32_t); word++) {
+          size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
+          if (rxMem[addr] != txMem[addr]) {
+            printf("\nERROR: Incorrect data transferred by DMA in packet %d at addr %d: %0lX, expected: %0lX \n",
+                    packet, addr, rxMem[addr], txMem[addr]);
+            exit(1);
+          }
+        }
+
+        // Disabling Tx/Rx
+        rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
+    
+        printf("------- DMA 2-boards communication test PASSED -------\n\n");
       }
       break;
 
