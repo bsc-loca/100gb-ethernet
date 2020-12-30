@@ -242,7 +242,7 @@ void ethCoreSetup(bool gtLoopback) {
   printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n\n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
   
   // Reading status via pins
-  printf("GT_POWER_PINS: %0lX \n", gtCtrl[GT_CTRL]);
+  printf("GT_POWER_PINS: %0lX \n",       gtCtrl  [GT_CTRL]);
   printf("STAT_TX_STATUS_PINS: %0lX \n", rxtxCtrl[TX_CTRL]);
   printf("STAT_RX_STATUS_PINS: %0lX \n", rxtxCtrl[RX_CTRL]);
   // Reading status and other regs via AXI
@@ -290,8 +290,8 @@ void ethCoreSetup(bool gtLoopback) {
   printf("Waiting for RX is aligned and RFI is got from TX side...\n");
   while(!(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
         !(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-  printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-  printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
+    printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
                                                  ethCore[STAT_RX_STATUS_REG]);
     sleep(1); // in seconds, user wait process
   }
@@ -314,9 +314,9 @@ void ethCoreSetup(bool gtLoopback) {
   printf("Waiting for RFI is stopped...\n");
   while(!(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
          (ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-  printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-  printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
-                                                 ethCore[STAT_RX_STATUS_REG]);
+    printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
+                                                   ethCore[STAT_RX_STATUS_REG]);
     sleep(1); // in seconds, user wait process
   }
   printf("RFI is stopped:\n");
