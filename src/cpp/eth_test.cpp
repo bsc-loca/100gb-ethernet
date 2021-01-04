@@ -436,7 +436,8 @@ int main(int argc, char *argv[])
                            ETH_PACKET_LEN > DMA_AXI_BURST/4  ? DMA_AXI_BURST/2  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/8  ? DMA_AXI_BURST/4  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/16 ? DMA_AXI_BURST/8  :
-                           ETH_PACKET_LEN > DMA_AXI_BURST/32 ? DMA_AXI_BURST/16 : ETH_PACKET_LEN
+                           ETH_PACKET_LEN > DMA_AXI_BURST/32 ? DMA_AXI_BURST/16 : ETH_PACKET_LEN,
+        ETH_PACKET_DECR = 7*sizeof(uint32_t) // optional length decrement for some packets for test purposes
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
@@ -654,7 +655,9 @@ int main(int argc, char *argv[])
             printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr,
+                                          ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR), // decreasing length for some packets
+                                          XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
@@ -668,12 +671,19 @@ int main(int argc, char *argv[])
         }
 
         for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++)
-        for (size_t word   = 0; word < ETH_PACKET_LEN/sizeof(uint32_t); word++) {
+        for (size_t word   = 0; word < ETH_MEMPACK_SIZE/sizeof(uint32_t); word++) {
           size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
-          if (rxMem[addr] != txMem[addr]) {
-            printf("\nERROR: Incorrect data transferred by DMA in packet %d at addr %d: %0lX, expected: %0lX \n",
-                    packet, addr, rxMem[addr], txMem[addr]);
-            exit(1);
+          if (word < (ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR))/sizeof(uint32_t)) {
+            if (rxMem[addr] != txMem[addr]) {
+              printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
+                      word, packet, addr, rxMem[addr], txMem[addr]);
+              exit(1);
+            }
+          }
+          else if (rxMem[addr] != 0) {
+              printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
+                      word, packet, addr, rxMem[addr]);
+              exit(1);
           }
         }
 
@@ -751,7 +761,9 @@ int main(int argc, char *argv[])
             exit(1);
 	        }
           if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
-		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+		      status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)dmaMemPtr,
+                                          ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR), // decreasing length for some packets
+                                          XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
@@ -765,12 +777,19 @@ int main(int argc, char *argv[])
         }
 
         for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++)
-        for (size_t word   = 0; word < ETH_PACKET_LEN/sizeof(uint32_t); word++) {
+        for (size_t word   = 0; word < ETH_MEMPACK_SIZE/sizeof(uint32_t); word++) {
           size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
-          if (rxMem[addr] != txMem[addr]) {
-            printf("\nERROR: Incorrect data transferred by DMA in packet %d at addr %d: %0lX, expected: %0lX \n",
-                    packet, addr, rxMem[addr], txMem[addr]);
-            exit(1);
+          if (word < (ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR))/sizeof(uint32_t)) {
+            if (rxMem[addr] != txMem[addr]) {
+              printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
+                      word, packet, addr, rxMem[addr], txMem[addr]);
+              exit(1);
+            }
+          }
+          else if (rxMem[addr] != 0) {
+              printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
+                      word, packet, addr, rxMem[addr]);
+              exit(1);
           }
         }
 
