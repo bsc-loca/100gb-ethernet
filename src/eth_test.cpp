@@ -192,7 +192,12 @@ void switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
     strSwitch[MI_MUX+0] = 0; // connect Out0(Tx:LB /Rx:CPU) to In0(Tx:CPU/Rx:LB)
     strSwitch[MI_MUX+1] = 1; // connect Out1(Tx:Eth/Rx:DMA) to In1(Tx:DMA/Rx:Eth)
   }
-  // printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  if (strSwitch[MI_MUX+0] != uint32_t( cpu2eth_dma2lb) ||
+      strSwitch[MI_MUX+1] != uint32_t(!cpu2eth_dma2lb)) {
+    printf("\nERROR: Incorrect Stream Switch control readback: Out0 = %0lX, Out1 = %0lX, expected: Out0 = %0X, Out1 = %0X \n",
+             strSwitch[MI_MUX], strSwitch[MI_MUX+1], cpu2eth_dma2lb, !cpu2eth_dma2lb);
+    exit(1);
+  }
   printf("Commiting the setting\n");
   strSwitch[SW_CTR] = XAXIS_SCR_CTRL_REG_UPDATE_MASK;
   printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
@@ -226,20 +231,31 @@ void ethCoreSetup(bool gtLoopback) {
   // GT control via pins 
   uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
   enum { GT_CTRL = XGPIO_DATA_OFFSET / sizeof(uint32_t) };
+  enum { ETH_FULL_RST_ASSERT = RESET_REG_USR_RX_SERDES_RESET_MASK |
+                               RESET_REG_USR_RX_RESET_MASK        |
+                               RESET_REG_USR_TX_RESET_MASK,
+         ETH_FULL_RST_DEASSERT = RESET_REG_USR_RX_SERDES_RESET_DEFAULT |
+                                 RESET_REG_USR_RX_RESET_DEFAULT |
+                                 RESET_REG_USR_TX_RESET_DEFAULT
+  };
 
   printf("Soft reset of Ethernet core:\n");
   printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
   ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
-  ethCore[RESET_REG]    = RESET_REG_USR_RX_SERDES_RESET_MASK |
-                          RESET_REG_USR_RX_RESET_MASK        |
-                          RESET_REG_USR_TX_RESET_MASK;
+  ethCore[RESET_REG]    = ETH_FULL_RST_ASSERT;
   printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  if (ethCore[RESET_REG] != ETH_FULL_RST_ASSERT) {
+    printf("\nERROR: Incorrect Ethernet core RESET_REG readback, expected: %0X \n", ETH_FULL_RST_ASSERT);
+    exit(1);
+  }
   sleep(1); // in seconds
-  ethCore[RESET_REG] = RESET_REG_USR_RX_SERDES_RESET_DEFAULT |
-                       RESET_REG_USR_RX_RESET_DEFAULT |
-                       RESET_REG_USR_TX_RESET_DEFAULT;
-  sleep(1); // in seconds
+  ethCore[RESET_REG] = ETH_FULL_RST_DEASSERT;
   printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n\n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  if (ethCore[RESET_REG] != ETH_FULL_RST_DEASSERT) {
+    printf("\nERROR: Incorrect Ethernet core RESET_REG readback, expected: %0X \n", ETH_FULL_RST_DEASSERT);
+    exit(1);
+  }
+  sleep(1); // in seconds
   
   // Reading status via pins
   printf("GT_POWER_PINS: %0lX \n",       gtCtrl  [GT_CTRL]);
@@ -264,12 +280,20 @@ void ethCoreSetup(bool gtLoopback) {
     printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
     printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    if (ethCore[GT_LOOPBACK_REG] != GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK) {
+      printf("\nERROR: Incorrect Ethernet core GT_LOOPBACK_REG readback, expected: %0X \n", GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK);
+      exit(1);
+    }
   } else {
     printf("Enabling GT normal operation with no loopback\n");
     // gtCtrl[GT_CTRL] = 0; // via GPIO
     printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT;
     printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    if (ethCore[GT_LOOPBACK_REG] != GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT) {
+      printf("\nERROR: Incorrect Ethernet core GT_LOOPBACK_REG readback, expected: %0X \n", GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT);
+      exit(1);
+    }
   }
   printf("\n");
   
@@ -478,14 +502,14 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (txMem[addr] != expectVal) {
-            printf("\nERROR: Incorret readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, txMem[addr], expectVal);
+            printf("\nERROR: Incorrect readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, txMem[addr], expectVal);
             exit(1);
           }
         }
         for (size_t addr = 0; addr < rxMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorret readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
+            printf("\nERROR: Incorrect readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, rxMem[addr], expectVal);
             exit(1);
           }
         }
