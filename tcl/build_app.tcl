@@ -46,7 +46,7 @@ sysproj report eth_test_system
 app list
 app report eth_test
 #config the app
-importsources -name eth_test -path ./src/eth_test.cpp
+importsources -name eth_test -path ./src/cpp/ 
 app config -name eth_test -set build-config release
 app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og}
 # app config -name eth_test -add libraries xil   # (-l for lib of drivers for components from the platform (XSA), linked automatically (-L,-l))

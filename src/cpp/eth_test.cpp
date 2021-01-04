@@ -24,6 +24,9 @@
 
 // using namespace std;
 
+int pingReplyTest(u16 DeviceId);
+int pingReqTest  (u16 DeviceId);
+
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
     printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
             chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
@@ -450,6 +453,8 @@ int main(int argc, char *argv[])
     printf("Please enter test mode:\n");
     printf("  Loopback tests:              l\n");
     printf("  2-boards communication test: c\n");
+    printf("  Ping reply test:             p\n");
+    printf("  Ping request test            q\n");
     printf("  Finish:                      f\n");
     char choice;
     scanf("%s", &choice);
@@ -780,6 +785,48 @@ int main(int argc, char *argv[])
                                                          ethCore[CONFIGURATION_RX_REG1]);
     
         printf("------- DMA 2-boards communication test PASSED -------\n\n");
+      }
+      break;
+
+
+      case 'p': {
+        printf("------- Ping Reply test -------\n");
+
+        ethCoreSetup(true);
+
+        printf("\nPlease run Ping Request test on the other side, to exit press 'e'\n");
+        char confirm;
+        scanf("%s", &confirm);
+        printf("%c\n", confirm);
+        if (confirm == 'e') break;
+
+        int status = pingReplyTest(XPAR_ETH_LITE_DUM4LWIP_DEVICE_ID);
+        if (status != XST_SUCCESS) {
+          printf("\nERROR: Ping Reply test failed with status %d\n", status);
+          return XST_FAILURE;
+        }
+
+        printf("------- Ping Reply test finished -------\n\n");
+      }
+      break;
+
+
+      case 'q': {
+        printf("------- Ping Request test -------\n");
+        printf("Please make sure that Ping Reply test is running on the other side and confirm with 'y'...\n");
+        char confirm;
+        scanf("%s", &confirm);
+        printf("%c\n", confirm);
+        if (confirm != 'y') break;
+
+        ethCoreSetup(true);
+
+      	int status = pingReqTest(XPAR_ETH_LITE_DUM4LWIP_DEVICE_ID);
+	      if (status != XST_SUCCESS) {
+		      printf("\nERROR: Ping Request test failed with status %d\n", status);
+          exit(1);
+	      }
+        printf("------- Ping Request test finished -------\n\n");
       }
       break;
 
