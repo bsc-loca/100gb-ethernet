@@ -46,7 +46,8 @@
 
 #include "xparameters.h"
 #include "xstatus.h"
-#include "xemaclite.h"
+// #include "xemaclite.h"
+#include "../../../src/cpp/ethdrv.h"
 #include "xil_io.h"
 #include "xil_printf.h"
 
@@ -214,24 +215,25 @@ u32 NumOfPingReplies;
 *		ping replies as defined by MAX_PING_REPLIES.
 *
 ******************************************************************************/
-int pingReplyTest(u16 DeviceId)
+int pingReplyTest() //(u16 DeviceId)
 {
 	int Status;
 	XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
-	XEmacLite_Config *ConfigPtr;
+	// XEmacLite_Config *ConfigPtr;
 	NumOfPingReplies = 0;
 
 	/*
 	 * Initialize the EmacLite device.
 	 */
-	ConfigPtr = XEmacLite_LookupConfig(DeviceId);
-	if (ConfigPtr == NULL) {
-		return XST_FAILURE;
-	}
+	// ConfigPtr = XEmacLite_LookupConfig(DeviceId);
+	// if (ConfigPtr == NULL) {
+	// 	return XST_FAILURE;
+	// }
 
-	Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
-					ConfigPtr,
-					ConfigPtr->BaseAddress);
+	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
+	// 				ConfigPtr,
+	// 				ConfigPtr->BaseAddress);
+	Status = ethDrv_CfgInitialize(EmacLiteInstPtr);
 	if (Status != XST_SUCCESS) {
 		return XST_FAILURE;
 	}
@@ -239,12 +241,14 @@ int pingReplyTest(u16 DeviceId)
 	/*
 	 * Set the MAC address.
 	 */
-	XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
+	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
+	ethDrv_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
 
 	/*
 	 * Empty any existing receive frames.
 	 */
-	XEmacLite_FlushReceive(EmacLiteInstPtr);
+	// XEmacLite_FlushReceive(EmacLiteInstPtr);
+	ethDrv_FlushReceive(EmacLiteInstPtr);
 
 	while (1) {
 
@@ -252,8 +256,9 @@ int pingReplyTest(u16 DeviceId)
 		 * Wait for a Receive packet.
 		 */
 		while (RecvFrameLength == 0) {
-			RecvFrameLength = XEmacLite_Recv(EmacLiteInstPtr,
-								(u8 *)RxFrame);
+			// RecvFrameLength = XEmacLite_Recv(EmacLiteInstPtr,
+			// 					(u8 *)RxFrame);
+			RecvFrameLength = ethDrv_Recv(EmacLiteInstPtr, (u8 *)RxFrame);
 		}
 
 		/*
@@ -293,7 +298,7 @@ static void ProcessRecvFrame(XEmacLite *InstancePtr)
 	u16 *TxFramePtr;
 	u16 *TempPtr;
 	u16 CheckSum;
-	u32 NextTxBuffBaseAddr;
+	// u32 NextTxBuffBaseAddr;
 	int Index;
 	int PacketType = 0;
 
@@ -303,7 +308,7 @@ static void ProcessRecvFrame(XEmacLite *InstancePtr)
 	/*
 	 * Determine the next expected Tx buffer address.
 	 */
-	NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
+	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
 
 	/*
 	 * Check the packet type.
@@ -459,9 +464,10 @@ static void ProcessRecvFrame(XEmacLite *InstancePtr)
 					/*
 					 * Transmit the Reply Packet.
 					 */
-					XEmacLite_Send(InstancePtr,
-							(u8 *)&TxFrame,
-							ARP_PACKET_SIZE);
+					// XEmacLite_Send(InstancePtr,
+					// 		(u8 *)&TxFrame,
+					// 		ARP_PACKET_SIZE);
+					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_PACKET_SIZE);
 				}
 			}
 		}
@@ -629,9 +635,10 @@ static void ProcessRecvFrame(XEmacLite *InstancePtr)
 					/*
 					 * Transmit the frame.
 					 */
-					XEmacLite_Send(InstancePtr,
-							(u8 *)&TxFrame,
-							ICMP_PACKET_SIZE);
+					// XEmacLite_Send(InstancePtr,
+					// 		(u8 *)&TxFrame,
+					// 		ICMP_PACKET_SIZE);
+					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PACKET_SIZE);
 
 					/*
 					 * Increment the number of

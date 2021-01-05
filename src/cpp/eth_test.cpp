@@ -24,8 +24,8 @@
 
 // using namespace std;
 
-int pingReplyTest(u16 DeviceId);
-int pingReqTest  (u16 DeviceId);
+int pingReplyTest(); //(u16 DeviceId);
+int pingReqTest();   //(u16 DeviceId);
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
     printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
@@ -819,7 +819,7 @@ int main(int argc, char *argv[])
         printf("%c\n", confirm);
         if (confirm == 'e') break;
 
-        int status = pingReplyTest(XPAR_ETH_LITE_DUM4LWIP_DEVICE_ID);
+        int status = pingReplyTest();
         if (status != XST_SUCCESS) {
           printf("\nERROR: Ping Reply test failed with status %d\n", status);
           return XST_FAILURE;
@@ -840,7 +840,7 @@ int main(int argc, char *argv[])
 
         ethCoreSetup(true);
 
-      	int status = pingReqTest(XPAR_ETH_LITE_DUM4LWIP_DEVICE_ID);
+      	int status = pingReqTest();
 	      if (status != XST_SUCCESS) {
 		      printf("\nERROR: Ping Request test failed with status %d\n", status);
           exit(1);
