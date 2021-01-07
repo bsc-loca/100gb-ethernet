@@ -47,6 +47,8 @@
 
 /***************************** Include Files *********************************/
 
+#include <stdio.h>
+#include <unistd.h>
 #include "xil_io.h"
 #include "xenv.h"
 // #include "xemaclite.h"
@@ -63,7 +65,45 @@
 
 /************************** Function Prototypes ******************************/
 
-static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress);
+// static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress);
+u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
+	u16 Length = XEL_MAX_FRAME_SIZE;
+
+// #ifdef __LITTLE_ENDIAN__
+// 	Length = (XEmacLite_ReadReg((BaseAddress),
+// 			headerOffset + XEL_RXBUFF_OFFSET) &
+// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+// 	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
+// #else
+// 	Length = ((XEmacLite_ReadReg((BaseAddress),
+// 			headerOffset + XEL_RXBUFF_OFFSET) >>
+// 			XEL_HEADER_SHIFT) &
+// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+// #endif
+    printf("Extracting Data length from address %d, offset %d \n", BaseAddress, headerOffset);
+
+	return Length;
+}
+
+u32 ethDrv_GetTxStatus(UINTPTR BaseAddress) {
+	printf("Getting Tx status (readiness) at address %d \n", BaseAddress);
+    sleep(1); // in seconds
+	return ~(XEL_TSR_PROG_MAC_ADDR); // returning just readiness only for MAC address setup
+}
+
+void ethDrv_SetTxStatus(UINTPTR BaseAddress, u32 Data) {
+	printf("Updating Tx status at address %d with value %0lX \n", BaseAddress, Data);
+}
+
+u32 ethDrv_GetRxStatus(UINTPTR BaseAddress) {
+	printf("Getting Rx status (readiness) at address %d \n", BaseAddress);
+    sleep(1); // in seconds
+	return ~(XEL_RSR_RECV_DONE_MASK); // No data available
+}
+
+void ethDrv_SetRxStatus(UINTPTR BaseAddress, u32 Data) {
+	printf("Updating Rx status at address %d with value %0lX \n", BaseAddress, Data);
+}
 
 /************************** Variable Definitions *****************************/
 
@@ -95,7 +135,7 @@ static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress);
 // int XEmacLite_CfgInitialize(XEmacLite *InstancePtr,
 // 				XEmacLite_Config *EmacLiteConfigPtr,
 // 				UINTPTR EffectiveAddr)
-int ethDrv_CfgInitialize(XEmacLite *InstancePtr)
+int ethDrv_CfgInitialize(EthDrv *InstancePtr)
 {
 
 	/*
@@ -107,7 +147,7 @@ int ethDrv_CfgInitialize(XEmacLite *InstancePtr)
 	/*
 	 * Zero the provided instance memory.
 	 */
-	memset(InstancePtr, 0, sizeof(XEmacLite));
+	memset(InstancePtr, 0, sizeof(EthDrv));
 
 	/*
 	 * Set some default values for instance data, don't indicate the device
@@ -126,8 +166,8 @@ int ethDrv_CfgInitialize(XEmacLite *InstancePtr)
 
 	InstancePtr->NextTxBufferToUse = 0x0;
 	InstancePtr->NextRxBufferToUse = 0x0;
-	InstancePtr->RecvHandler = (XEmacLite_Handler) StubHandler;
-	InstancePtr->SendHandler = (XEmacLite_Handler) StubHandler;
+	// InstancePtr->RecvHandler = (XEmacLite_Handler) StubHandler;
+	// InstancePtr->SendHandler = (XEmacLite_Handler) StubHandler;
 
 	/*
 	 * Clear the TX CSR's in case this is a restart.
@@ -169,7 +209,7 @@ int ethDrv_CfgInitialize(XEmacLite *InstancePtr)
 *
 ******************************************************************************/
 // int XEmacLite_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
-int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
+int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 {
 	u32 Register;
 	UINTPTR BaseAddress;
@@ -201,7 +241,8 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 	/*
 	 * Determine if the expected buffer address is empty.
 	 */
-	Register = XEmacLite_GetTxStatus(BaseAddress);
+	// Register = XEmacLite_GetTxStatus(BaseAddress);
+	Register = ethDrv_GetTxStatus(BaseAddress);
 
 	/*
 	 * If the expected buffer is available, fill it with the provided data
@@ -228,9 +269,9 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 		/*
 		 * The frame is in the buffer, now send it.
 		 */
-		XEmacLite_WriteReg(BaseAddress, XEL_TPLR_OFFSET,
-					(ByteCount & (XEL_TPLR_LENGTH_MASK_HI |
-					XEL_TPLR_LENGTH_MASK_LO)));
+		// XEmacLite_WriteReg(BaseAddress, XEL_TPLR_OFFSET,
+		// 			(ByteCount & (XEL_TPLR_LENGTH_MASK_HI |
+		// 			XEL_TPLR_LENGTH_MASK_LO)));
 
 		/*
 		 * Update the Tx Status Register to indicate that there is a
@@ -241,13 +282,15 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 		 * handler to call the callback function provided by the user
 		 * to indicate that the frame has been transmitted.
 		 */
-		Register = XEmacLite_GetTxStatus(BaseAddress);
+		// Register = XEmacLite_GetTxStatus(BaseAddress);
+		Register = ethDrv_GetTxStatus(BaseAddress);
 		Register |= XEL_TSR_XMIT_BUSY_MASK;
 		// IntrEnableStatus = XEmacLite_GetTxStatus(EmacBaseAddress);
 		// if ((IntrEnableStatus & XEL_TSR_XMIT_IE_MASK) != 0) {
 		// 	Register |= XEL_TSR_XMIT_ACTIVE_MASK;
 		// }
-		XEmacLite_SetTxStatus(BaseAddress, Register);
+		// XEmacLite_SetTxStatus(BaseAddress, Register);
+		ethDrv_SetTxStatus(BaseAddress, Register);
 
 		return XST_SUCCESS;
 	}
@@ -262,7 +305,8 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 		/*
 		 * Determine if the expected buffer address is empty.
 		 */
-		Register = XEmacLite_GetTxStatus(BaseAddress);
+		// Register = XEmacLite_GetTxStatus(BaseAddress);
+		Register = ethDrv_GetTxStatus(BaseAddress);
 
 		/*
 		 * If the next buffer is available, fill it with the provided
@@ -281,9 +325,9 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 			/*
 			 * The frame is in the buffer, now send it.
 			 */
-			XEmacLite_WriteReg(BaseAddress, XEL_TPLR_OFFSET,
-					(ByteCount & (XEL_TPLR_LENGTH_MASK_HI |
-					   XEL_TPLR_LENGTH_MASK_LO)));
+			// XEmacLite_WriteReg(BaseAddress, XEL_TPLR_OFFSET,
+			// 		(ByteCount & (XEL_TPLR_LENGTH_MASK_HI |
+			// 		   XEL_TPLR_LENGTH_MASK_LO)));
 
 			/*
 			 * Update the Tx Status Register to indicate that there
@@ -295,14 +339,16 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 			 * provided by the user to indicate that the frame has
 			 * been transmitted.
 			 */
-			Register = XEmacLite_GetTxStatus(BaseAddress);
+			// Register = XEmacLite_GetTxStatus(BaseAddress);
+			Register = ethDrv_GetTxStatus(BaseAddress);
 			Register |= XEL_TSR_XMIT_BUSY_MASK;
 			// IntrEnableStatus =
 			// 		XEmacLite_GetTxStatus(EmacBaseAddress);
 			// if ((IntrEnableStatus & XEL_TSR_XMIT_IE_MASK) != 0) {
 			// 	Register |= XEL_TSR_XMIT_ACTIVE_MASK;
 			// }
-			XEmacLite_SetTxStatus(BaseAddress, Register);
+			// XEmacLite_SetTxStatus(BaseAddress, Register);
+			ethDrv_SetTxStatus(BaseAddress, Register);
 
 			/*
 			 * Do not switch to next buffer, there is a sync problem
@@ -347,7 +393,7 @@ int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 *
 ******************************************************************************/
 // u16 XEmacLite_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
-u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
+u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 {
 	u16 LengthType;
 	u16 Length;
@@ -369,7 +415,8 @@ u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 	/*
 	 * Verify which buffer has valid data.
 	 */
-	Register = XEmacLite_GetRxStatus(BaseAddress);
+	// Register = XEmacLite_GetRxStatus(BaseAddress);
+	Register = ethDrv_GetRxStatus(BaseAddress);
 
 	if ((Register & XEL_RSR_RECV_DONE_MASK) == XEL_RSR_RECV_DONE_MASK) {
 
@@ -399,7 +446,8 @@ u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 		/*
 		 * Verify that buffer has valid data.
 		 */
-		Register = XEmacLite_GetRxStatus(BaseAddress);
+		// Register = XEmacLite_GetRxStatus(BaseAddress);
+		Register = ethDrv_GetRxStatus(BaseAddress);
 		if ((Register & XEL_RSR_RECV_DONE_MASK) !=
 				XEL_RSR_RECV_DONE_MASK) {
 			return 0;	/* No data was available */
@@ -409,7 +457,8 @@ u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 	/*
 	 * Get the length of the frame that arrived.
 	 */
-	LengthType = XEmacLite_GetReceiveDataLength(BaseAddress);
+	// LengthType = XEmacLite_GetReceiveDataLength(BaseAddress);
+	LengthType = ethDrv_GetReceiveDataLength(BaseAddress, XEL_HEADER_OFFSET);
 
 	/*
 	 * Check if length is valid.
@@ -422,22 +471,22 @@ u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 			/*
 			 * The packet is a an IP Packet.
 			 */
-#ifdef __LITTLE_ENDIAN__
-			Length = (XEmacLite_ReadReg((BaseAddress),
-					XEL_HEADER_IP_LENGTH_OFFSET +
-					XEL_RXBUFF_OFFSET) &
-					(XEL_RPLR_LENGTH_MASK_HI |
-					XEL_RPLR_LENGTH_MASK_LO));
-			Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
-#else
-			Length = ((XEmacLite_ReadReg((BaseAddress),
-					XEL_HEADER_IP_LENGTH_OFFSET +
-					XEL_RXBUFF_OFFSET) >>
-					XEL_HEADER_SHIFT) &
-					(XEL_RPLR_LENGTH_MASK_HI |
-					XEL_RPLR_LENGTH_MASK_LO));
-#endif
-
+// #ifdef __LITTLE_ENDIAN__
+// 			Length = (XEmacLite_ReadReg((BaseAddress),
+// 					XEL_HEADER_IP_LENGTH_OFFSET +
+// 					XEL_RXBUFF_OFFSET) &
+// 					(XEL_RPLR_LENGTH_MASK_HI |
+// 					XEL_RPLR_LENGTH_MASK_LO));
+// 			Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
+// #else
+// 			Length = ((XEmacLite_ReadReg((BaseAddress),
+// 					XEL_HEADER_IP_LENGTH_OFFSET +
+// 					XEL_RXBUFF_OFFSET) >>
+// 					XEL_HEADER_SHIFT) &
+// 					(XEL_RPLR_LENGTH_MASK_HI |
+// 					XEL_RPLR_LENGTH_MASK_LO));
+// #endif
+	        Length = ethDrv_GetReceiveDataLength(BaseAddress, XEL_HEADER_IP_LENGTH_OFFSET);
 			Length += XEL_HEADER_SIZE + XEL_FCS_SIZE;
 
 		} else if (LengthType == XEL_ETHER_PROTO_TYPE_ARP) {
@@ -474,9 +523,11 @@ u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 	/*
 	 * Acknowledge the frame.
 	 */
-	Register = XEmacLite_GetRxStatus(BaseAddress);
+	// Register = XEmacLite_GetRxStatus(BaseAddress);
+	Register = ethDrv_GetRxStatus(BaseAddress);
 	Register &= ~XEL_RSR_RECV_DONE_MASK;
-	XEmacLite_SetRxStatus(BaseAddress, Register);
+	// XEmacLite_SetRxStatus(BaseAddress, Register);
+	ethDrv_SetRxStatus(BaseAddress, Register);
 
 	return Length;
 }
@@ -504,7 +555,7 @@ u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 *
 ******************************************************************************/
 // void XEmacLite_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr)
-void ethDrv_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr)
+void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr)
 {
 	UINTPTR BaseAddress;
 
@@ -530,20 +581,23 @@ void ethDrv_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr)
 	/*
 	 * Set the length.
 	 */
-	XEmacLite_WriteReg(BaseAddress,
-				XEL_TPLR_OFFSET,
-				XEL_MAC_ADDR_SIZE);
+	// XEmacLite_WriteReg(BaseAddress,
+	// 			XEL_TPLR_OFFSET,
+	// 			XEL_MAC_ADDR_SIZE);
 
 	/*
 	 * Update the MAC address in the EmacLite.
 	 */
-	XEmacLite_SetTxStatus(BaseAddress, XEL_TSR_PROG_MAC_ADDR);
+	// XEmacLite_SetTxStatus(BaseAddress, XEL_TSR_PROG_MAC_ADDR);
+	ethDrv_SetTxStatus(BaseAddress, XEL_TSR_PROG_MAC_ADDR);
 
 
 	/*
 	 * Wait for EmacLite to finish with the MAC address update.
 	 */
-	while ((XEmacLite_GetTxStatus(BaseAddress) &
+	// while ((XEmacLite_GetTxStatus(BaseAddress) &
+	// 		XEL_TSR_PROG_MAC_ADDR) != 0);
+	while ((ethDrv_GetTxStatus(BaseAddress) &
 			XEL_TSR_PROG_MAC_ADDR) != 0);
 
 }
@@ -561,11 +615,11 @@ void ethDrv_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr)
 * @note		None.
 *
 ******************************************************************************/
-void StubHandler(void *CallBackRef)
-{
-	(void)(CallBackRef);
-	Xil_AssertVoidAlways();
-}
+// void StubHandler(void *CallBackRef)
+// {
+// 	(void)(CallBackRef);
+// 	Xil_AssertVoidAlways();
+// }
 
 
 /****************************************************************************/
@@ -638,7 +692,7 @@ void StubHandler(void *CallBackRef)
 * @note		None.
 *
 *****************************************************************************/
-void ethDrv_FlushReceive(XEmacLite *InstancePtr) {}
+void ethDrv_FlushReceive(EthDrv *InstancePtr) {}
 // void XEmacLite_FlushReceive(XEmacLite *InstancePtr)
 // {
 
@@ -943,23 +997,23 @@ void ethDrv_FlushReceive(XEmacLite *InstancePtr) {}
 * @note		None.
 *
 ******************************************************************************/
-static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress)
-{
-	u16 Length;
+// static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress)
+// {
+// 	u16 Length;
 
-#ifdef __LITTLE_ENDIAN__
-	Length = (XEmacLite_ReadReg((BaseAddress),
-			XEL_HEADER_OFFSET + XEL_RXBUFF_OFFSET) &
-			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
-#else
-	Length = ((XEmacLite_ReadReg((BaseAddress),
-			XEL_HEADER_OFFSET + XEL_RXBUFF_OFFSET) >>
-			XEL_HEADER_SHIFT) &
-			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-#endif
+// #ifdef __LITTLE_ENDIAN__
+// 	Length = (XEmacLite_ReadReg((BaseAddress),
+// 			XEL_HEADER_OFFSET + XEL_RXBUFF_OFFSET) &
+// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+// 	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
+// #else
+// 	Length = ((XEmacLite_ReadReg((BaseAddress),
+// 			XEL_HEADER_OFFSET + XEL_RXBUFF_OFFSET) >>
+// 			XEL_HEADER_SHIFT) &
+// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+// #endif
 
-	return Length;
-}
+// 	return Length;
+// }
 
 /** @} */

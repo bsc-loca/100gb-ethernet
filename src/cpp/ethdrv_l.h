@@ -192,8 +192,8 @@ extern "C" {
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
-#define XEmacLite_In32 Xil_In32
-#define XEmacLite_Out32 Xil_Out32
+// #define XEmacLite_In32 Xil_In32
+// #define XEmacLite_Out32 Xil_Out32
 
 /****************************************************************************/
 /**
@@ -210,8 +210,7 @@ extern "C" {
 *		u32 XEmacLite_ReadReg(u32 BaseAddress, u32 RegOffset);
 *
 ******************************************************************************/
-#define XEmacLite_ReadReg(BaseAddress, RegOffset) \
-	XEmacLite_In32((BaseAddress) + (RegOffset))
+// #define XEmacLite_ReadReg(BaseAddress, RegOffset) XEmacLite_In32((BaseAddress) + (RegOffset))
 
 /***************************************************************************/
 /**
@@ -229,8 +228,7 @@ extern "C" {
 *		void XEmacLite_WriteReg(u32 BaseAddress, u32 RegOffset,
 *					u32 RegisterValue);
 ******************************************************************************/
-#define XEmacLite_WriteReg(BaseAddress, RegOffset, RegisterValue) \
-	XEmacLite_Out32((BaseAddress) + (RegOffset), (RegisterValue))
+// #define XEmacLite_WriteReg(BaseAddress, RegOffset, RegisterValue) XEmacLite_Out32((BaseAddress) + (RegOffset), (RegisterValue))
 
 
 /****************************************************************************/
@@ -246,8 +244,7 @@ extern "C" {
 * 		u32 XEmacLite_GetTxStatus(u32 BaseAddress)
 *
 *****************************************************************************/
-#define XEmacLite_GetTxStatus(BaseAddress)			\
-	(XEmacLite_ReadReg((BaseAddress), XEL_TSR_OFFSET))
+// #define XEmacLite_GetTxStatus(BaseAddress) (XEmacLite_ReadReg((BaseAddress), XEL_TSR_OFFSET))
 
 
 /****************************************************************************/
@@ -264,8 +261,7 @@ extern "C" {
 * 		u32 XEmacLite_SetTxStatus(u32 BaseAddress, u32 Data)
 *
 *****************************************************************************/
-#define XEmacLite_SetTxStatus(BaseAddress, Data)			\
-	(XEmacLite_WriteReg((BaseAddress), XEL_TSR_OFFSET, (Data)))
+// #define XEmacLite_SetTxStatus(BaseAddress, Data) (XEmacLite_WriteReg((BaseAddress), XEL_TSR_OFFSET, (Data)))
 
 
 /****************************************************************************/
@@ -281,8 +277,7 @@ extern "C" {
 * 		u32 XEmacLite_GetRxStatus(u32 BaseAddress)
 *
 *****************************************************************************/
-#define XEmacLite_GetRxStatus(BaseAddress)			\
-	(XEmacLite_ReadReg((BaseAddress), XEL_RSR_OFFSET))
+// #define XEmacLite_GetRxStatus(BaseAddress) (XEmacLite_ReadReg((BaseAddress), XEL_RSR_OFFSET))
 
 
 /****************************************************************************/
@@ -299,8 +294,7 @@ extern "C" {
 * 		u32 XEmacLite_SetRxStatus(u32 BaseAddress, u32 Data)
 *
 *****************************************************************************/
-#define XEmacLite_SetRxStatus(BaseAddress, Data)			\
-	(XEmacLite_WriteReg((BaseAddress), XEL_RSR_OFFSET, (Data)))
+// #define XEmacLite_SetRxStatus(BaseAddress, Data) (XEmacLite_WriteReg((BaseAddress), XEL_RSR_OFFSET, (Data)))
 
 
 /****************************************************************************/
@@ -316,9 +310,7 @@ extern "C" {
 * 		int XEmacLite_IsTxDone(u32 BaseAddress)
 *
 *****************************************************************************/
-#define XEmacLite_IsTxDone(BaseAddress)			\
-		 ((XEmacLite_ReadReg((BaseAddress), XEL_TSR_OFFSET) & 	 \
-			 XEL_TSR_XMIT_BUSY_MASK) != XEL_TSR_XMIT_BUSY_MASK)
+// #define XEmacLite_IsTxDone(BaseAddress) ((XEmacLite_ReadReg((BaseAddress), XEL_TSR_OFFSET) & XEL_TSR_XMIT_BUSY_MASK) != XEL_TSR_XMIT_BUSY_MASK)
 
 
 /****************************************************************************/
@@ -334,9 +326,7 @@ extern "C" {
 *		int XEmacLite_IsRxEmpty(u32 BaseAddress)
 *
 *****************************************************************************/
-#define XEmacLite_IsRxEmpty(BaseAddress) \
-		  ((XEmacLite_ReadReg((BaseAddress), XEL_RSR_OFFSET) & \
-			XEL_RSR_RECV_DONE_MASK) != XEL_RSR_RECV_DONE_MASK)
+// #define XEmacLite_IsRxEmpty(BaseAddress) ((XEmacLite_ReadReg((BaseAddress), XEL_RSR_OFFSET) & XEL_RSR_RECV_DONE_MASK) != XEL_RSR_RECV_DONE_MASK)
 
 /************************** Function Prototypes ******************************/
 

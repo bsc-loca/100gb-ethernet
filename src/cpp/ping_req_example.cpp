@@ -129,11 +129,14 @@
 
 // static int EmacLitePingReqExample(u16 DeviceId);
 
-static void SendArpReqFrame(XEmacLite *InstancePtr);
+// static void SendArpReqFrame(XEmacLite *InstancePtr);
+static void SendArpReqFrame(EthDrv *InstancePtr);
 
-static void SendEchoReqFrame(XEmacLite *InstancePtr);
+// static void SendEchoReqFrame(XEmacLite *InstancePtr);
+static void SendEchoReqFrame(EthDrv *InstancePtr);
 
-static int ProcessRecvFrame(XEmacLite *InstancePtr);
+// static int ProcessRecvFrame(XEmacLite *InstancePtr);
+static int ProcessRecvFrame(EthDrv *InstancePtr);
 
 static u16 CheckSumCalculation(u16 *RxFramePtr16, int StartLoc, int Length);
 
@@ -168,7 +171,8 @@ static u8 DestIpAddress[IP_ADDR_SIZE] =
 };
 
 static u16 DestMacAddr[MAC_ADDR_LEN]; 	/* Destination MAC Address */
-static XEmacLite EmacLiteInstance;	/* Instance of the EmacLite driver */
+// static XEmacLite EmacLiteInstance;	/* Instance of the EmacLite driver */
+static EthDrv ethDrvInstance;	/* Instance of the EmacLite driver */
 
 /*
  * Known data transmitted in Echo request.
@@ -264,7 +268,8 @@ int pingReqTest() //(u16 DeviceId)
 	int Count;
 	int EchoReplyStatus;
 	// XEmacLite_Config *ConfigPtr;
-	XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
+	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
+	EthDrv *ethDrvInstPtr = &ethDrvInstance;
 	SeqNum = 0;
 	u32 RecvFrameLength = 0;
 	EchoReplyStatus = XST_FAILURE;
@@ -280,7 +285,7 @@ int pingReqTest() //(u16 DeviceId)
 	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
 	// 				ConfigPtr,
 	// 				ConfigPtr->BaseAddress);
-	Status = ethDrv_CfgInitialize(EmacLiteInstPtr);
+	Status = ethDrv_CfgInitialize(ethDrvInstPtr);
 	if (Status != XST_SUCCESS) {
 		return XST_FAILURE;
 	}
@@ -289,13 +294,13 @@ int pingReqTest() //(u16 DeviceId)
 	 * Set the MAC address.
 	 */
 	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	ethDrv_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
+	ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
 
 	/*
 	 * Empty any existing receive frames.
 	 */
 	// XEmacLite_FlushReceive(EmacLiteInstPtr);
-	ethDrv_FlushReceive(EmacLiteInstPtr);
+	ethDrv_FlushReceive(ethDrvInstPtr);
 	while (NumOfPingReqPkts--) {
 
 		/*
@@ -309,9 +314,9 @@ int pingReqTest() //(u16 DeviceId)
 		 * Send an ARP or an ICMP packet based on receive packet.
 		 */
 		if (SeqNum == 0) {
-			SendArpReqFrame(EmacLiteInstPtr);
+			SendArpReqFrame(ethDrvInstPtr);
 		} else {
-			SendEchoReqFrame(EmacLiteInstPtr);
+			SendEchoReqFrame(ethDrvInstPtr);
 		}
 
 		/*
@@ -328,7 +333,7 @@ int pingReqTest() //(u16 DeviceId)
 				// RecvFrameLength = XEmacLite_Recv(
 				// 			EmacLiteInstPtr,
 				// 			(u8 *)RxFrame);
-				RecvFrameLength = ethDrv_Recv(EmacLiteInstPtr, (u8 *)RxFrame);
+				RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
 
 				/*
 				 * To avoid infinite loop when no packet is
@@ -343,8 +348,9 @@ int pingReqTest() //(u16 DeviceId)
 			 * Process the Receive frame.
 			 */
 			if (RecvFrameLength != 0) {
-				EchoReplyStatus = ProcessRecvFrame(
-							EmacLiteInstPtr);
+				// EchoReplyStatus = ProcessRecvFrame(
+				// 			EmacLiteInstPtr);
+				EchoReplyStatus = ProcessRecvFrame(ethDrvInstPtr);
 			}
 			RecvFrameLength = 0;
 
@@ -383,7 +389,8 @@ int pingReqTest() //(u16 DeviceId)
 * @note		None.
 *
 ******************************************************************************/
-static void SendArpReqFrame(XEmacLite *InstancePtr)
+// static void SendArpReqFrame(XEmacLite *InstancePtr)
+static void SendArpReqFrame(EthDrv *InstancePtr)
 {
 	u16 *TempPtr;
 	u16 *TxFramePtr;
@@ -487,7 +494,8 @@ static void SendArpReqFrame(XEmacLite *InstancePtr)
 * @note		None.
 *
 ******************************************************************************/
-static void SendEchoReqFrame(XEmacLite *InstancePtr)
+// static void SendEchoReqFrame(XEmacLite *InstancePtr)
+static void SendEchoReqFrame(EthDrv *InstancePtr)
 {
 	u16 *TempPtr;
 	u16 *TxFramePtr;
@@ -613,7 +621,8 @@ static void SendEchoReqFrame(XEmacLite *InstancePtr)
 * @note		This assumes MAC does not strip padding or CRC.
 *
 ******************************************************************************/
-static int ProcessRecvFrame(XEmacLite *InstancePtr)
+// static int ProcessRecvFrame(XEmacLite *InstancePtr)
+static int ProcessRecvFrame(EthDrv *InstancePtr)
 {
 	u16 *RxFramePtr;
 	u16 *TempPtr;

@@ -240,7 +240,7 @@ typedef struct {
  *		when setting the callback functions, and passed back to the
  *		upper layer when the callback is invoked.
  */
-typedef void (*XEmacLite_Handler) (void *CallBackRef);
+// typedef void (*XEmacLite_Handler) (void *CallBackRef);
 
 /**
  * The XEmacLite driver instance data. The user is required to allocate a
@@ -258,12 +258,13 @@ typedef struct {
 	/*
 	 * Callbacks
 	 */
-	XEmacLite_Handler RecvHandler;
-	void *RecvRef;
-	XEmacLite_Handler SendHandler;
-	void *SendRef;
+	// XEmacLite_Handler RecvHandler;
+	// void *RecvRef;
+	// XEmacLite_Handler SendHandler;
+	// void *SendRef;
 
-} XEmacLite;
+// } XEmacLite;
+} EthDrv;
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
@@ -354,17 +355,17 @@ typedef struct {
 // int XEmacLite_CfgInitialize(XEmacLite *InstancePtr,
 // 				XEmacLite_Config *EmacLiteConfigPtr,
 // 				UINTPTR EffectiveAddr);
-int ethDrv_CfgInitialize(XEmacLite *InstancePtr);
+int ethDrv_CfgInitialize(EthDrv *InstancePtr);
 // void XEmacLite_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr);
-void ethDrv_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr);
+void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr);
 // int XEmacLite_TxBufferAvailable(XEmacLite *InstancePtr);
 // void XEmacLite_FlushReceive(XEmacLite *InstancePtr);
-void ethDrv_FlushReceive(XEmacLite *InstancePtr);
+void ethDrv_FlushReceive(EthDrv *InstancePtr);
 
 // int XEmacLite_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount);
-int ethDrv_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount);
+int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount);
 // u16 XEmacLite_Recv(XEmacLite *InstancePtr, u8 *FramePtr);
-u16 ethDrv_Recv(XEmacLite *InstancePtr, u8 *FramePtr);
+u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr);
 
 // int XEmacLite_PhyRead(XEmacLite *InstancePtr, u32 PhyAddress, u32 RegNum,
 // 			u16 *PhyDataPtr);

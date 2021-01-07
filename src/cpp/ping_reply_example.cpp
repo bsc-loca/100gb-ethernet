@@ -127,7 +127,8 @@
 
 // static int EmacLitePingReplyExample(u16 DeviceId);
 
-static void ProcessRecvFrame(XEmacLite *InstancePtr);
+// static void ProcessRecvFrame(XEmacLite *InstancePtr);
+static void ProcessRecvFrame(EthDrv *InstancePtr);
 
 static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length);
 
@@ -150,7 +151,8 @@ static u8 LocalIpAddr[IP_ADDR_SIZE] =
 	172, 16, 63, 121
 };
 
-static XEmacLite EmacLiteInstance;	/* Instance of the EmacLite driver */
+// static XEmacLite EmacLiteInstance;	/* Instance of the EmacLite driver */
+static EthDrv ethDrvInstance;	/* Instance of the EmacLite driver */
 
 /*
  * Buffers used for Transmission and Reception of Packets. These are declared as
@@ -218,7 +220,8 @@ u32 NumOfPingReplies;
 int pingReplyTest() //(u16 DeviceId)
 {
 	int Status;
-	XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
+	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
+	EthDrv *ethDrvInstPtr = &ethDrvInstance;
 	// XEmacLite_Config *ConfigPtr;
 	NumOfPingReplies = 0;
 
@@ -233,7 +236,7 @@ int pingReplyTest() //(u16 DeviceId)
 	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
 	// 				ConfigPtr,
 	// 				ConfigPtr->BaseAddress);
-	Status = ethDrv_CfgInitialize(EmacLiteInstPtr);
+	Status = ethDrv_CfgInitialize(ethDrvInstPtr);
 	if (Status != XST_SUCCESS) {
 		return XST_FAILURE;
 	}
@@ -242,13 +245,13 @@ int pingReplyTest() //(u16 DeviceId)
 	 * Set the MAC address.
 	 */
 	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	ethDrv_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
+	ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
 
 	/*
 	 * Empty any existing receive frames.
 	 */
 	// XEmacLite_FlushReceive(EmacLiteInstPtr);
-	ethDrv_FlushReceive(EmacLiteInstPtr);
+	ethDrv_FlushReceive(ethDrvInstPtr);
 
 	while (1) {
 
@@ -258,13 +261,14 @@ int pingReplyTest() //(u16 DeviceId)
 		while (RecvFrameLength == 0) {
 			// RecvFrameLength = XEmacLite_Recv(EmacLiteInstPtr,
 			// 					(u8 *)RxFrame);
-			RecvFrameLength = ethDrv_Recv(EmacLiteInstPtr, (u8 *)RxFrame);
+			RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
 		}
 
 		/*
 		 * Process the Receive frame.
 		 */
-		ProcessRecvFrame(EmacLiteInstPtr);
+		// ProcessRecvFrame(EmacLiteInstPtr);
+		ProcessRecvFrame(ethDrvInstPtr);
 		RecvFrameLength = 0;
 
 		/*
@@ -292,7 +296,8 @@ int pingReplyTest() //(u16 DeviceId)
 * @note		This function assumes MAC does not strip padding or CRC.
 *
 ******************************************************************************/
-static void ProcessRecvFrame(XEmacLite *InstancePtr)
+// static void ProcessRecvFrame(XEmacLite *InstancePtr)
+static void ProcessRecvFrame(EthDrv *InstancePtr)
 {
 	u16 *RxFramePtr;
 	u16 *TxFramePtr;
