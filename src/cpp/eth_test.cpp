@@ -24,8 +24,8 @@
 
 // using namespace std;
 
-int pingReplyTest(); //(u16 DeviceId);
-int pingReqTest();   //(u16 DeviceId);
+int pingReplyTest(XAxiDma&); //(u16 DeviceId);
+int pingReqTest  (XAxiDma&); //(u16 DeviceId);
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
     printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
@@ -772,7 +772,7 @@ int main(int argc, char *argv[])
 			           (XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE))) {
             // printf("Waiting untill Tx/Rx transfer finishes \n");
             // sleep(1); // in seconds, user wait process
-    		}
+          }
           dmaMemPtr += ETH_MEMPACK_SIZE;
         }
 
@@ -810,16 +810,19 @@ int main(int argc, char *argv[])
 
       case 'p': {
         printf("------- Ping Reply test -------\n");
-
-        ethCoreSetup(true);
-
-        printf("\nPlease run Ping Request test on the other side, to exit press 'e'\n");
+        printf("Please make sure that Ping Request test is running on the other side and confirm with 'y'...\n");
         char confirm;
         scanf("%s", &confirm);
         printf("%c\n", confirm);
-        if (confirm == 'e') break;
+        if (confirm != 'y') break;
 
-        int status = pingReplyTest();
+        ethCoreSetup(false);
+        axiDmaSetup();
+        switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
+        switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        sleep(1); // in seconds
+
+        int status = pingReplyTest(axiDma);
         if (status != XST_SUCCESS) {
           printf("\nERROR: Ping Reply test failed with status %d\n", status);
           return XST_FAILURE;
@@ -838,9 +841,13 @@ int main(int argc, char *argv[])
         printf("%c\n", confirm);
         if (confirm != 'y') break;
 
-        ethCoreSetup(true);
+        ethCoreSetup(false);
+        axiDmaSetup();
+        switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
+        switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        sleep(1); // in seconds
 
-      	int status = pingReqTest();
+      	int status = pingReqTest(axiDma);
 	      if (status != XST_SUCCESS) {
 		      printf("\nERROR: Ping Request test failed with status %d\n", status);
           exit(1);

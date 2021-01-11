@@ -261,7 +261,7 @@ int NumOfPingReqPkts;
 * @note		None.
 *
 ******************************************************************************/
-int pingReqTest() //(u16 DeviceId)
+int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 {
 	int Status;
 	int Index;
@@ -270,6 +270,7 @@ int pingReqTest() //(u16 DeviceId)
 	// XEmacLite_Config *ConfigPtr;
 	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
+	ethDrvInstPtr->axiDmaPtr = &axiDma;
 	SeqNum = 0;
 	u32 RecvFrameLength = 0;
 	EchoReplyStatus = XST_FAILURE;
@@ -294,7 +295,7 @@ int pingReqTest() //(u16 DeviceId)
 	 * Set the MAC address.
 	 */
 	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
+	// ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
 
 	/*
 	 * Empty any existing receive frames.

@@ -203,6 +203,7 @@ extern "C" {
 #include "xstatus.h"
 // #include "xemaclite_l.h"
 #include "ethdrv_l.h"
+#include "xaxidma.h"
 
 #ifdef __ARMEL__
 #ifndef __LITTLE_ENDIAN__
@@ -226,8 +227,8 @@ typedef struct {
 	// UINTPTR BaseAddress; /**< Device base address */
 	UINTPTR txBaseAddress; /**< Tx mem base address */
 	UINTPTR rxBaseAddress; /**< Rx mem base address */
-	u8 TxPingPong;	 /**< 1 if TX Pong buffer configured, 0 otherwise */
-	u8 RxPingPong;	 /**< 1 if RX Pong buffer configured, 0 otherwise */
+	// u8 TxPingPong;	 /**< 1 if TX Pong buffer configured, 0 otherwise */
+	// u8 RxPingPong;	 /**< 1 if RX Pong buffer configured, 0 otherwise */
 	// u8 MdioInclude;  /**< 1 if MDIO is enabled, 0 otherwise */
 	// u8 Loopback;     /**< 1 if internal loopback is enabled, 0 otherwise */
 // } XEmacLite_Config;
@@ -254,6 +255,10 @@ typedef struct {
 
 	u32 NextTxBufferToUse;		 /* Next TX buffer to write to */
 	u32 NextRxBufferToUse;		 /* Next RX buffer to read from */
+
+    XAxiDma* axiDmaPtr; // AXI DMA instance definitions
+	bool txDmaStarted;
+	bool rxDmaStarted;
 
 	/*
 	 * Callbacks
@@ -357,7 +362,7 @@ typedef struct {
 // 				UINTPTR EffectiveAddr);
 int ethDrv_CfgInitialize(EthDrv *InstancePtr);
 // void XEmacLite_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr);
-void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr);
+// void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr);
 // int XEmacLite_TxBufferAvailable(XEmacLite *InstancePtr);
 // void XEmacLite_FlushReceive(XEmacLite *InstancePtr);
 void ethDrv_FlushReceive(EthDrv *InstancePtr);

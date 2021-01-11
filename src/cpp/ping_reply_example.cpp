@@ -217,11 +217,12 @@ u32 NumOfPingReplies;
 *		ping replies as defined by MAX_PING_REPLIES.
 *
 ******************************************************************************/
-int pingReplyTest() //(u16 DeviceId)
+int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 {
 	int Status;
 	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
+	ethDrvInstPtr->axiDmaPtr = &axiDma;
 	// XEmacLite_Config *ConfigPtr;
 	NumOfPingReplies = 0;
 
@@ -245,7 +246,7 @@ int pingReplyTest() //(u16 DeviceId)
 	 * Set the MAC address.
 	 */
 	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
+	// ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
 
 	/*
 	 * Empty any existing receive frames.
