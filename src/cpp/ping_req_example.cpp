@@ -270,7 +270,6 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	// XEmacLite_Config *ConfigPtr;
 	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
-	ethDrvInstPtr->axiDmaPtr = &axiDma;
 	SeqNum = 0;
 	u32 RecvFrameLength = 0;
 	EchoReplyStatus = XST_FAILURE;
@@ -286,7 +285,7 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
 	// 				ConfigPtr,
 	// 				ConfigPtr->BaseAddress);
-	Status = ethDrv_CfgInitialize(ethDrvInstPtr);
+	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
 	if (Status != XST_SUCCESS) {
 		return XST_FAILURE;
 	}
@@ -480,6 +479,7 @@ static void SendArpReqFrame(EthDrv *InstancePtr)
 	 * Transmit the Frame.
 	 */
 	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
+	printf("Making ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
 }
 
@@ -605,6 +605,7 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 	 * Transmit the Frame.
 	 */
 	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
+	printf("Making ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
 }
 

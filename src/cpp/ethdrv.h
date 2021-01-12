@@ -251,14 +251,13 @@ typedef struct {
 typedef struct {
 	// XEmacLite_Config EmacLiteConfig; /* Device configuration */
 	EthDrv_Config EmacLiteConfig; /* Device configuration */
-	u32 IsReady;			 /* Device is initialized and ready */
+	// u32 IsReady;			 /* Device is initialized and ready */
 
 	u32 NextTxBufferToUse;		 /* Next TX buffer to write to */
 	u32 NextRxBufferToUse;		 /* Next RX buffer to read from */
 
     XAxiDma* axiDmaPtr; // AXI DMA instance definitions
 	bool txDmaStarted;
-	bool rxDmaStarted;
 
 	/*
 	 * Callbacks
@@ -360,7 +359,7 @@ typedef struct {
 // int XEmacLite_CfgInitialize(XEmacLite *InstancePtr,
 // 				XEmacLite_Config *EmacLiteConfigPtr,
 // 				UINTPTR EffectiveAddr);
-int ethDrv_CfgInitialize(EthDrv *InstancePtr);
+int ethDrv_CfgInitialize(EthDrv*, XAxiDma&);
 // void XEmacLite_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr);
 // void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr);
 // int XEmacLite_TxBufferAvailable(XEmacLite *InstancePtr);

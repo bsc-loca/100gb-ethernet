@@ -48,6 +48,7 @@
 #include "xstatus.h"
 // #include "xemaclite.h"
 #include "../../../src/cpp/ethdrv.h"
+#include "stdio.h"
 #include "xil_io.h"
 #include "xil_printf.h"
 
@@ -222,7 +223,6 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 	int Status;
 	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
-	ethDrvInstPtr->axiDmaPtr = &axiDma;
 	// XEmacLite_Config *ConfigPtr;
 	NumOfPingReplies = 0;
 
@@ -237,7 +237,7 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
 	// 				ConfigPtr,
 	// 				ConfigPtr->BaseAddress);
-	Status = ethDrv_CfgInitialize(ethDrvInstPtr);
+	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
 	if (Status != XST_SUCCESS) {
 		return XST_FAILURE;
 	}
@@ -473,6 +473,7 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					// XEmacLite_Send(InstancePtr,
 					// 		(u8 *)&TxFrame,
 					// 		ARP_PACKET_SIZE);
+	                printf("Making ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
 					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_PACKET_SIZE);
 				}
 			}
@@ -644,6 +645,7 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					// XEmacLite_Send(InstancePtr,
 					// 		(u8 *)&TxFrame,
 					// 		ICMP_PACKET_SIZE);
+	                printf("Making ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
 					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PACKET_SIZE);
 
 					/*

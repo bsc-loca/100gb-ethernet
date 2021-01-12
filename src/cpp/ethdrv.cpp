@@ -145,7 +145,7 @@ u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
 // int XEmacLite_CfgInitialize(XEmacLite *InstancePtr,
 // 				XEmacLite_Config *EmacLiteConfigPtr,
 // 				UINTPTR EffectiveAddr)
-int ethDrv_CfgInitialize(EthDrv *InstancePtr)
+int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
 {
 
 	/*
@@ -180,7 +180,6 @@ int ethDrv_CfgInitialize(EthDrv *InstancePtr)
 	// InstancePtr->SendHandler = (XEmacLite_Handler) StubHandler;
 
 	InstancePtr->txDmaStarted = false;
-	InstancePtr->rxDmaStarted = false;
 
 	/*
 	 * Clear the TX CSR's in case this is a restart.
@@ -193,7 +192,9 @@ int ethDrv_CfgInitialize(EthDrv *InstancePtr)
 	/*
 	 * Since there were no failures, indicate the device is ready to use.
 	 */
-	InstancePtr->IsReady = XIL_COMPONENT_IS_READY;
+	// InstancePtr->IsReady = XIL_COMPONENT_IS_READY;
+
+	InstancePtr->axiDmaPtr = &axiDma;
 
 	return XST_SUCCESS;
 }
@@ -310,11 +311,11 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 		// XEmacLite_SetTxStatus(BaseAddress, Register);
 		// ethDrv_SetTxStatus(BaseAddress, Register);
 
-        int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)BaseAddress, ByteCount, XAXIDMA_DMA_TO_DEVICE);
+        int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
 		InstancePtr->txDmaStarted = true;
         if (XST_SUCCESS != status) {
           printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
-		          BaseAddress, ByteCount, status);
+		          0, ByteCount, status);
 	    }
 
 		return status;
@@ -437,17 +438,10 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	// BaseAddress = XEmacLite_NextReceiveAddr(InstancePtr);
 	BaseAddress = ethDrv_NextReceiveAddr(InstancePtr);
 
-    if (!InstancePtr->rxDmaStarted) {
-	  int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)BaseAddress, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
-      if (XST_SUCCESS != status) {
-        printf("\nERROR: Initial Ethernet XAxiDma Rx accept to addr %0X with max lenth %d failed with status %d\n",
-		        BaseAddress, XEL_MAX_FRAME_SIZE, status);
-	  }
-	}
-
-	while (XAxiDma_Busy(InstancePtr->axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
-      printf("Waiting untill previously ordered Rx accept finishes \n");
-      // sleep(1); // in seconds, user wait process
+	if (XAxiDma_Busy(InstancePtr->axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
+      printf("Checking if any Rx frame is received \n");
+      sleep(1); // in seconds, user wait process
+	  return 0;
     }
 
 	/*
@@ -567,11 +561,10 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	// XEmacLite_SetRxStatus(BaseAddress, Register);
 	// ethDrv_SetRxStatus(BaseAddress, Register);
 
-	int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)BaseAddress, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
-	InstancePtr->rxDmaStarted = true;
+	int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
     if (XST_SUCCESS != status) {
       printf("\nERROR: Ethernet XAxiDma Rx accept to addr %0X with max lenth %d failed with status %d\n",
-		      BaseAddress, XEL_MAX_FRAME_SIZE, status);
+		      0, XEL_MAX_FRAME_SIZE, status);
 	}
 
 	return Length;
@@ -737,7 +730,14 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 * @note		None.
 *
 *****************************************************************************/
-void ethDrv_FlushReceive(EthDrv *InstancePtr) {}
+void ethDrv_FlushReceive(EthDrv *InstancePtr) {
+
+  int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+  if (XST_SUCCESS != status) {
+    printf("\nERROR: Initial Ethernet XAxiDma Rx accept to addr %0X with max lenth %d failed with status %d\n",
+           0, XEL_MAX_FRAME_SIZE, status);
+  }
+}
 // void XEmacLite_FlushReceive(XEmacLite *InstancePtr)
 // {
 

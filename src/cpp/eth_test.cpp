@@ -393,6 +393,13 @@ void axiDmaSetup() {
   XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
 
   printf("XAxiDma is initialized and reset: \n");
+  printf("Initialized              = %d  \n", axiDma.Initialized);
+  printf("RegBase                  = %d  \n", axiDma.RegBase);
+  printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
+  printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
+  printf("HasSg                    = %d  \n", axiDma.HasSg);
+  printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
+  printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
   printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
   printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
   printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
