@@ -474,7 +474,7 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					// XEmacLite_Send(InstancePtr,
 					// 		(u8 *)&TxFrame,
 					// 		ARP_PACKET_SIZE);
-	                printf("Making ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
+	                printf("Sending ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
 					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_PACKET_SIZE);
 				}
 			}
@@ -646,7 +646,7 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					// XEmacLite_Send(InstancePtr,
 					// 		(u8 *)&TxFrame,
 					// 		ICMP_PACKET_SIZE);
-	                printf("Making ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
+	                printf("Sending ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
 					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PACKET_SIZE);
 
 					/*

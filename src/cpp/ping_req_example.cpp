@@ -69,7 +69,7 @@
  * Change this parameter to limit the number of ping requests sent by this
  * program.
  */
-#define NUM_OF_PING_REQ_PKTS	100	/* Number of ping req it generates */
+#define NUM_OF_PING_REQ_PKTS	10	/* Number of ping req it generates */
 
 #define ECHO_REPLY		0x00	/* Echo reply */
 #define HW_TYPE			0x01	/* Hardware type (10/100 Mbps) */
@@ -161,7 +161,7 @@ static u8 LocalMacAddr[XEL_MAC_ADDR_SIZE] =
  */
 static u8 LocalIpAddress[IP_ADDR_SIZE] =
 {
-	172, 16, 63, 121
+	172, 16, 63, 61 //121
 };
 
 /*
@@ -169,7 +169,7 @@ static u8 LocalIpAddress[IP_ADDR_SIZE] =
  */
 static u8 DestIpAddress[IP_ADDR_SIZE] =
 {
-	172, 16, 63, 61
+	172, 16, 63, 121 //61
 };
 
 static u16 DestMacAddr[MAC_ADDR_LEN]; 	/* Destination MAC Address */
@@ -482,7 +482,7 @@ static void SendArpReqFrame(EthDrv *InstancePtr)
 	 * Transmit the Frame.
 	 */
 	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
-	printf("Making ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
+	printf("Sending ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
 }
 
@@ -608,7 +608,7 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 	 * Transmit the Frame.
 	 */
 	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
-	printf("Making ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
+	printf("Sending ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
 }
 

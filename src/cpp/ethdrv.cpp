@@ -92,7 +92,7 @@ u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
 	Length = ((addr32[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
 #endif
-    printf("Extracting Data length from address %d, offset %d \n", BaseAddress, headerOffset);
+    // printf("Extracting Data length %d from address %X, offset %d \n", Length, BaseAddress, headerOffset);
 
 	return Length;
 }
@@ -442,11 +442,9 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	BaseAddress = ethDrv_NextReceiveAddr(InstancePtr);
 
 	if (XAxiDma_Busy(InstancePtr->axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
-      printf("Checking if any Rx frame is received \n");
-      sleep(1); // in seconds, user wait process
 	  return 0;
     }
-    printf("Some Rx frame is received \n");
+    // printf("Some Rx frame is received \n");
 
 	/*
 	 * Verify which buffer has valid data.
@@ -554,7 +552,7 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	 */
 	// XEmacLite_AlignedRead(((UINTPTR *) (BaseAddress + XEL_RXBUFF_OFFSET)),
 	// 		      FramePtr, Length);
-	ethDrv_AlignedRead(((UINTPTR *) (BaseAddress + XEL_RXBUFF_OFFSET)), FramePtr, Length);
+	ethDrv_AlignedRead(((UINTPTR *) BaseAddress), FramePtr, Length);
 
 	/*
 	 * Acknowledge the frame.
