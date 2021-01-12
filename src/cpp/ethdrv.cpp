@@ -49,6 +49,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <algorithm>
+
 #include "xil_io.h"
 #include "xenv.h"
 // #include "xemaclite.h"
@@ -247,10 +249,10 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 	 * The maximum Tx packet size is
 	 * Ethernet header (14 Bytes) + Maximum MTU (1500 bytes).
 	 */
-	if (ByteCount > XEL_MAX_TX_FRAME_SIZE) {
+	// if (ByteCount > XEL_MAX_TX_FRAME_SIZE) {
 
-		ByteCount = XEL_MAX_TX_FRAME_SIZE;
-	}
+	// 	ByteCount = XEL_MAX_TX_FRAME_SIZE;
+	// }
 
     while (InstancePtr->txDmaStarted && XAxiDma_Busy(InstancePtr->axiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
       printf("Waiting untill previous Tx transfer finishes \n");
@@ -311,6 +313,7 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 		// XEmacLite_SetTxStatus(BaseAddress, Register);
 		// ethDrv_SetTxStatus(BaseAddress, Register);
 
+        ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XEL_MAX_TX_FRAME_SIZE));
         int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
 		InstancePtr->txDmaStarted = true;
         if (XST_SUCCESS != status) {
@@ -443,6 +446,7 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
       sleep(1); // in seconds, user wait process
 	  return 0;
     }
+    printf("Some Rx frame is received \n");
 
 	/*
 	 * Verify which buffer has valid data.

@@ -178,6 +178,7 @@ extern "C" {
 
 
 #define XEL_MAC_ADDR_SIZE		6	/**< length of MAC address */
+#define ETH_MIN_PACK_SIZE       64  // defined by 100Gb Ethernet core
 
 
 /*

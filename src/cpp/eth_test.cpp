@@ -319,7 +319,7 @@ void ethCoreSetup(bool gtLoopback) {
         !(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
     printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
-                                                 ethCore[STAT_RX_STATUS_REG]);
+                                                   ethCore[STAT_RX_STATUS_REG]);
     sleep(1); // in seconds, user wait process
   }
   printf("RX is aligned and RFI is got from TX side:\n");
@@ -828,12 +828,24 @@ int main(int argc, char *argv[])
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
         sleep(1); // in seconds
+        printf("Enabling Ethernet TX:\n");
+        printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
 
         int status = pingReplyTest(axiDma);
         if (status != XST_SUCCESS) {
           printf("\nERROR: Ping Reply test failed with status %d\n", status);
           return XST_FAILURE;
         }
+
+        printf("Disabling Ethernet TX/RX:\n");
+        printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                         ethCore[CONFIGURATION_RX_REG1]);
+        ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
+        printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                         ethCore[CONFIGURATION_RX_REG1]);
 
         printf("------- Ping Reply test finished -------\n\n");
       }
@@ -853,12 +865,26 @@ int main(int argc, char *argv[])
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
         sleep(1); // in seconds
+        printf("Enabling Ethernet TX:\n");
+        // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK; // via GPIO
+        printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
+        printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
 
       	int status = pingReqTest(axiDma);
 	      if (status != XST_SUCCESS) {
 		      printf("\nERROR: Ping Request test failed with status %d\n", status);
           exit(1);
 	      }
+
+        printf("Disabling Ethernet TX/RX:\n");
+        printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                         ethCore[CONFIGURATION_RX_REG1]);
+        ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
+        ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
+        printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                         ethCore[CONFIGURATION_RX_REG1]);
+
         printf("------- Ping Request test finished -------\n\n");
       }
       break;

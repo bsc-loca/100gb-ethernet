@@ -46,11 +46,13 @@
 *****************************************************************************/
 /***************************** Include Files *********************************/
 
+#include <stdio.h>
+#include <unistd.h>
+
 #include "xparameters.h"
 #include "xstatus.h"
 // #include "xemaclite.h"
 #include "../../../src/cpp/ethdrv.h"
-#include "stdio.h"
 #include "xil_io.h"
 #include "xil_printf.h"
 
@@ -85,7 +87,7 @@
 					before sending another request */
 #define NUM_PACK_CHECK_RX_PACK	100	/* Max number of pack to be checked
 					before to identify a Rx packet */
-#define DELAY			5000000 /* Used to introduce delay */
+// #define DELAY			5000000 /* Used to introduce delay */
 
 /*
  * Definitions for the locations and length of some of the fields in a
@@ -306,9 +308,10 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 		/*
 		 * Introduce delay.
 		 */
-		Count = DELAY;
-		while (Count--) {
-		}
+		// Count = DELAY;
+		// while (Count--) {
+		// }
+        sleep(1); // in seconds
 
 		/*
 		 * Send an ARP or an ICMP packet based on receive packet.
