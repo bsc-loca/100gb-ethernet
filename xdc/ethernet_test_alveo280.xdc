@@ -55,6 +55,25 @@ set_max_delay -datapath_only -from $tx_clk  -to $sys_clk [expr [get_property -mi
 set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -min period $tx_clk ] * 0.9]
 set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
 set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
+#
+# Timing constraints for domains crossings in Ethernet MAC Lite + 1Gb Ethernet PHY
+# set phy_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out2     ]]
+# set txl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/userclk_out  ]]
+# set rxl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/rxuserclk_out]]
+# Ethernet MAC Lite
+# set_max_delay -datapath_only -from $sys_clk -to $txl_clk [expr [get_property -min period $sys_clk] * 0.9]
+# set_max_delay -datapath_only -from $sys_clk -to $rxl_clk [expr [get_property -min period $sys_clk] * 0.9]
+# set_max_delay -datapath_only -from $txl_clk -to $sys_clk [expr [get_property -min period $txl_clk] * 0.9]
+# set_max_delay -datapath_only -from $rxl_clk -to $sys_clk [expr [get_property -min period $rxl_clk] * 0.9]
+# 1Gb Ethernet PHY
+# set_max_delay -datapath_only -from $phy_clk -to $txl_clk [expr [get_property -min period $phy_clk] * 0.9]
+# set_max_delay -datapath_only -from $phy_clk -to $rxl_clk [expr [get_property -min period $phy_clk] * 0.9]
+# set_max_delay -datapath_only -from $txl_clk -to $phy_clk [expr [get_property -min period $txl_clk] * 0.9]
+# set_max_delay -datapath_only -from $rxl_clk -to $phy_clk [expr [get_property -min period $rxl_clk] * 0.9]
+# both
+# set_max_delay -datapath_only -from $txl_clk -to $rxl_clk [expr [get_property -min period $txl_clk] * 0.9]
+# set_max_delay -datapath_only -from $rxl_clk -to $txl_clk [expr [get_property -min period $rxl_clk] * 0.9]
+
 
 #--------------------------------------------
 # On-board system clock
@@ -138,10 +157,10 @@ set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP0_OEB"]  ;# Bank  75 VCCO - V
 # set_property PACKAGE_PIN M42       [get_ports "QSFP1_CLOCK_P"]  ;# Bank 135 - MGTREFCLK1P_135, platform: io_clk_gtyquad_refclk1_01_clk_p
 #
 ## QSFP1_CLOCK control signals
-# set_property PACKAGE_PIN H30       [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75     , platform: QSFP1_OEB[0:0]
-# set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75
-# set_property PACKAGE_PIN G33       [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75, platform: QSFP1_FS[0:0]
-# set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75
+set_property PACKAGE_PIN H30       [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75     , platform: QSFP1_OEB[0:0]
+set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75
+set_property PACKAGE_PIN G33       [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75, platform: QSFP1_FS[0:0]
+set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75
 #
 ## QSFP1 MGTY Interface
 # set_property PACKAGE_PIN G54       [get_ports "QSFP1_RX1_N"]  ;# Bank 135 - MGTYRXN0_135, platform: io_gt_gtyquad_01[_grx_n[0]]
