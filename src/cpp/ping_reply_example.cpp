@@ -239,9 +239,7 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 	// 				ConfigPtr,
 	// 				ConfigPtr->BaseAddress);
 	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
+	if (Status != XST_SUCCESS) return Status;
 
 	/*
 	 * Set the MAC address.
@@ -253,7 +251,8 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 	 * Empty any existing receive frames.
 	 */
 	// XEmacLite_FlushReceive(EmacLiteInstPtr);
-	ethDrv_FlushReceive(ethDrvInstPtr);
+	Status = ethDrv_FlushReceive(ethDrvInstPtr);
+	if (Status != XST_SUCCESS) return Status;
 
 	while (1) {
 

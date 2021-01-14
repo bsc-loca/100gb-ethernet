@@ -257,7 +257,6 @@ typedef struct {
 	u32 NextRxBufferToUse;		 /* Next RX buffer to read from */
 
     XAxiDma* axiDmaPtr; // AXI DMA instance definitions
-	bool txDmaStarted;
 
 	/*
 	 * Callbacks
@@ -364,7 +363,7 @@ int ethDrv_CfgInitialize(EthDrv*, XAxiDma&);
 // void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr);
 // int XEmacLite_TxBufferAvailable(XEmacLite *InstancePtr);
 // void XEmacLite_FlushReceive(XEmacLite *InstancePtr);
-void ethDrv_FlushReceive(EthDrv *InstancePtr);
+int ethDrv_FlushReceive(EthDrv *InstancePtr);
 
 // int XEmacLite_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount);
 int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount);

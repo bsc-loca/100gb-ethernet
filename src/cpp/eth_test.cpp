@@ -415,6 +415,9 @@ void axiDmaSetup() {
   printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
   printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
   printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
+
+  printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
+  printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
 }
 
 
@@ -459,11 +462,10 @@ int main(int argc, char *argv[])
     printf("\n");
     printf("------ Ethernet Test App ------\n");
     printf("Please enter test mode:\n");
-    printf("  Loopback tests:              l\n");
-    printf("  2-boards communication test: c\n");
-    printf("  Ping reply test:             p\n");
-    printf("  Ping request test            q\n");
-    printf("  Finish:                      f\n");
+    printf("  Single board self-diag/loopback tests: l\n");
+    printf("  Two boards diag communication tests:   c\n");
+    printf("  Two boards IP-based tests:             i\n");
+    printf("  Finish:                                f\n");
     char choice;
     scanf("%s", &choice);
     printf("You have entered: %c\n\n", choice);
@@ -815,9 +817,9 @@ int main(int argc, char *argv[])
       break;
 
 
-      case 'p': {
-        printf("------- Ping Reply test -------\n");
-        printf("Please make sure that Ping Request test is running on the other side and confirm with 'y'...\n");
+      case 'i': {
+        printf("------- Running 2-boards IP-based tests -------\n");
+        printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
         char confirm;
         scanf("%s", &confirm);
         printf("%c\n", confirm);
@@ -832,11 +834,47 @@ int main(int argc, char *argv[])
         printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
         printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+        printf("\n------- Physical connection is set-up -------\n");
 
-        int status = pingReplyTest(axiDma);
-        if (status != XST_SUCCESS) {
-          printf("\nERROR: Ping Reply test failed with status %d\n", status);
-          return XST_FAILURE;
+        while (true) {
+          printf("Please choose particular IP-based test:\n");
+          printf("  Ping reply test:   p\n");
+          printf("  Ping request test: q\n");
+          printf("  Exit to main menu: e\n");
+          char choice;
+          scanf("%s", &choice);
+          printf("You have entered: %c\n\n", choice);
+
+          switch (choice) {
+            case 'p': {
+              printf("------- Ping Reply test -------\n");
+              int status = pingReplyTest(axiDma);
+              if (status != XST_SUCCESS) {
+                printf("\nERROR: Ping Reply test failed with status %d\n", status);
+                exit(1);
+              }
+              printf("------- Ping Reply test finished -------\n\n");
+            }
+            break;
+
+            case 'q': {
+              printf("------- Ping Request test -------\n");
+            	int status = pingReqTest(axiDma);
+	            if (status != XST_SUCCESS) {
+		            printf("\nERROR: Ping Request test failed with status %d\n", status);
+                exit(1);
+	            }
+              printf("------- Ping Request test finished -------\n\n");
+            }
+            break;
+
+            case 'e':
+              printf("------- Exiting to main menu -------\n");
+              break;
+
+            default: printf("Please choose right option\n");
+          }
+          if (choice == 'e') break;
         }
 
         printf("Disabling Ethernet TX/RX:\n");
@@ -846,56 +884,14 @@ int main(int argc, char *argv[])
         ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
         printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
                                                          ethCore[CONFIGURATION_RX_REG1]);
-
-        printf("------- Ping Reply test finished -------\n\n");
       }
       break;
-
-
-      case 'q': {
-        printf("------- Ping Request test -------\n");
-        printf("Please make sure that Ping Reply test is running on the other side and confirm with 'y'...\n");
-        char confirm;
-        scanf("%s", &confirm);
-        printf("%c\n", confirm);
-        if (confirm != 'y') break;
-
-        ethCoreSetup(false);
-        axiDmaSetup();
-        switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
-        switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
-        sleep(1); // in seconds
-        printf("Enabling Ethernet TX:\n");
-        // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK; // via GPIO
-        printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-        ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
-        printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-
-      	int status = pingReqTest(axiDma);
-	      if (status != XST_SUCCESS) {
-		      printf("\nERROR: Ping Request test failed with status %d\n", status);
-          exit(1);
-	      }
-
-        printf("Disabling Ethernet TX/RX:\n");
-        printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
-                                                         ethCore[CONFIGURATION_RX_REG1]);
-        ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
-        ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
-        printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
-                                                         ethCore[CONFIGURATION_RX_REG1]);
-
-        printf("------- Ping Request test finished -------\n\n");
-      }
-      break;
-
 
       case 'f':
         printf("------- Exiting the app -------\n");
         return(0);
 
-      default:
-        printf("Please choose right option\n");
+      default: printf("Please choose right option\n");
     }
   }
 }
