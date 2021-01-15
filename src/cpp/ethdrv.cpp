@@ -52,66 +52,6 @@
 
 #include "../../../src/cpp/ethdrv.h"
 
-/************************** Constant Definitions *****************************/
-
-/**************************** Type Definitions *******************************/
-
-/***************** Macros (Inline Functions) Definitions *********************/
-
-
-/************************** Function Prototypes ******************************/
-
-// static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress);
-u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
-	u16 Length;
-    uint32_t* addr32 = reinterpret_cast<uint32_t*>(BaseAddress);
-
-// #ifdef __LITTLE_ENDIAN__
-// 	Length = (XEmacLite_ReadReg((BaseAddress),
-// 			headerOffset + XEL_RXBUFF_OFFSET) &
-// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-// 	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
-// #else
-// 	Length = ((XEmacLite_ReadReg((BaseAddress),
-// 			headerOffset + XEL_RXBUFF_OFFSET) >>
-// 			XEL_HEADER_SHIFT) &
-// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-// #endif
-
-#ifdef __LITTLE_ENDIAN__
-	Length = (addr32[headerOffset / sizeof(uint32_t)] &
-			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
-#else
-	Length = ((addr32[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
-			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-#endif
-    // printf("Extracting Data length %d from address %X, offset %d \n", Length, BaseAddress, headerOffset);
-
-	return Length;
-}
-
-// u32 ethDrv_GetTxStatus(UINTPTR BaseAddress) {
-// 	printf("Getting Tx status (readiness) at address %d \n", BaseAddress);
-//     sleep(1); // in seconds
-// 	return ~(XEL_TSR_PROG_MAC_ADDR); // returning just readiness only for MAC address setup
-// }
-
-// void ethDrv_SetTxStatus(UINTPTR BaseAddress, u32 Data) {
-// 	printf("Updating Tx status at address %d with value %0lX \n", BaseAddress, Data);
-// }
-
-// u32 ethDrv_GetRxStatus(UINTPTR BaseAddress) {
-// 	printf("Getting Rx status (readiness) at address %d \n", BaseAddress);
-//     sleep(1); // in seconds
-// 	return ~(XEL_RSR_RECV_DONE_MASK); // No data available
-// }
-
-// void ethDrv_SetRxStatus(UINTPTR BaseAddress, u32 Data) {
-// 	printf("Updating Rx status at address %d with value %0lX \n", BaseAddress, Data);
-// }
-
-/************************** Variable Definitions *****************************/
 
 /*****************************************************************************/
 /**
@@ -138,12 +78,8 @@ u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
 *		XEmacLite_PhyWrite functions to access the PHY device.
 *
 ******************************************************************************/
-// int XEmacLite_CfgInitialize(XEmacLite *InstancePtr,
-// 				XEmacLite_Config *EmacLiteConfigPtr,
-// 				UINTPTR EffectiveAddr)
 int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
 {
-
 	/*
 	 * Verify that each of the inputs are valid.
 	 */
@@ -165,13 +101,13 @@ int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
 	// InstancePtr->EmacLiteConfig.RxPingPong = EmacLiteConfigPtr->RxPingPong;
 	// InstancePtr->EmacLiteConfig.MdioInclude = EmacLiteConfigPtr->MdioInclude;
 	// InstancePtr->EmacLiteConfig.Loopback = EmacLiteConfigPtr->Loopback;
-	InstancePtr->EmacLiteConfig.txBaseAddress = XPAR_TX_MEM_CPU_S_AXI_BASEADDR;
-	InstancePtr->EmacLiteConfig.rxBaseAddress = XPAR_RX_MEM_CPU_S_AXI_BASEADDR;
+	InstancePtr->txBaseAddress = XPAR_TX_MEM_CPU_S_AXI_BASEADDR;
+	InstancePtr->rxBaseAddress = XPAR_RX_MEM_CPU_S_AXI_BASEADDR;
 	// InstancePtr->EmacLiteConfig.TxPingPong = 1;
 	// InstancePtr->EmacLiteConfig.RxPingPong = 1;
 
-	InstancePtr->NextTxBufferToUse = 0x0;
-	InstancePtr->NextRxBufferToUse = 0x0;
+	// InstancePtr->NextTxBufferToUse = 0x0;
+	// InstancePtr->NextRxBufferToUse = 0x0;
 	// InstancePtr->RecvHandler = (XEmacLite_Handler) StubHandler;
 	// InstancePtr->SendHandler = (XEmacLite_Handler) StubHandler;
 
@@ -209,7 +145,6 @@ int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
 * @note		None.
 *
 ******************************************************************************/
-// void XEmacLite_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
 void ethDrv_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
 {
 	unsigned Index;
@@ -355,140 +290,6 @@ void ethDrv_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
 	}
 }
 
-/******************************************************************************/
-/**
-*
-* This function reads from a 32-bit aligned source address range and aligns
-* the writes to the provided destination pointer alignment.
-*
-* @param	SrcPtr is a pointer to incoming data of 32-bit alignment.
-* @param	DestPtr is a pointer to outgoing data of any alignment.
-* @param	ByteCount is the number of bytes to read.
-*
-* @return	None.
-*
-* @note		None.
-*
-******************************************************************************/
-// void XEmacLite_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
-void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
-{
-	unsigned Index;
-	unsigned Length = ByteCount;
-	volatile u32 AlignBuffer;
-	u32 *To32Ptr;
-	volatile u32 *From32Ptr;
-	u16 *To16Ptr;
-	volatile u16 *From16Ptr;
-	u8 *To8Ptr;
-	volatile u8 *From8Ptr;
-
-	From32Ptr = (u32 *) SrcPtr;
-
-	if ((((u32) DestPtr) & 0x00000003) == 0) {
-
-		/*
-		 * Word aligned buffer, no correction needed.
-		 */
-		To32Ptr = (u32 *) DestPtr;
-
-		while (Length > 3) {
-			/*
-			 * Output each word.
-			 */
-			*To32Ptr++ = *From32Ptr++;
-
-			/*
-			 * Adjust length accordingly.
-			 */
-			Length -= 4;
-		}
-
-		/*
-		 * Set up to read the remaining data.
-		 */
-		To8Ptr = (u8 *) To32Ptr;
-
-	}
-	else if ((((u32) DestPtr) & 0x00000001) != 0) {
-		/*
-		 * Byte aligned buffer, correct.
-		 */
-		To8Ptr = (u8 *) DestPtr;
-
-		while (Length > 3) {
-			/*
-			 * Copy each word into the temporary buffer.
-			 */
-			AlignBuffer = *From32Ptr++;
-			From8Ptr = (u8 *) &AlignBuffer;
-
-			/*
-			 * Write data to destination.
-			 */
-			for (Index = 0; Index < 4; Index++) {
-				*To8Ptr++ = *From8Ptr++;
-			}
-
-			/*
-			 * Adjust length
-			 */
-			Length -= 4;
-		}
-
-	}
-	else {
-		/*
-		 * Half-Word aligned buffer, correct.
-		 */
-		To16Ptr = (u16 *) DestPtr;
-
-		while (Length > 3) {
-			/*
-			 * Copy each word into the temporary buffer.
-			 */
-			AlignBuffer = *From32Ptr++;
-
-			/*
-			 * This is a funny looking cast. The new gcc, version
-			 * 3.3.x has a strict cast check for 16 bit pointers,
-			 * aka short pointers. The following warning is issued
-			 * if the initial 'void *' cast is not used:
-			 * 'dereferencing type-punned pointer will break
-			 *  strict-aliasing rules'
-			 */
-			From16Ptr = (u16 *) ((void *) &AlignBuffer);
-
-			/*
-			 * Write data to destination.
-			 */
-			for (Index = 0; Index < 2; Index++) {
-				*To16Ptr++ = *From16Ptr++;
-			}
-
-			/*
-			 * Adjust length.
-			 */
-			Length -= 4;
-		}
-
-		/*
-		 * Set up to read the remaining data.
-		 */
-		To8Ptr = (u8 *) To16Ptr;
-	}
-
-	/*
-	 * Read the remaining data.
-	 */
-	AlignBuffer = *From32Ptr++;
-	From8Ptr = (u8 *) &AlignBuffer;
-
-	for (Index = 0; Index < Length; Index++) {
-		*To8Ptr++ = *From8Ptr++;
-	}
-}
-
 
 /*****************************************************************************/
 /**
@@ -513,7 +314,6 @@ void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
 * frame is transmitted.
 *
 ******************************************************************************/
-// int XEmacLite_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 {
 	// u32 Register;
@@ -530,7 +330,7 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 	 * Determine the expected TX buffer address.
 	 */
 	// BaseAddress = XEmacLite_NextTransmitAddr(InstancePtr);
-	BaseAddress = ethDrv_NextTransmitAddr(InstancePtr);
+	BaseAddress = InstancePtr->txBaseAddress;
 	// EmacBaseAddress = InstancePtr->EmacLiteConfig.BaseAddress;
 
 	/*
@@ -684,6 +484,171 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 	// return XST_FAILURE;
 }
 
+
+/*****************************************************************************/
+/**
+*
+* Return the length of the data in the Receive Buffer.
+*
+* @param	BaseAddress contains the base address of the device.
+*
+* @return	The type/length field of the frame received.
+*
+* @note		None.
+*
+******************************************************************************/
+u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
+	u16 Length;
+    uint32_t* addr32 = reinterpret_cast<uint32_t*>(BaseAddress);
+
+#ifdef __LITTLE_ENDIAN__
+	Length = (addr32[headerOffset / sizeof(uint32_t)] &
+			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
+#else
+	Length = ((addr32[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
+			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+#endif
+    // printf("Extracting Data length %d from address %X, offset %d \n", Length, BaseAddress, headerOffset);
+
+	return Length;
+}
+
+
+/******************************************************************************/
+/**
+*
+* This function reads from a 32-bit aligned source address range and aligns
+* the writes to the provided destination pointer alignment.
+*
+* @param	SrcPtr is a pointer to incoming data of 32-bit alignment.
+* @param	DestPtr is a pointer to outgoing data of any alignment.
+* @param	ByteCount is the number of bytes to read.
+*
+* @return	None.
+*
+* @note		None.
+*
+******************************************************************************/
+void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
+{
+	unsigned Index;
+	unsigned Length = ByteCount;
+	volatile u32 AlignBuffer;
+	u32 *To32Ptr;
+	volatile u32 *From32Ptr;
+	u16 *To16Ptr;
+	volatile u16 *From16Ptr;
+	u8 *To8Ptr;
+	volatile u8 *From8Ptr;
+
+	From32Ptr = (u32 *) SrcPtr;
+
+	if ((((u32) DestPtr) & 0x00000003) == 0) {
+
+		/*
+		 * Word aligned buffer, no correction needed.
+		 */
+		To32Ptr = (u32 *) DestPtr;
+
+		while (Length > 3) {
+			/*
+			 * Output each word.
+			 */
+			*To32Ptr++ = *From32Ptr++;
+
+			/*
+			 * Adjust length accordingly.
+			 */
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to read the remaining data.
+		 */
+		To8Ptr = (u8 *) To32Ptr;
+
+	}
+	else if ((((u32) DestPtr) & 0x00000001) != 0) {
+		/*
+		 * Byte aligned buffer, correct.
+		 */
+		To8Ptr = (u8 *) DestPtr;
+
+		while (Length > 3) {
+			/*
+			 * Copy each word into the temporary buffer.
+			 */
+			AlignBuffer = *From32Ptr++;
+			From8Ptr = (u8 *) &AlignBuffer;
+
+			/*
+			 * Write data to destination.
+			 */
+			for (Index = 0; Index < 4; Index++) {
+				*To8Ptr++ = *From8Ptr++;
+			}
+
+			/*
+			 * Adjust length
+			 */
+			Length -= 4;
+		}
+
+	}
+	else {
+		/*
+		 * Half-Word aligned buffer, correct.
+		 */
+		To16Ptr = (u16 *) DestPtr;
+
+		while (Length > 3) {
+			/*
+			 * Copy each word into the temporary buffer.
+			 */
+			AlignBuffer = *From32Ptr++;
+
+			/*
+			 * This is a funny looking cast. The new gcc, version
+			 * 3.3.x has a strict cast check for 16 bit pointers,
+			 * aka short pointers. The following warning is issued
+			 * if the initial 'void *' cast is not used:
+			 * 'dereferencing type-punned pointer will break
+			 *  strict-aliasing rules'
+			 */
+			From16Ptr = (u16 *) ((void *) &AlignBuffer);
+
+			/*
+			 * Write data to destination.
+			 */
+			for (Index = 0; Index < 2; Index++) {
+				*To16Ptr++ = *From16Ptr++;
+			}
+
+			/*
+			 * Adjust length.
+			 */
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to read the remaining data.
+		 */
+		To8Ptr = (u8 *) To16Ptr;
+	}
+
+	/*
+	 * Read the remaining data.
+	 */
+	AlignBuffer = *From32Ptr++;
+	From8Ptr = (u8 *) &AlignBuffer;
+
+	for (Index = 0; Index < Length; Index++) {
+		*To8Ptr++ = *From8Ptr++;
+	}
+}
+
+
 /*****************************************************************************/
 /**
 *
@@ -711,7 +676,6 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 * a frame arrives.
 *
 ******************************************************************************/
-// u16 XEmacLite_Recv(XEmacLite *InstancePtr, u8 *FramePtr)
 u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 {
 	u16 LengthType;
@@ -729,7 +693,7 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	 * Determine the expected buffer address.
 	 */
 	// BaseAddress = XEmacLite_NextReceiveAddr(InstancePtr);
-	BaseAddress = ethDrv_NextReceiveAddr(InstancePtr);
+	BaseAddress = InstancePtr->rxBaseAddress;
 
 	if (XAxiDma_Busy(InstancePtr->axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
 	  return 0;
@@ -862,152 +826,6 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	return Length;
 }
 
-/*****************************************************************************/
-/**
-*
-* Set the MAC address for this device.  The address is a 48-bit value.
-*
-* @param	InstancePtr is a pointer to the XEmacLite instance.
-* @param	AddressPtr is a pointer to a 6-byte MAC address.
-*		the format of the MAC address is major octet to minor octet
-*
-* @return	None.
-*
-* @note
-*
-* 	- TX must be idle and RX should be idle for deterministic results.
-*	It is recommended that this function should be called after the
-*	initialization and before transmission of any packets from the device.
-* 	- Function will not return if hardware is absent or not functioning
-* 	properly.
-*	- The MAC address can be programmed using any of the two transmit
-*	buffers (if configured).
-*
-******************************************************************************/
-// void XEmacLite_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr)
-// void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr)
-// {
-// 	UINTPTR BaseAddress;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertVoid(InstancePtr != NULL);
-
-// 	/*
-// 	 * Determine the expected TX buffer address.
-// 	 */
-// 	// BaseAddress = XEmacLite_NextTransmitAddr(InstancePtr);
-// 	BaseAddress = ethDrv_NextTransmitAddr(InstancePtr);
-
-// 	/*
-// 	 * Copy the MAC address to the Transmit buffer.
-// 	 */
-// 	// XEmacLite_AlignedWrite(AddressPtr,
-// 	// 			(UINTPTR *) BaseAddress,
-// 	// 			XEL_MAC_ADDR_SIZE);
-// 	ethDrv_AlignedWrite(AddressPtr,	(UINTPTR *) BaseAddress, XEL_MAC_ADDR_SIZE);
-
-// 	/*
-// 	 * Set the length.
-// 	 */
-// 	// XEmacLite_WriteReg(BaseAddress,
-// 	// 			XEL_TPLR_OFFSET,
-// 	// 			XEL_MAC_ADDR_SIZE);
-
-// 	/*
-// 	 * Update the MAC address in the EmacLite.
-// 	 */
-// 	// XEmacLite_SetTxStatus(BaseAddress, XEL_TSR_PROG_MAC_ADDR);
-// 	ethDrv_SetTxStatus(BaseAddress, XEL_TSR_PROG_MAC_ADDR);
-
-
-// 	/*
-// 	 * Wait for EmacLite to finish with the MAC address update.
-// 	 */
-// 	// while ((XEmacLite_GetTxStatus(BaseAddress) &
-// 	// 		XEL_TSR_PROG_MAC_ADDR) != 0);
-// 	while ((ethDrv_GetTxStatus(BaseAddress) &
-// 			XEL_TSR_PROG_MAC_ADDR) != 0);
-
-// }
-
-/******************************************************************************/
-/**
-*
-* This is a stub for the send and receive callbacks. The stub
-* is here in case the upper layers forget to set the handlers.
-*
-* @param	CallBackRef is a pointer to the upper layer callback reference.
-*
-* @return	None.
-*
-* @note		None.
-*
-******************************************************************************/
-// void StubHandler(void *CallBackRef)
-// {
-// 	(void)(CallBackRef);
-// 	Xil_AssertVoidAlways();
-// }
-
-
-/****************************************************************************/
-/**
-*
-* Determine if there is a transmit buffer available.
-*
-* @param	InstancePtr is the pointer to the instance of the driver to
-*		be worked on.
-*
-* @return
-*		- TRUE if there is a TX buffer available for data to be written
-*		- FALSE if Tx Buffer is not available.
-*
-* @note		None.
-*
-*****************************************************************************/
-// int XEmacLite_TxBufferAvailable(XEmacLite *InstancePtr)
-// {
-
-// 	u32 Register;
-// 	int TxPingBusy;
-// 	int TxPongBusy;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertNonvoid(InstancePtr != NULL);
-
-// 	/*
-// 	 * Read the Tx Status and determine if the buffer is available.
-// 	 */
-// 	Register = XEmacLite_GetTxStatus(InstancePtr->EmacLiteConfig.
-// 						BaseAddress);
-
-// 	TxPingBusy = (Register & (XEL_TSR_XMIT_BUSY_MASK |
-// 				 XEL_TSR_XMIT_ACTIVE_MASK));
-
-
-// 	/*
-// 	 * Read the Tx Status of the second buffer register and determine if the
-// 	 * buffer is available.
-// 	 */
-// 	if (InstancePtr->EmacLiteConfig.TxPingPong != 0) {
-// 		Register = XEmacLite_GetTxStatus(InstancePtr->EmacLiteConfig.
-// 						BaseAddress +
-// 						XEL_BUFFER_OFFSET);
-
-// 		TxPongBusy = (Register & (XEL_TSR_XMIT_BUSY_MASK |
-// 					XEL_TSR_XMIT_ACTIVE_MASK));
-
-// 		return (!(TxPingBusy && TxPongBusy));
-// 	}
-
-// 	return (!TxPingBusy);
-
-
-// }
 
 /****************************************************************************/
 /**
@@ -1037,327 +855,3 @@ int ethDrv_FlushReceive(EthDrv *InstancePtr) {
 
   return XST_SUCCESS;
 }
-// void XEmacLite_FlushReceive(XEmacLite *InstancePtr)
-// {
-
-// 	u32 Register;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertVoid(InstancePtr != NULL);
-
-// 	/*
-// 	 * Read the current buffer register and determine if the buffer is
-// 	 * available.
-// 	 */
-// 	Register = XEmacLite_GetRxStatus(InstancePtr->EmacLiteConfig.
-// 						BaseAddress);
-
-// 	/*
-// 	 * Preserve the IE bit.
-// 	 */
-// 	Register &= XEL_RSR_RECV_IE_MASK;
-
-// 	/*
-// 	 * Write out the value to flush the RX buffer.
-// 	 */
-// 	XEmacLite_SetRxStatus(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				Register);
-
-// 	/*
-// 	 * If the pong buffer is available, flush it also.
-// 	 */
-// 	if (InstancePtr->EmacLiteConfig.RxPingPong != 0) {
-// 		/*
-// 		 * Read the current buffer register and determine if the buffer
-// 		 * is available.
-// 		 */
-// 		Register = XEmacLite_GetRxStatus(InstancePtr->EmacLiteConfig.
-// 							BaseAddress +
-// 							XEL_BUFFER_OFFSET);
-
-// 		/*
-// 		 * Preserve the IE bit.
-// 		 */
-// 		Register &= XEL_RSR_RECV_IE_MASK;
-
-// 		/*
-// 		 * Write out the value to flush the RX buffer.
-// 		 */
-// 		XEmacLite_SetRxStatus(InstancePtr->EmacLiteConfig.BaseAddress +
-// 					XEL_BUFFER_OFFSET, Register);
-
-// 	}
-
-// }
-
-/******************************************************************************/
-/**
-*
-* Read the specified PHY register.
-*
-* @param	InstancePtr is the pointer to the instance of the driver.
-* @param	PhyAddress is the address of the PHY device. The valid range is
-*		is from 0 to 31.
-* @param	RegNum is the register number in the PHY device which
-*		is to be read. The valid range is is from 0 to 31.
-* @param	PhyDataPtr is a pointer to the data in which the data read
-*		from the PHY device is returned.
-*
-* @return
-*		- XST_SUCCESS if the data is read from the PHY.
-*		- XST_DEVICE_BUSY if MDIO is busy.
-*
-* @note		This function waits for the completion of MDIO data transfer.
-*
-*****************************************************************************/
-// int XEmacLite_PhyRead(XEmacLite *InstancePtr, u32 PhyAddress, u32 RegNum,
-// 			u16 *PhyDataPtr)
-// {
-// 	u32 PhyAddrReg;
-// 	u32 MdioCtrlReg;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertNonvoid(InstancePtr != NULL);
-// 	Xil_AssertNonvoid(InstancePtr->EmacLiteConfig.MdioInclude == TRUE);
-// 	Xil_AssertNonvoid(PhyAddress <= 31);
-// 	Xil_AssertNonvoid(RegNum <= 31);
-// 	Xil_AssertNonvoid(PhyDataPtr != NULL);
-
-// 	/*
-// 	 * Verify MDIO master status.
-// 	 */
-// 	if (XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET) &
-// 				XEL_MDIOCNTR_STATUS_MASK) {
-// 		return XST_DEVICE_BUSY;
-// 	}
-
-// 	PhyAddrReg = ((((PhyAddress << XEL_MDIO_ADDRESS_SHIFT) &
-// 			XEL_MDIO_ADDRESS_MASK) | RegNum) | XEL_MDIO_OP_MASK);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				 XEL_MDIOADDR_OFFSET, PhyAddrReg);
-
-// 	/*
-// 	 * Enable MDIO and start the transfer.
-// 	 */
-// 	MdioCtrlReg =
-// 		XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_MDIOCNTR_OFFSET);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET,
-// 				MdioCtrlReg |
-// 				XEL_MDIOCNTR_STATUS_MASK |
-// 				XEL_MDIOCNTR_ENABLE_MASK);
-
-// 	/*
-// 	 * Wait till the completion of transfer.
-// 	 */
-// 	while ((XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET) &
-// 				XEL_MDIOCNTR_STATUS_MASK));
-
-// 	/*
-// 	 * Read data from MDIO read data register.
-// 	 */
-// 	*PhyDataPtr = (u16)XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_MDIORD_OFFSET);
-
-// 	/*
-// 	 * Disable the MDIO.
-// 	 */
-// 	MdioCtrlReg =
-// 		XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_MDIOCNTR_OFFSET);
-
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET,
-// 				MdioCtrlReg & ~XEL_MDIOCNTR_ENABLE_MASK);
-
-
-// 	return XST_SUCCESS;
-// }
-
-/******************************************************************************/
-/**
-*
-* Write the given data to the specified register in the PHY device.
-*
-* @param	InstancePtr is the pointer to the instance of the driver.
-* @param	PhyAddress is the address of the PHY device. The valid range is
-*		is from 0 to 31.
-* @param	RegNum is the register number in the PHY device which
-*		is to be written. The valid range is is from 0 to 31.
-* @param	PhyData is the data to be written to the specified register in
-*		the PHY device.
-*
-* @return
-*		- XST_SUCCESS if the data is written to the PHY.
-*		- XST_DEVICE_BUSY if MDIO is busy.
-*
-* @note		This function waits for the completion of MDIO data transfer.
-*
-*******************************************************************************/
-// int XEmacLite_PhyWrite(XEmacLite *InstancePtr, u32 PhyAddress, u32 RegNum,
-// 			u16 PhyData)
-// {
-// 	u32 PhyAddrReg;
-// 	u32 MdioCtrlReg;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertNonvoid(InstancePtr != NULL);
-// 	Xil_AssertNonvoid(InstancePtr->EmacLiteConfig.MdioInclude == TRUE);
-// 	Xil_AssertNonvoid(PhyAddress <= 31);
-// 	Xil_AssertNonvoid(RegNum <= 31);
-
-// 	/*
-// 	 * Verify MDIO master status.
-// 	 */
-// 	if (XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET) &
-// 				XEL_MDIOCNTR_STATUS_MASK) {
-// 		return XST_DEVICE_BUSY;
-// 	}
-
-
-
-// 	PhyAddrReg = ((((PhyAddress << XEL_MDIO_ADDRESS_SHIFT) &
-// 			XEL_MDIO_ADDRESS_MASK) | RegNum) & ~XEL_MDIO_OP_MASK);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOADDR_OFFSET, PhyAddrReg);
-
-// 	/*
-// 	 * Write data to MDIO write data register.
-// 	 */
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOWR_OFFSET, (u32)PhyData);
-
-// 	/*
-// 	 * Enable MDIO and start the transfer.
-// 	 */
-// 	MdioCtrlReg =
-// 		XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_MDIOCNTR_OFFSET);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET,
-// 				MdioCtrlReg | XEL_MDIOCNTR_STATUS_MASK |
-// 				XEL_MDIOCNTR_ENABLE_MASK);
-
-// 	/*
-// 	 * Wait till the completion of transfer.
-// 	 */
-// 	while ((XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET) & XEL_MDIOCNTR_STATUS_MASK));
-
-
-// 	/*
-// 	 * Disable the MDIO.
-// 	 */
-// 	MdioCtrlReg =
-// 		XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_MDIOCNTR_OFFSET);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 				XEL_MDIOCNTR_OFFSET,
-// 				MdioCtrlReg & ~XEL_MDIOCNTR_ENABLE_MASK);
-
-
-
-// 	return XST_SUCCESS;
-// }
-
-
-
-/****************************************************************************/
-/**
-*
-* Enable Internal loop back functionality.
-*
-* @param	InstancePtr is the pointer to the instance of the driver.
-*
-* @return	None.
-*
-* @note		None.
-*
-*****************************************************************************/
-// void XEmacLite_EnableLoopBack(XEmacLite *InstancePtr)
-// {
-// 	u32 TsrReg;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertVoid(InstancePtr != NULL);
-// 	Xil_AssertVoid(InstancePtr->EmacLiteConfig.Loopback == TRUE);
-
-// 	TsrReg = XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_TSR_OFFSET);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 			XEL_TSR_OFFSET,	TsrReg | XEL_TSR_LOOPBACK_MASK);
-// }
-
-/****************************************************************************/
-/**
-*
-* Disable Internal loop back functionality.
-*
-* @param	InstancePtr is the pointer to the instance of the driver.
-*
-* @return	None.
-*
-* @note		None.
-*
-*****************************************************************************/
-// void XEmacLite_DisableLoopBack(XEmacLite *InstancePtr)
-// {
-// 	u32 TsrReg;
-
-// 	/*
-// 	 * Verify that each of the inputs are valid.
-// 	 */
-// 	Xil_AssertVoid(InstancePtr != NULL);
-// 	Xil_AssertVoid(InstancePtr->EmacLiteConfig.Loopback == TRUE);
-
-// 	TsrReg = XEmacLite_ReadReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 					XEL_TSR_OFFSET);
-// 	XEmacLite_WriteReg(InstancePtr->EmacLiteConfig.BaseAddress,
-// 			XEL_TSR_OFFSET,	TsrReg & (~XEL_TSR_LOOPBACK_MASK));
-// }
-
-
-/*****************************************************************************/
-/**
-*
-* Return the length of the data in the Receive Buffer.
-*
-* @param	BaseAddress contains the base address of the device.
-*
-* @return	The type/length field of the frame received.
-*
-* @note		None.
-*
-******************************************************************************/
-// static u16 XEmacLite_GetReceiveDataLength(UINTPTR BaseAddress)
-// {
-// 	u16 Length;
-
-// #ifdef __LITTLE_ENDIAN__
-// 	Length = (XEmacLite_ReadReg((BaseAddress),
-// 			XEL_HEADER_OFFSET + XEL_RXBUFF_OFFSET) &
-// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-// 	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
-// #else
-// 	Length = ((XEmacLite_ReadReg((BaseAddress),
-// 			XEL_HEADER_OFFSET + XEL_RXBUFF_OFFSET) >>
-// 			XEL_HEADER_SHIFT) &
-// 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-// #endif
-
-// 	return Length;
-// }
-
-/** @} */

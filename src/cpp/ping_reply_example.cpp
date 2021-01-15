@@ -50,18 +50,8 @@
 
 /************************** Constant Definitions *****************************/
 
-/*
- * The following constants map to the XPAR parameters created in the
- * xparameters.h file. They are defined here such that a user can easily
- * change all the needed parameters in one place.
- */
-// #define EMAC_DEVICE_ID		  XPAR_EMACLITE_0_DEVICE_ID
-
-/*
- * Change this parameter to limit the number of ping replies sent by this
- * program.
- */
-#define MAX_PING_REPLIES	10	/* Maximum number of ping replies */
+// Maximum number of ping replies, change this parameter to limit the number of ping replies sent by this program.
+#define MAX_PING_REPLIES	10
 
 #define BROADCAST_PACKET	1	/* Broadcast packet */
 #define MAC_MATCHED_PACKET	2 	/* Dest MAC matched with local MAC */
@@ -69,8 +59,7 @@
 #define ARP_REQUEST 		0x0001	/* ARP Request bits in Rx packet */
 #define ARP_REPLY 		0x0002 	/* ARP status bits indicating reply */
 #define ARP_PACKET_SIZE 	0x3C    /* ARP packet len 60 Bytes */
-#define ICMP_PACKET_SIZE 	0x4A    /* ICMP packet length 74 Bytes
-					 * including Src and Dest MAC Address */
+#define ICMP_PACKET_SIZE 	0x4A    /* ICMP packet length 74 Bytes including Src and Dest MAC Address */
 #define BROADCAST_ADDR 		0xFFFF  /* Broadcast Address */
 #define CORRECT_CKSUM_VALUE	0xFFFF  /* Correct checksum value */
 #define IDENT_FIELD_VALUE	0x9263	/* Identification field (random num) */
@@ -110,27 +99,12 @@
 #define ICMP_ECHO_FIELD_LOC 	17 /* Echo field location */
 #define ICMP_DATA_START_LOC 	17 /* Data field start location */
 #define ICMP_DATA_LEN 		18 /* ICMP data length */
-#define ICMP_DATA_LOC 		19 /* ICMP data location including
-				      identifier number and sequence number */
-#define ICMP_DATA_CSUM_LOC_BACK 19 /* Data checksum location from end of
-					frame */
+#define ICMP_DATA_LOC 		19 /* ICMP data location including identifier number and sequence number */
+#define ICMP_DATA_CSUM_LOC_BACK 19 /* Data checksum location from end of frame */
 #define ICMP_DATA_FIELD_LEN 	20 /* Data field length */
 
-/**************************** Type Definitions *******************************/
-
-/***************** Macros (Inline Functions) Definitions *********************/
-
-/************************** Function Prototypes ******************************/
-
-// static int EmacLitePingReplyExample(u16 DeviceId);
-
-// static void ProcessRecvFrame(XEmacLite *InstancePtr);
-static void ProcessRecvFrame(EthDrv *InstancePtr);
-
-static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length);
 
 /************************** Variable Definitions *****************************/
-
 /*
  * Set up a local MAC address.
  */
@@ -169,115 +143,48 @@ u32 RecvFrameLength = 0;
 u32 NumOfPingReplies;
 
 
-/****************************************************************************/
-/**
-*
-* This function is the main function of the Ping reply example in
-* polled mode.
-*
-* @param	None.
-*
-* @return	XST_FAILURE to indicate failure, otherwise XST_SUCCESS
-*		is returned.
-*
-* @note		None.
-*
-*****************************************************************************/
-// int pingReply()
-// {
-// 	int Status;
-
-// 	/*
-// 	 * Run the EmacLite Ping reply example.
-// 	 */
-// 	Status = EmacLitePingReplyExample(EMAC_DEVICE_ID);
-// 	if (Status != XST_SUCCESS) {
-// 		xil_printf("Emaclite ping reply Example Failed\r\n");
-// 		return XST_FAILURE;
-// 	}
-
-// 	xil_printf("Successfully ran Emaclite ping reply Example\r\n");
-// 	return XST_SUCCESS;
-// }
-
 /*****************************************************************************/
 /**
 *
-* The entry point for the EmacLite Ping reply example in polled mode.
+* This function calculates the checksum and returns a 16 bit result.
 *
-* @param	DeviceId is device ID of the XEmacLite Device.
+* @param 	RxFramePtr is a 16 bit pointer for the data to which checksum
+* 		is to be calculated.
+* @param	StartLoc is the starting location of the data from which the
+*		checksum has to be calculated.
+* @param	Length is the number of halfwords(16 bits) to which checksum is
+* 		to be calculated.
 *
-* @return	XST_FAILURE to indicate failure, otherwise XST_SUCCESS is
-*		returned.
+* @return	It returns a 16 bit checksum value.
 *
-* @note		This is in a continuous loop generating a specified number of
-*		ping replies as defined by MAX_PING_REPLIES.
+* @note		This can also be used for calculating checksum. The ones
+* 		complement of this return value will give the final checksum.
 *
 ******************************************************************************/
-int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
+static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
 {
-	int Status;
-	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
-	EthDrv *ethDrvInstPtr = &ethDrvInstance;
-	// XEmacLite_Config *ConfigPtr;
-	NumOfPingReplies = 0;
+	u32 Sum = 0;
+	u16 CheckSum = 0;
+	int Index;
 
 	/*
-	 * Initialize the EmacLite device.
+	 * Add all the 16 bit data.
 	 */
-	// ConfigPtr = XEmacLite_LookupConfig(DeviceId);
-	// if (ConfigPtr == NULL) {
-	// 	return XST_FAILURE;
-	// }
-
-	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
-	// 				ConfigPtr,
-	// 				ConfigPtr->BaseAddress);
-	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
-	if (Status != XST_SUCCESS) return Status;
-
-	/*
-	 * Set the MAC address.
-	 */
-	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	// ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
-
-	/*
-	 * Empty any existing receive frames.
-	 */
-	// XEmacLite_FlushReceive(EmacLiteInstPtr);
-	Status = ethDrv_FlushReceive(ethDrvInstPtr);
-	if (Status != XST_SUCCESS) return Status;
-
-	while (1) {
-
-		/*
-		 * Wait for a Receive packet.
-		 */
-		while (RecvFrameLength == 0) {
-			// RecvFrameLength = XEmacLite_Recv(EmacLiteInstPtr,
-			// 					(u8 *)RxFrame);
-			RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
-		}
-
-		/*
-		 * Process the Receive frame.
-		 */
-		// ProcessRecvFrame(EmacLiteInstPtr);
-		ProcessRecvFrame(ethDrvInstPtr);
-		RecvFrameLength = 0;
-
-		/*
-		 * If the number of ping replies sent is equal to that
-		 * specified by the user then exit out of this loop.
-		 */
-		if (NumOfPingReplies == MAX_PING_REPLIES) {
-
-			return XST_SUCCESS;
-		}
-
+	Index = StartLoc;
+	while (Index < (StartLoc + Length)) {
+		Sum = Sum + Xil_Ntohs(*(RxFramePtr + Index));
+		Index++;
 	}
+
+	/*
+	 * Add upper 16 bits to lower 16 bits.
+	 */
+	CheckSum = Sum;
+	Sum = Sum >> 16;
+	CheckSum = Sum + CheckSum;
+	return CheckSum;
 }
+
 
 /******************************************************************************/
 /**
@@ -292,7 +199,6 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 * @note		This function assumes MAC does not strip padding or CRC.
 *
 ******************************************************************************/
-// static void ProcessRecvFrame(XEmacLite *InstancePtr)
 static void ProcessRecvFrame(EthDrv *InstancePtr)
 {
 	u16 *RxFramePtr;
@@ -655,44 +561,82 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 	}
 }
 
+
 /*****************************************************************************/
 /**
 *
-* This function calculates the checksum and returns a 16 bit result.
+* The entry point for the EmacLite Ping reply example in polled mode.
 *
-* @param 	RxFramePtr is a 16 bit pointer for the data to which checksum
-* 		is to be calculated.
-* @param	StartLoc is the starting location of the data from which the
-*		checksum has to be calculated.
-* @param	Length is the number of halfwords(16 bits) to which checksum is
-* 		to be calculated.
+* @param	DeviceId is device ID of the XEmacLite Device.
 *
-* @return	It returns a 16 bit checksum value.
+* @return	XST_FAILURE to indicate failure, otherwise XST_SUCCESS is
+*		returned.
 *
-* @note		This can also be used for calculating checksum. The ones
-* 		complement of this return value will give the final checksum.
+* @note		This is in a continuous loop generating a specified number of
+*		ping replies as defined by MAX_PING_REPLIES.
 *
 ******************************************************************************/
-static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
+int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 {
-	u32 Sum = 0;
-	u16 CheckSum = 0;
-	int Index;
+	int Status;
+	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
+	EthDrv *ethDrvInstPtr = &ethDrvInstance;
+	// XEmacLite_Config *ConfigPtr;
+	NumOfPingReplies = 0;
 
 	/*
-	 * Add all the 16 bit data.
+	 * Initialize the EmacLite device.
 	 */
-	Index = StartLoc;
-	while (Index < (StartLoc + Length)) {
-		Sum = Sum + Xil_Ntohs(*(RxFramePtr + Index));
-		Index++;
+	// ConfigPtr = XEmacLite_LookupConfig(DeviceId);
+	// if (ConfigPtr == NULL) {
+	// 	return XST_FAILURE;
+	// }
+
+	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
+	// 				ConfigPtr,
+	// 				ConfigPtr->BaseAddress);
+	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
+	if (Status != XST_SUCCESS) return Status;
+
+	/*
+	 * Set the MAC address.
+	 */
+	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
+	// ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
+
+	/*
+	 * Empty any existing receive frames.
+	 */
+	// XEmacLite_FlushReceive(EmacLiteInstPtr);
+	Status = ethDrv_FlushReceive(ethDrvInstPtr);
+	if (Status != XST_SUCCESS) return Status;
+
+	while (1) {
+
+		/*
+		 * Wait for a Receive packet.
+		 */
+		while (RecvFrameLength == 0) {
+			// RecvFrameLength = XEmacLite_Recv(EmacLiteInstPtr,
+			// 					(u8 *)RxFrame);
+			RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
+		}
+
+		/*
+		 * Process the Receive frame.
+		 */
+		// ProcessRecvFrame(EmacLiteInstPtr);
+		ProcessRecvFrame(ethDrvInstPtr);
+		RecvFrameLength = 0;
+
+		/*
+		 * If the number of ping replies sent is equal to that
+		 * specified by the user then exit out of this loop.
+		 */
+		if (NumOfPingReplies == MAX_PING_REPLIES) {
+
+			return XST_SUCCESS;
+		}
+
 	}
-
-	/*
-	 * Add upper 16 bits to lower 16 bits.
-	 */
-	CheckSum = Sum;
-	Sum = Sum >> 16;
-	CheckSum = Sum + CheckSum;
-	return CheckSum;
 }

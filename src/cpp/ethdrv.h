@@ -204,8 +204,8 @@ extern "C" {
 #define __LITTLE_ENDIAN__
 #endif
 #endif
-/************************** Constant Definitions *****************************/
 
+/************************** Constant Definitions *****************************/
 //----- Ethernet difinitions ---------
 /**
  * Transmit Packet Length Register (TPLR)
@@ -257,195 +257,22 @@ extern "C" {
 
 
 /**************************** Type Definitions *******************************/
-
-/**
- * This typedef contains configuration information for a device.
- */
 typedef struct {
-	// u16 DeviceId;	 /**< Unique ID  of device */
-	// UINTPTR BaseAddress; /**< Device base address */
 	UINTPTR txBaseAddress; /**< Tx mem base address */
 	UINTPTR rxBaseAddress; /**< Rx mem base address */
-	// u8 TxPingPong;	 /**< 1 if TX Pong buffer configured, 0 otherwise */
-	// u8 RxPingPong;	 /**< 1 if RX Pong buffer configured, 0 otherwise */
-	// u8 MdioInclude;  /**< 1 if MDIO is enabled, 0 otherwise */
-	// u8 Loopback;     /**< 1 if internal loopback is enabled, 0 otherwise */
-// } XEmacLite_Config;
-} EthDrv_Config;
-
-
-/*
- * Callback when data is sent or received .
- * @param 	CallBackRef is a callback reference passed in by the upper layer
- *		when setting the callback functions, and passed back to the
- *		upper layer when the callback is invoked.
- */
-// typedef void (*XEmacLite_Handler) (void *CallBackRef);
-
-/**
- * The XEmacLite driver instance data. The user is required to allocate a
- * variable of this type for every EmacLite device in the system. A pointer
- * to a variable of this type is then passed to the driver API functions.
- */
-typedef struct {
-	// XEmacLite_Config EmacLiteConfig; /* Device configuration */
-	EthDrv_Config EmacLiteConfig; /* Device configuration */
-	// u32 IsReady;			 /* Device is initialized and ready */
-
-	u32 NextTxBufferToUse;		 /* Next TX buffer to write to */
-	u32 NextRxBufferToUse;		 /* Next RX buffer to read from */
-
     XAxiDma* axiDmaPtr; // AXI DMA instance definitions
-
-	/*
-	 * Callbacks
-	 */
-	// XEmacLite_Handler RecvHandler;
-	// void *RecvRef;
-	// XEmacLite_Handler SendHandler;
-	// void *SendRef;
-
-// } XEmacLite;
 } EthDrv;
 
-/***************** Macros (Inline Functions) Definitions *********************/
-
-/****************************************************************************/
-/**
-*
-* Return the next expected Transmit Buffer's address.
-*
-* @param	InstancePtr is the pointer to the instance of the driver to
-*		be worked on
-*
-* @note		C-Style signature:
-*		u32 XEmacLite_NextTransmitAddr(XEmacLite *InstancePtr);
-*
-* This macro returns the address of the next transmit buffer to put data into.
-* This is used to determine the destination of the next transmit data frame.
-*
-*****************************************************************************/
-// #define XEmacLite_NextTransmitAddr(InstancePtr)
-#define ethDrv_NextTransmitAddr(InstancePtr) 			\
-	((InstancePtr)->EmacLiteConfig.txBaseAddress + 			\
-		(InstancePtr)->NextTxBufferToUse)
-
-/****************************************************************************/
-/**
-*
-* Return the next expected Receive Buffer's address.
-*
-* @param	InstancePtr is the pointer to the instance of the driver to
-*		be worked on
-*
-* @note		C-Style signature:
-*		u32 XEmacLite_NextReceiveAddr(XEmacLite *InstancePtr);
-*
-* This macro returns the address of the next receive buffer to read data from.
-* This is the expected receive buffer address if the driver is in sync.
-*
-*****************************************************************************/
-// #define XEmacLite_NextReceiveAddr(InstancePtr)
-#define ethDrv_NextReceiveAddr(InstancePtr)				\
-	((InstancePtr)->EmacLiteConfig.rxBaseAddress + 			\
-	(InstancePtr)->NextRxBufferToUse)
-
-/*****************************************************************************/
-/**
-*
-* This macro determines if the device is currently configured for MDIO.
-*
-* @param	InstancePtr is the pointer to the instance of the
-*		EmacLite driver.
-*
-* @return
-* 		- TRUE if the device is configured for MDIO.
-*		- FALSE if the device is NOT configured for MDIO.
-*
-* @note		C-Style signature:
-*		int XEmacLite_IsMdioConfigured(XEmacLite *InstancePtr)
-*
-******************************************************************************/
-// #define XEmacLite_IsMdioConfigured(InstancePtr) ((InstancePtr)->EmacLiteConfig.MdioInclude == 1)
-
-/*****************************************************************************/
-/**
-*
-* This macro determines if the device is currently configured for internal
-* loopback.
-*
-* @param	InstancePtr is the pointer to the instance of the
-*		EmacLite driver.
-*
-* @return
-* 		- TRUE if the device is configured for internal loopback.
-*		- FALSE if the device is NOT configured for internal loopback.
-*
-* @note		C-Style signature:
-*		int XEmacLite_IsLoopbackConfigured(XEmacLite *InstancePtr)
-*
-******************************************************************************/
-// #define XEmacLite_IsLoopbackConfigured(InstancePtr) ((InstancePtr)->EmacLiteConfig.Loopback == 1)
-
-/************************** Variable Definitions *****************************/
 
 /************************** Function Prototypes ******************************/
-
-/*
- * Functions in xemaclite.c
- */
-// int XEmacLite_CfgInitialize(XEmacLite *InstancePtr,
-// 				XEmacLite_Config *EmacLiteConfigPtr,
-// 				UINTPTR EffectiveAddr);
 int ethDrv_CfgInitialize(EthDrv*, XAxiDma&);
-// void XEmacLite_SetMacAddress(XEmacLite *InstancePtr, u8 *AddressPtr);
-// void ethDrv_SetMacAddress(EthDrv *InstancePtr, u8 *AddressPtr);
-// int XEmacLite_TxBufferAvailable(XEmacLite *InstancePtr);
-// void XEmacLite_FlushReceive(XEmacLite *InstancePtr);
 int ethDrv_FlushReceive(EthDrv *InstancePtr);
-
-// int XEmacLite_Send(XEmacLite *InstancePtr, u8 *FramePtr, unsigned ByteCount);
 int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount);
-// u16 XEmacLite_Recv(XEmacLite *InstancePtr, u8 *FramePtr);
 u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr);
 
-// int XEmacLite_PhyRead(XEmacLite *InstancePtr, u32 PhyAddress, u32 RegNum,
-// 			u16 *PhyDataPtr);
-// int XEmacLite_PhyWrite(XEmacLite *InstancePtr, u32 PhyAddress, u32 RegNum,
-// 			u16 PhyData);
-
-// void XEmacLite_EnableLoopBack(XEmacLite *InstancePtr);
-// void XEmacLite_DisableLoopBack(XEmacLite *InstancePtr);
-
-/*
- * Initialization functions in xemaclite_sinit.c
- */
-// XEmacLite_Config *XEmacLite_LookupConfig(u16 DeviceId);
-// int XEmacLite_Initialize(XEmacLite *InstancePtr, u16 DeviceId);
-
-/*
- * Interrupt driven functions in xemaclite_intr.c
- */
-// int XEmacLite_EnableInterrupts(XEmacLite *InstancePtr);
-// void XEmacLite_DisableInterrupts(XEmacLite *InstancePtr);
-
-// void XEmacLite_InterruptHandler(void *InstancePtr);
-
-// void XEmacLite_SetRecvHandler(XEmacLite *InstancePtr, void *CallBackRef,
-// 			      XEmacLite_Handler FuncPtr);
-// void XEmacLite_SetSendHandler(XEmacLite *InstancePtr, void *CallBackRef,
-// 			      XEmacLite_Handler FuncPtr);
-
-/*
- * Selftest function in xemaclite_selftest.c
- */
-// int XEmacLite_SelfTest(XEmacLite *InstancePtr);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* end of protection macro */
-
-
-/** @} */

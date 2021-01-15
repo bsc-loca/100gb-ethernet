@@ -53,18 +53,8 @@
 
 /************************** Constant Definitions *****************************/
 
-/*
- * The following constants map to the XPAR parameters created in the
- * xparameters.h file. They are defined here such that a user can easily
- * change all the needed parameters in one place.
- */
-// #define EMAC_DEVICE_ID		  XPAR_EMACLITE_0_DEVICE_ID
-
-/*
- * Change this parameter to limit the number of ping requests sent by this
- * program.
- */
-#define NUM_OF_PING_REQ_PKTS	10	/* Number of ping req it generates */
+// Number of ping req it generates, change this parameter to limit the number of ping requests sent by this program.
+#define NUM_OF_PING_REQ_PKTS 10
 
 #define ECHO_REPLY		0x00	/* Echo reply */
 #define HW_TYPE			0x01	/* Hardware type (10/100 Mbps) */
@@ -116,32 +106,8 @@
 #define ARP_REQ_STATUS_LOC 	10	/* ARP request loc */
 #define ARP_REQ_SRC_IP_LOC 	14	/* Src IP add loc of ARP req Packet */
 
-/**************************** Type Definitions *******************************/
-
-
-/***************** Macros (Inline Functions) Definitions *********************/
-
-
-/************************** Function Prototypes ******************************/
-
-// static int EmacLitePingReqExample(u16 DeviceId);
-
-// static void SendArpReqFrame(XEmacLite *InstancePtr);
-static void SendArpReqFrame(EthDrv *InstancePtr);
-
-// static void SendEchoReqFrame(XEmacLite *InstancePtr);
-static void SendEchoReqFrame(EthDrv *InstancePtr);
-
-// static int ProcessRecvFrame(XEmacLite *InstancePtr);
-static int ProcessRecvFrame(EthDrv *InstancePtr);
-
-static u16 CheckSumCalculation(u16 *RxFramePtr16, int StartLoc, int Length);
-
-static int CompareData(u16 *LhsPtr, u16 *RhsPtr, int LhsLoc, int RhsLoc,
-			int Count);
 
 /************************** Variable Definitions *****************************/
-
 /*
  * Set up a local MAC address.
  */
@@ -212,36 +178,435 @@ int SeqNum;
  */
 int NumOfPingReqPkts;
 
-/****************************************************************************/
+
+/*****************************************************************************/
 /**
 *
-* This function is the main function of the Ping Request example in polled mode.
+* This function calculates the checksum and returns a 16 bit result.
 *
-* @param	None.
+* @param 	RxFramePtr is a 16 bit pointer for the data to which checksum
+* 		is to be calculated.
+* @param	StartLoc is the starting location of the data from which the
+*		checksum has to be calculated.
+* @param	Length is the number of halfwords(16 bits) to which checksum is
+* 		to be calculated.
 *
-* @return	XST_FAILURE to indicate failure, otherwise it will return
-*		XST_SUCCESS after sending specified number of packets as
-*		defined in "NUM_OF_PING_REQ_PKTS" .
+* @return	It returns a 16 bit checksum value.
+*
+* @note		This can also be used for calculating checksum. The ones
+* 		complement of this return value will give the final checksum.
+*
+******************************************************************************/
+static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
+{
+	u32 Sum = 0;
+	u16 CheckSum = 0;
+	int Index;
+
+	/*
+	 * Add all the 16 bit data.
+	 */
+	Index = StartLoc;
+	while (Index < (StartLoc + Length)) {
+		Sum = Sum + Xil_Htons(*(RxFramePtr + Index));
+		Index++;
+	}
+
+	/*
+	 * Add upper 16 bits to lower 16 bits.
+	 */
+	CheckSum = Sum;
+	Sum = Sum>>16;
+	CheckSum = Sum + CheckSum;
+	return CheckSum;
+}
+
+
+/*****************************************************************************/
+/**
+*
+* This function will send a Echo request packet.
+*
+* @param	InstancePtr is a pointer to the instance of the EmacLite.
+*
+* @return	None.
 *
 * @note		None.
 *
-*****************************************************************************/
-// int pingReq()
-// {
-// 	int Status;
+******************************************************************************/
+static void SendEchoReqFrame(EthDrv *InstancePtr)
+{
+	u16 *TempPtr;
+	u16 *TxFramePtr;
+	// u16 *RxFramePtr;
+	u16 CheckSum;
+	// u32 NextTxBuffBaseAddr;
+	int Index;
 
-// 	/*
-// 	 * Run the EmacLite Ping request example.
-// 	 */
-// 	Status = EmacLitePingReqExample(EMAC_DEVICE_ID);
-// 	if (Status != XST_SUCCESS) {
-// 		xil_printf("Emaclite ping request Example Failed\r\n");
-// 		return XST_FAILURE;
-// 	}
+	TxFramePtr = (u16 *)TxFrame;
+	// RxFramePtr = (u16 *)RxFrame;
 
-// 	xil_printf("Successfully ran Emaclite ping request Example\r\n");
-// 	return XST_SUCCESS;
-// }
+	/*
+	 * Determine the next expected transmit buffer base address.
+	 */
+	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
+
+	/*
+	 * Add Destination MAC Address.
+	 */
+	Index = MAC_ADDR_LEN;
+	while (Index--) {
+		*(TxFramePtr + Index) = *(DestMacAddr + Index);
+	}
+
+	/*
+	 * Add Source MAC Address.
+	 */
+	Index = MAC_ADDR_LEN;
+	TempPtr = (u16 *)LocalMacAddr;
+	while (Index--) {
+		*(TxFramePtr + (Index + SRC_MAC_ADDR_LOC )) =
+							*(TempPtr + Index);
+	}
+
+	/*
+	 * Add IP header information.
+	 */
+	Index = IP_START_LOC;
+	while (Index--) {
+		*(TxFramePtr + (Index + ETHER_PROTO_TYPE_LOC )) =
+				Xil_Htons(*(IpHeaderInfo + Index));
+	}
+
+	/*
+	 * Add Source IP address.
+	 */
+	Index = IP_ADDR_LEN;
+	TempPtr = (u16 *)LocalIpAddress;
+	while (Index--) {
+		*(TxFramePtr + (Index + IP_REQ_SRC_IP_LOC )) =
+						*(TempPtr + Index);
+	}
+
+	/*
+	 * Add Destination IP address.
+	 */
+	Index = IP_ADDR_LEN;
+	TempPtr = (u16 *)DestIpAddress;
+	while (Index--) {
+		*(TxFramePtr + (Index + IP_REQ_DEST_IP_LOC )) =
+						*(TempPtr + Index);
+	}
+
+	/*
+	 * Checksum is calculated for IP field and added in the frame.
+	 */
+	CheckSum = CheckSumCalculation((u16 *)TxFrame, IP_START_LOC,
+							IP_HEADER_LEN);
+	CheckSum = ~CheckSum;
+	*(TxFramePtr + IP_CHECKSUM_LOC) = Xil_Htons(CheckSum);
+
+	/*
+	 * Add echo field information.
+	 */
+	*(TxFramePtr + ICMP_ECHO_FIELD_LOC) = Xil_Htons(XEL_ETHER_PROTO_TYPE_IP);
+
+	/*
+	 * Checksum value is initialized to zeros.
+	 */
+	*(TxFramePtr + ICMP_DATA_LEN) = 0x0000;
+
+	/*
+	 * Add identifier and sequence number to the frame.
+	 */
+	*(TxFramePtr + ICMP_IDEN_FIELD_LOC) = (IDEN_NUM);
+	*(TxFramePtr + (ICMP_IDEN_FIELD_LOC + 1)) = Xil_Htons((u16)(++SeqNum));
+
+	/*
+	 * Add known data to the frame.
+	 */
+	Index = ICMP_KNOWN_DATA_LEN;
+	while (Index--) {
+		*(TxFramePtr + (Index + ICMP_KNOWN_DATA_LOC)) =
+				Xil_Htons(*(IcmpData + Index));
+	}
+
+	/*
+	 * Checksum is calculated for Data Field and added in the frame.
+	 */
+	CheckSum = CheckSumCalculation((u16 *)TxFrame, ICMP_DATA_START_LOC,
+						ICMP_DATA_FIELD_LEN );
+	CheckSum = ~CheckSum;
+	*(TxFramePtr + ICMP_DATA_CHECKSUM_LOC) = Xil_Htons(CheckSum);
+
+	/*
+	 * Transmit the Frame.
+	 */
+	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
+	printf("Sending ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
+	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
+}
+
+
+/*****************************************************************************/
+/**
+*
+* This function will send a ARP request packet.
+*
+* @param	InstancePtr is a pointer to the instance of the EmacLite.
+*
+* @return	None.
+*
+* @note		None.
+*
+******************************************************************************/
+static void SendArpReqFrame(EthDrv *InstancePtr)
+{
+	u16 *TempPtr;
+	u16 *TxFramePtr;
+	// u32 NextTxBuffBaseAddr;
+	int Index;
+
+	TxFramePtr = (u16 *)TxFrame;
+
+	/*
+	 * Determine the next expected transmit buffer base address.
+	 */
+	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
+
+	/*
+	 * Add broadcast address.
+	 */
+	Index = MAC_ADDR_LEN;
+	while (Index--) {
+		*TxFramePtr++ = BROADCAST_ADDR;
+	}
+
+	/*
+	 * Add local MAC address.
+	 */
+	Index = 0;
+	TempPtr = (u16 *)LocalMacAddr;
+	while (Index < MAC_ADDR_LEN) {
+		*TxFramePtr++ = *(TempPtr + Index);
+		Index++;
+	}
+
+	/*
+	 * Add
+	 * 	- Ethernet proto type.
+	 *	- Hardware Type
+	 *	- Protocol IP Type
+	 *	- IP version (IPv6/IPv4)
+	 *	- ARP Request
+	 */
+	*TxFramePtr++ = Xil_Htons(XEL_ETHER_PROTO_TYPE_ARP);
+	*TxFramePtr++ = Xil_Htons(HW_TYPE);
+	*TxFramePtr++ = Xil_Htons(XEL_ETHER_PROTO_TYPE_IP);
+	*TxFramePtr++ = Xil_Htons(IP_VERSION);
+	*TxFramePtr++ = Xil_Htons(ARP_REQUEST);
+
+	/*
+	 * Add local MAC address.
+	 */
+	Index = 0;
+	TempPtr = (u16 *)LocalMacAddr;
+	while (Index < MAC_ADDR_LEN) {
+		*TxFramePtr++ = *(TempPtr + Index);
+		Index++;
+	}
+
+	/*
+	 * Add local IP address.
+	 */
+	Index = 0;
+	TempPtr = (u16 *)LocalIpAddress;
+	while (Index < IP_ADDR_LEN) {
+		*TxFramePtr++ = *(TempPtr + Index);
+		Index++;
+	}
+
+	/*
+	 * Fills 6 bytes of information with zeros as per protocol.
+	 */
+	Index = 0;
+	while (Index < 3) {
+		*TxFramePtr++ = 0x0000;
+		Index++;
+	}
+
+	/*
+	 * Add Destination IP address.
+	 */
+	Index = 0;
+	TempPtr = (u16 *)DestIpAddress;
+	while (Index < IP_ADDR_LEN) {
+		*TxFramePtr++ = *(TempPtr + Index);
+		Index++;
+	}
+
+	/*
+	 * Transmit the Frame.
+	 */
+	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
+	printf("Sending ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
+	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
+}
+
+
+/*****************************************************************************/
+/**
+*
+* This function checks the match for the specified number of half words.
+*
+* @param	LhsPtr is a LHS entity pointer.
+* @param 	RhsPtr is a RHS entity pointer.
+* @param	LhsLoc is a LHS entity location.
+* @param 	RhsLoc is a RHS entity location.
+* @param 	Count is the number of location which has to compared.
+*
+* @return	XST_SUCCESS is returned when both the entities are same,
+*		otherwise XST_FAILURE is returned.
+*
+* @note		None.
+*
+******************************************************************************/
+static int CompareData(u16 *LhsPtr, u16 *RhsPtr, int LhsLoc, int RhsLoc,
+								int Count)
+{
+	int Result;
+	while (Count--) {
+		if (*(LhsPtr + LhsLoc + Count) == *(RhsPtr + RhsLoc + Count)) {
+			Result = XST_SUCCESS;
+		} else {
+			Result = XST_FAILURE;
+			break;
+		}
+	}
+	return Result;
+}
+
+
+/*****************************************************************************/
+/**
+*
+* This function will process the received packet. This function sends
+* the echo request packet based on the ARP reply packet.
+*
+* @param	InstancePtr is a pointer to the instance of the EmacLite.
+*
+* @return	XST_SUCCESS is returned when an echo reply is received.
+*		Otherwise, XST_FAILURE is returned.
+*
+* @note		This assumes MAC does not strip padding or CRC.
+*
+******************************************************************************/
+static int ProcessRecvFrame(EthDrv *InstancePtr)
+{
+	u16 *RxFramePtr;
+	u16 *TempPtr;
+	u16 CheckSum;
+	int Index;
+	int Match = 0;
+	int DataWrong = 0;
+
+	RxFramePtr = (u16 *)RxFrame;
+	TempPtr = (u16 *)LocalMacAddr;
+
+	/*
+	 * Check Dest Mac address of the packet with the LocalMac address.
+	 */
+	Match = CompareData(RxFramePtr, TempPtr, 0, 0, MAC_ADDR_LEN);
+	if (Match == XST_SUCCESS) {
+
+		/*
+		 * Check ARP type.
+		 */
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
+				XEL_ETHER_PROTO_TYPE_ARP ) {
+
+			/*
+			 * Check ARP status.
+			 */
+			if (Xil_Ntohs(*(RxFramePtr + ARP_REQ_STATUS_LOC)) == ARP_REPLY) {
+
+				/*
+				 * Check destination IP address with
+				 * packet's source IP address.
+				 */
+				TempPtr = (u16 *)DestIpAddress;
+				Match = CompareData(RxFramePtr,
+						TempPtr, ARP_REQ_SRC_IP_LOC,
+						0, IP_ADDR_LEN);
+				if (Match == XST_SUCCESS) {
+
+					/*
+					 * Copy src Mac address of the received
+					 * packet.
+					 */
+					Index = MAC_ADDR_LEN;
+					TempPtr = (u16 *)DestMacAddr;
+					while (Index--) {
+						*(TempPtr + Index) =
+							*(RxFramePtr +
+							(SRC_MAC_ADDR_LOC +
+								Index));
+					}
+
+					/*
+					 * Send Echo request packet.
+					 */
+					SendEchoReqFrame(InstancePtr);
+				}
+			}
+		}
+
+		/*
+		 * Check for IP type.
+		 */
+		else if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
+						XEL_ETHER_PROTO_TYPE_IP) {
+
+			/*
+			 * Calculate checksum.
+			 */
+			CheckSum = CheckSumCalculation(RxFramePtr,
+							ICMP_DATA_START_LOC,
+							ICMP_DATA_FIELD_LEN);
+
+			/*
+			 * Verify checksum, echo reply, identifier number and
+			 * sequence number of the received packet.
+			 */
+			if ((CheckSum == CORRECT_CHECKSUM_VALUE) &&
+			(Xil_Ntohs(*(RxFramePtr + ICMP_ECHO_FIELD_LOC)) == ECHO_REPLY) &&
+			(Xil_Ntohs(*(RxFramePtr + ICMP_IDEN_FIELD_LOC)) == IDEN_NUM) &&
+			(Xil_Ntohs(*(RxFramePtr + (ICMP_SEQ_NO_LOC))) == SeqNum)) {
+
+				/*
+				 * Verify data in the received packet with known
+				 * data.
+				 */
+				TempPtr = IcmpData;
+				Match = CompareData(RxFramePtr,
+						TempPtr, ICMP_KNOWN_DATA_LOC,
+							0, ICMP_KNOWN_DATA_LEN);
+				if (Match == XST_FAILURE) {
+					DataWrong = 1;
+				}
+			}
+			if (DataWrong != 1) {
+				xil_printf("Packet No: %d ",
+				NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts);
+				xil_printf("Seq NO %d Echo Packet received\r\n",
+								SeqNum);
+				return XST_SUCCESS;
+			}
+		}
+	}
+	return XST_FAILURE;
+}
+
 
 /*****************************************************************************/
 /**
@@ -373,429 +738,4 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 		}
 	}
 	return XST_SUCCESS;
-}
-
-/*****************************************************************************/
-/**
-*
-* This function will send a ARP request packet.
-*
-* @param	InstancePtr is a pointer to the instance of the EmacLite.
-*
-* @return	None.
-*
-* @note		None.
-*
-******************************************************************************/
-// static void SendArpReqFrame(XEmacLite *InstancePtr)
-static void SendArpReqFrame(EthDrv *InstancePtr)
-{
-	u16 *TempPtr;
-	u16 *TxFramePtr;
-	// u32 NextTxBuffBaseAddr;
-	int Index;
-
-	TxFramePtr = (u16 *)TxFrame;
-
-	/*
-	 * Determine the next expected transmit buffer base address.
-	 */
-	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
-
-	/*
-	 * Add broadcast address.
-	 */
-	Index = MAC_ADDR_LEN;
-	while (Index--) {
-		*TxFramePtr++ = BROADCAST_ADDR;
-	}
-
-	/*
-	 * Add local MAC address.
-	 */
-	Index = 0;
-	TempPtr = (u16 *)LocalMacAddr;
-	while (Index < MAC_ADDR_LEN) {
-		*TxFramePtr++ = *(TempPtr + Index);
-		Index++;
-	}
-
-	/*
-	 * Add
-	 * 	- Ethernet proto type.
-	 *	- Hardware Type
-	 *	- Protocol IP Type
-	 *	- IP version (IPv6/IPv4)
-	 *	- ARP Request
-	 */
-	*TxFramePtr++ = Xil_Htons(XEL_ETHER_PROTO_TYPE_ARP);
-	*TxFramePtr++ = Xil_Htons(HW_TYPE);
-	*TxFramePtr++ = Xil_Htons(XEL_ETHER_PROTO_TYPE_IP);
-	*TxFramePtr++ = Xil_Htons(IP_VERSION);
-	*TxFramePtr++ = Xil_Htons(ARP_REQUEST);
-
-	/*
-	 * Add local MAC address.
-	 */
-	Index = 0;
-	TempPtr = (u16 *)LocalMacAddr;
-	while (Index < MAC_ADDR_LEN) {
-		*TxFramePtr++ = *(TempPtr + Index);
-		Index++;
-	}
-
-	/*
-	 * Add local IP address.
-	 */
-	Index = 0;
-	TempPtr = (u16 *)LocalIpAddress;
-	while (Index < IP_ADDR_LEN) {
-		*TxFramePtr++ = *(TempPtr + Index);
-		Index++;
-	}
-
-	/*
-	 * Fills 6 bytes of information with zeros as per protocol.
-	 */
-	Index = 0;
-	while (Index < 3) {
-		*TxFramePtr++ = 0x0000;
-		Index++;
-	}
-
-	/*
-	 * Add Destination IP address.
-	 */
-	Index = 0;
-	TempPtr = (u16 *)DestIpAddress;
-	while (Index < IP_ADDR_LEN) {
-		*TxFramePtr++ = *(TempPtr + Index);
-		Index++;
-	}
-
-	/*
-	 * Transmit the Frame.
-	 */
-	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
-	printf("Sending ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
-	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
-}
-
-/*****************************************************************************/
-/**
-*
-* This function will send a Echo request packet.
-*
-* @param	InstancePtr is a pointer to the instance of the EmacLite.
-*
-* @return	None.
-*
-* @note		None.
-*
-******************************************************************************/
-// static void SendEchoReqFrame(XEmacLite *InstancePtr)
-static void SendEchoReqFrame(EthDrv *InstancePtr)
-{
-	u16 *TempPtr;
-	u16 *TxFramePtr;
-	// u16 *RxFramePtr;
-	u16 CheckSum;
-	// u32 NextTxBuffBaseAddr;
-	int Index;
-
-	TxFramePtr = (u16 *)TxFrame;
-	// RxFramePtr = (u16 *)RxFrame;
-
-	/*
-	 * Determine the next expected transmit buffer base address.
-	 */
-	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
-
-	/*
-	 * Add Destination MAC Address.
-	 */
-	Index = MAC_ADDR_LEN;
-	while (Index--) {
-		*(TxFramePtr + Index) = *(DestMacAddr + Index);
-	}
-
-	/*
-	 * Add Source MAC Address.
-	 */
-	Index = MAC_ADDR_LEN;
-	TempPtr = (u16 *)LocalMacAddr;
-	while (Index--) {
-		*(TxFramePtr + (Index + SRC_MAC_ADDR_LOC )) =
-							*(TempPtr + Index);
-	}
-
-	/*
-	 * Add IP header information.
-	 */
-	Index = IP_START_LOC;
-	while (Index--) {
-		*(TxFramePtr + (Index + ETHER_PROTO_TYPE_LOC )) =
-				Xil_Htons(*(IpHeaderInfo + Index));
-	}
-
-	/*
-	 * Add Source IP address.
-	 */
-	Index = IP_ADDR_LEN;
-	TempPtr = (u16 *)LocalIpAddress;
-	while (Index--) {
-		*(TxFramePtr + (Index + IP_REQ_SRC_IP_LOC )) =
-						*(TempPtr + Index);
-	}
-
-	/*
-	 * Add Destination IP address.
-	 */
-	Index = IP_ADDR_LEN;
-	TempPtr = (u16 *)DestIpAddress;
-	while (Index--) {
-		*(TxFramePtr + (Index + IP_REQ_DEST_IP_LOC )) =
-						*(TempPtr + Index);
-	}
-
-	/*
-	 * Checksum is calculated for IP field and added in the frame.
-	 */
-	CheckSum = CheckSumCalculation((u16 *)TxFrame, IP_START_LOC,
-							IP_HEADER_LEN);
-	CheckSum = ~CheckSum;
-	*(TxFramePtr + IP_CHECKSUM_LOC) = Xil_Htons(CheckSum);
-
-	/*
-	 * Add echo field information.
-	 */
-	*(TxFramePtr + ICMP_ECHO_FIELD_LOC) = Xil_Htons(XEL_ETHER_PROTO_TYPE_IP);
-
-	/*
-	 * Checksum value is initialized to zeros.
-	 */
-	*(TxFramePtr + ICMP_DATA_LEN) = 0x0000;
-
-	/*
-	 * Add identifier and sequence number to the frame.
-	 */
-	*(TxFramePtr + ICMP_IDEN_FIELD_LOC) = (IDEN_NUM);
-	*(TxFramePtr + (ICMP_IDEN_FIELD_LOC + 1)) = Xil_Htons((u16)(++SeqNum));
-
-	/*
-	 * Add known data to the frame.
-	 */
-	Index = ICMP_KNOWN_DATA_LEN;
-	while (Index--) {
-		*(TxFramePtr + (Index + ICMP_KNOWN_DATA_LOC)) =
-				Xil_Htons(*(IcmpData + Index));
-	}
-
-	/*
-	 * Checksum is calculated for Data Field and added in the frame.
-	 */
-	CheckSum = CheckSumCalculation((u16 *)TxFrame, ICMP_DATA_START_LOC,
-						ICMP_DATA_FIELD_LEN );
-	CheckSum = ~CheckSum;
-	*(TxFramePtr + ICMP_DATA_CHECKSUM_LOC) = Xil_Htons(CheckSum);
-
-	/*
-	 * Transmit the Frame.
-	 */
-	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
-	printf("Sending ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
-	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
-}
-
-/*****************************************************************************/
-/**
-*
-* This function will process the received packet. This function sends
-* the echo request packet based on the ARP reply packet.
-*
-* @param	InstancePtr is a pointer to the instance of the EmacLite.
-*
-* @return	XST_SUCCESS is returned when an echo reply is received.
-*		Otherwise, XST_FAILURE is returned.
-*
-* @note		This assumes MAC does not strip padding or CRC.
-*
-******************************************************************************/
-// static int ProcessRecvFrame(XEmacLite *InstancePtr)
-static int ProcessRecvFrame(EthDrv *InstancePtr)
-{
-	u16 *RxFramePtr;
-	u16 *TempPtr;
-	u16 CheckSum;
-	int Index;
-	int Match = 0;
-	int DataWrong = 0;
-
-	RxFramePtr = (u16 *)RxFrame;
-	TempPtr = (u16 *)LocalMacAddr;
-
-	/*
-	 * Check Dest Mac address of the packet with the LocalMac address.
-	 */
-	Match = CompareData(RxFramePtr, TempPtr, 0, 0, MAC_ADDR_LEN);
-	if (Match == XST_SUCCESS) {
-
-		/*
-		 * Check ARP type.
-		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
-				XEL_ETHER_PROTO_TYPE_ARP ) {
-
-			/*
-			 * Check ARP status.
-			 */
-			if (Xil_Ntohs(*(RxFramePtr + ARP_REQ_STATUS_LOC)) == ARP_REPLY) {
-
-				/*
-				 * Check destination IP address with
-				 * packet's source IP address.
-				 */
-				TempPtr = (u16 *)DestIpAddress;
-				Match = CompareData(RxFramePtr,
-						TempPtr, ARP_REQ_SRC_IP_LOC,
-						0, IP_ADDR_LEN);
-				if (Match == XST_SUCCESS) {
-
-					/*
-					 * Copy src Mac address of the received
-					 * packet.
-					 */
-					Index = MAC_ADDR_LEN;
-					TempPtr = (u16 *)DestMacAddr;
-					while (Index--) {
-						*(TempPtr + Index) =
-							*(RxFramePtr +
-							(SRC_MAC_ADDR_LOC +
-								Index));
-					}
-
-					/*
-					 * Send Echo request packet.
-					 */
-					SendEchoReqFrame(InstancePtr);
-				}
-			}
-		}
-
-		/*
-		 * Check for IP type.
-		 */
-		else if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
-						XEL_ETHER_PROTO_TYPE_IP) {
-
-			/*
-			 * Calculate checksum.
-			 */
-			CheckSum = CheckSumCalculation(RxFramePtr,
-							ICMP_DATA_START_LOC,
-							ICMP_DATA_FIELD_LEN);
-
-			/*
-			 * Verify checksum, echo reply, identifier number and
-			 * sequence number of the received packet.
-			 */
-			if ((CheckSum == CORRECT_CHECKSUM_VALUE) &&
-			(Xil_Ntohs(*(RxFramePtr + ICMP_ECHO_FIELD_LOC)) == ECHO_REPLY) &&
-			(Xil_Ntohs(*(RxFramePtr + ICMP_IDEN_FIELD_LOC)) == IDEN_NUM) &&
-			(Xil_Ntohs(*(RxFramePtr + (ICMP_SEQ_NO_LOC))) == SeqNum)) {
-
-				/*
-				 * Verify data in the received packet with known
-				 * data.
-				 */
-				TempPtr = IcmpData;
-				Match = CompareData(RxFramePtr,
-						TempPtr, ICMP_KNOWN_DATA_LOC,
-							0, ICMP_KNOWN_DATA_LEN);
-				if (Match == XST_FAILURE) {
-					DataWrong = 1;
-				}
-			}
-			if (DataWrong != 1) {
-				xil_printf("Packet No: %d ",
-				NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts);
-				xil_printf("Seq NO %d Echo Packet received\r\n",
-								SeqNum);
-				return XST_SUCCESS;
-			}
-		}
-	}
-	return XST_FAILURE;
-}
-/*****************************************************************************/
-/**
-*
-* This function calculates the checksum and returns a 16 bit result.
-*
-* @param 	RxFramePtr is a 16 bit pointer for the data to which checksum
-* 		is to be calculated.
-* @param	StartLoc is the starting location of the data from which the
-*		checksum has to be calculated.
-* @param	Length is the number of halfwords(16 bits) to which checksum is
-* 		to be calculated.
-*
-* @return	It returns a 16 bit checksum value.
-*
-* @note		This can also be used for calculating checksum. The ones
-* 		complement of this return value will give the final checksum.
-*
-******************************************************************************/
-static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
-{
-	u32 Sum = 0;
-	u16 CheckSum = 0;
-	int Index;
-
-	/*
-	 * Add all the 16 bit data.
-	 */
-	Index = StartLoc;
-	while (Index < (StartLoc + Length)) {
-		Sum = Sum + Xil_Htons(*(RxFramePtr + Index));
-		Index++;
-	}
-
-	/*
-	 * Add upper 16 bits to lower 16 bits.
-	 */
-	CheckSum = Sum;
-	Sum = Sum>>16;
-	CheckSum = Sum + CheckSum;
-	return CheckSum;
-}
-/*****************************************************************************/
-/**
-*
-* This function checks the match for the specified number of half words.
-*
-* @param	LhsPtr is a LHS entity pointer.
-* @param 	RhsPtr is a RHS entity pointer.
-* @param	LhsLoc is a LHS entity location.
-* @param 	RhsLoc is a RHS entity location.
-* @param 	Count is the number of location which has to compared.
-*
-* @return	XST_SUCCESS is returned when both the entities are same,
-*		otherwise XST_FAILURE is returned.
-*
-* @note		None.
-*
-******************************************************************************/
-static int CompareData(u16 *LhsPtr, u16 *RhsPtr, int LhsLoc, int RhsLoc,
-								int Count)
-{
-	int Result;
-	while (Count--) {
-		if (*(LhsPtr + LhsLoc + Count) == *(RhsPtr + RhsLoc + Count)) {
-			Result = XST_SUCCESS;
-		} else {
-			Result = XST_FAILURE;
-			break;
-		}
-	}
-	return Result;
 }
