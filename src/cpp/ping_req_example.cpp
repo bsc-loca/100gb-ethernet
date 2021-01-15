@@ -49,12 +49,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "xparameters.h"
-#include "xstatus.h"
-// #include "xemaclite.h"
 #include "../../../src/cpp/ethdrv.h"
-#include "xil_io.h"
-#include "xil_printf.h"
 
 /************************** Constant Definitions *****************************/
 

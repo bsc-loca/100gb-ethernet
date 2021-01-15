@@ -48,15 +48,9 @@
 /***************************** Include Files *********************************/
 
 #include <stdio.h>
-#include <unistd.h>
 #include <algorithm>
 
-#include "xil_io.h"
-#include "xenv.h"
-// #include "xemaclite.h"
-// #include "xemaclite_i.h"
 #include "../../../src/cpp/ethdrv.h"
-#include "../../../src/cpp/ethdrv_i.h"
 
 /************************** Constant Definitions *****************************/
 
@@ -198,6 +192,303 @@ int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
 
 	return XST_SUCCESS;
 }
+
+
+/******************************************************************************/
+/**
+*
+* This function aligns the incoming data and writes it out to a 32-bit
+* aligned destination address range.
+*
+* @param	SrcPtr is a pointer to incoming data of any alignment.
+* @param	DestPtr is a pointer to outgoing data of 32-bit alignment.
+* @param	ByteCount is the number of bytes to write.
+*
+* @return	None.
+*
+* @note		None.
+*
+******************************************************************************/
+// void XEmacLite_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
+void ethDrv_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
+{
+	unsigned Index;
+	unsigned Length = ByteCount;
+	volatile u32 AlignBuffer;
+	volatile u32 *To32Ptr;
+	u32 *From32Ptr;
+	volatile u16 *To16Ptr;
+	u16 *From16Ptr;
+	volatile u8 *To8Ptr;
+	u8 *From8Ptr;
+
+	To32Ptr = (volatile u32*)DestPtr;
+
+	if ((((u32) SrcPtr) & 0x00000003) == 0) {
+
+		/*
+		 * Word aligned buffer, no correction needed.
+		 */
+		From32Ptr = (u32 *) SrcPtr;
+
+		while (Length > 3) {
+			/*
+			 * Output each word destination.
+			 */
+			*To32Ptr++ = *From32Ptr++;
+
+			/*
+			 * Adjust length accordingly
+			 */
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to output the remaining data, zero the temp buffer
+		 first.
+		 */
+		AlignBuffer = 0;
+		To8Ptr = (u8 *) &AlignBuffer;
+		From8Ptr = (u8 *) From32Ptr;
+
+	}
+	else if ((((u32) SrcPtr) & 0x00000001) != 0) {
+		/*
+		 * Byte aligned buffer, correct.
+		 */
+		AlignBuffer = 0;
+		To8Ptr = (u8 *) &AlignBuffer;
+		From8Ptr = (u8 *) SrcPtr;
+
+		while (Length > 3) {
+			/*
+			 * Copy each byte into the temporary buffer.
+			 */
+			for (Index = 0; Index < 4; Index++) {
+				*To8Ptr++ = *From8Ptr++;
+			}
+
+			/*
+			 * Output the buffer
+			 */
+			*To32Ptr++ = AlignBuffer;
+
+			/*.
+			 * Reset the temporary buffer pointer and adjust length.
+			 */
+			To8Ptr = (u8 *) &AlignBuffer;
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to output the remaining data, zero the temp buffer
+		 * first.
+		 */
+		AlignBuffer = 0;
+		To8Ptr = (u8 *) &AlignBuffer;
+
+	}
+	else {
+		/*
+		 * Half-Word aligned buffer, correct.
+		 */
+		AlignBuffer = 0;
+
+		/*
+		 * This is a funny looking cast. The new gcc, version 3.3.x has
+		 * a strict cast check for 16 bit pointers, aka short pointers.
+		 * The following warning is issued if the initial 'void *' cast
+		 * is  not used:
+		 * 'dereferencing type-punned pointer will break strict-aliasing
+		 * rules'
+		 */
+
+		To16Ptr = (u16 *) ((void *) &AlignBuffer);
+		From16Ptr = (u16 *) SrcPtr;
+
+		while (Length > 3) {
+			/*
+			 * Copy each half word into the temporary buffer.
+			 */
+			for (Index = 0; Index < 2; Index++) {
+				*To16Ptr++ = *From16Ptr++;
+			}
+
+			/*
+			 * Output the buffer.
+			 */
+			*To32Ptr++ = AlignBuffer;
+
+			/*
+			 * Reset the temporary buffer pointer and adjust length.
+			 */
+
+			/*
+			 * This is a funny looking cast. The new gcc, version
+			 * 3.3.x has a strict cast check for 16 bit pointers,
+			 * aka short  pointers. The following warning is issued
+			 * if the initial 'void *' cast is not used:
+			 * 'dereferencing type-punned pointer will break
+			 * strict-aliasing  rules'
+			 */
+			To16Ptr = (u16 *) ((void *) &AlignBuffer);
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to output the remaining data, zero the temp buffer
+		 * first.
+		 */
+		AlignBuffer = 0;
+		To8Ptr = (u8 *) &AlignBuffer;
+		From8Ptr = (u8 *) From16Ptr;
+	}
+
+	/*
+	 * Output the remaining data, zero the temp buffer first.
+	 */
+	for (Index = 0; Index < Length; Index++) {
+		*To8Ptr++ = *From8Ptr++;
+	}
+	if (Length) {
+		*To32Ptr++ = AlignBuffer;
+	}
+}
+
+/******************************************************************************/
+/**
+*
+* This function reads from a 32-bit aligned source address range and aligns
+* the writes to the provided destination pointer alignment.
+*
+* @param	SrcPtr is a pointer to incoming data of 32-bit alignment.
+* @param	DestPtr is a pointer to outgoing data of any alignment.
+* @param	ByteCount is the number of bytes to read.
+*
+* @return	None.
+*
+* @note		None.
+*
+******************************************************************************/
+// void XEmacLite_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
+void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
+{
+	unsigned Index;
+	unsigned Length = ByteCount;
+	volatile u32 AlignBuffer;
+	u32 *To32Ptr;
+	volatile u32 *From32Ptr;
+	u16 *To16Ptr;
+	volatile u16 *From16Ptr;
+	u8 *To8Ptr;
+	volatile u8 *From8Ptr;
+
+	From32Ptr = (u32 *) SrcPtr;
+
+	if ((((u32) DestPtr) & 0x00000003) == 0) {
+
+		/*
+		 * Word aligned buffer, no correction needed.
+		 */
+		To32Ptr = (u32 *) DestPtr;
+
+		while (Length > 3) {
+			/*
+			 * Output each word.
+			 */
+			*To32Ptr++ = *From32Ptr++;
+
+			/*
+			 * Adjust length accordingly.
+			 */
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to read the remaining data.
+		 */
+		To8Ptr = (u8 *) To32Ptr;
+
+	}
+	else if ((((u32) DestPtr) & 0x00000001) != 0) {
+		/*
+		 * Byte aligned buffer, correct.
+		 */
+		To8Ptr = (u8 *) DestPtr;
+
+		while (Length > 3) {
+			/*
+			 * Copy each word into the temporary buffer.
+			 */
+			AlignBuffer = *From32Ptr++;
+			From8Ptr = (u8 *) &AlignBuffer;
+
+			/*
+			 * Write data to destination.
+			 */
+			for (Index = 0; Index < 4; Index++) {
+				*To8Ptr++ = *From8Ptr++;
+			}
+
+			/*
+			 * Adjust length
+			 */
+			Length -= 4;
+		}
+
+	}
+	else {
+		/*
+		 * Half-Word aligned buffer, correct.
+		 */
+		To16Ptr = (u16 *) DestPtr;
+
+		while (Length > 3) {
+			/*
+			 * Copy each word into the temporary buffer.
+			 */
+			AlignBuffer = *From32Ptr++;
+
+			/*
+			 * This is a funny looking cast. The new gcc, version
+			 * 3.3.x has a strict cast check for 16 bit pointers,
+			 * aka short pointers. The following warning is issued
+			 * if the initial 'void *' cast is not used:
+			 * 'dereferencing type-punned pointer will break
+			 *  strict-aliasing rules'
+			 */
+			From16Ptr = (u16 *) ((void *) &AlignBuffer);
+
+			/*
+			 * Write data to destination.
+			 */
+			for (Index = 0; Index < 2; Index++) {
+				*To16Ptr++ = *From16Ptr++;
+			}
+
+			/*
+			 * Adjust length.
+			 */
+			Length -= 4;
+		}
+
+		/*
+		 * Set up to read the remaining data.
+		 */
+		To8Ptr = (u8 *) To16Ptr;
+	}
+
+	/*
+	 * Read the remaining data.
+	 */
+	AlignBuffer = *From32Ptr++;
+	From8Ptr = (u8 *) &AlignBuffer;
+
+	for (Index = 0; Index < Length; Index++) {
+		*To8Ptr++ = *From8Ptr++;
+	}
+}
+
 
 /*****************************************************************************/
 /**

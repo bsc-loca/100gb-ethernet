@@ -197,12 +197,6 @@ extern "C" {
 
 /***************************** Include Files *********************************/
 
-#include "xenv.h"
-#include "xil_types.h"
-#include "xil_assert.h"
-#include "xstatus.h"
-// #include "xemaclite_l.h"
-#include "ethdrv_l.h"
 #include "xaxidma.h"
 
 #ifdef __ARMEL__
@@ -211,11 +205,56 @@ extern "C" {
 #endif
 #endif
 /************************** Constant Definitions *****************************/
-/*
- * Device information
+
+//----- Ethernet difinitions ---------
+/**
+ * Transmit Packet Length Register (TPLR)
  */
-#define XEL_DEVICE_NAME	 "xemaclite"
-#define XEL_DEVICE_DESC	 "Xilinx Ethernet Lite 10/100 MAC"
+#define XEL_TPLR_LENGTH_MASK_HI		0x0000FF00 /**< Transmit packet length
+							  upper byte */
+#define XEL_TPLR_LENGTH_MASK_LO		0x000000FF /**< Transmit packet length
+							  lower byte */
+
+/**
+ * Receive Packet Length Register (RPLR)
+ */
+#define XEL_RPLR_LENGTH_MASK_HI		0x0000FF00 /**< Receive packet length
+							  upper byte */
+#define XEL_RPLR_LENGTH_MASK_LO		0x000000FF /**< Receive packet length
+							  lower byte */
+
+#define XEL_HEADER_SIZE			14  /**< Size of header in bytes */
+#define XEL_MTU_SIZE			1500 /**< Max size of data in frame */
+#define XEL_FCS_SIZE			4    /**< Size of CRC */
+
+#define XEL_HEADER_OFFSET		12   /**< Offset to length field */
+#define XEL_HEADER_SHIFT		16   /**< Right shift value to align
+						  length */
+
+
+#define XEL_MAX_FRAME_SIZE (XEL_HEADER_SIZE+XEL_MTU_SIZE+ XEL_FCS_SIZE)	/**< Max
+						length of Rx frame  used if
+						length/type field
+						contains the type (> 1500) */
+
+#define XEL_MAX_TX_FRAME_SIZE (XEL_HEADER_SIZE + XEL_MTU_SIZE)	/**< Max
+						length of Tx frame */
+
+
+#define XEL_MAC_ADDR_SIZE		6	/**< length of MAC address */
+#define ETH_MIN_PACK_SIZE       64  // defined by 100Gb Ethernet core
+
+
+/*
+ * General Ethernet Definitions
+ */
+#define XEL_ETHER_PROTO_TYPE_IP		0x0800  /**< IP Protocol */
+#define XEL_ETHER_PROTO_TYPE_ARP	0x0806  /**< ARP Protocol */
+#define XEL_ETHER_PROTO_TYPE_VLAN	0x8100  /**< VLAN Tagged */
+#define XEL_ARP_PACKET_SIZE		28  	/**< Max ARP packet size */
+#define XEL_HEADER_IP_LENGTH_OFFSET	16  	/**< IP Length Offset */
+#define XEL_VLAN_TAG_SIZE		4  	/**< VLAN Tag Size */
+
 
 /**************************** Type Definitions *******************************/
 
@@ -289,7 +328,7 @@ typedef struct {
 // #define XEmacLite_NextTransmitAddr(InstancePtr)
 #define ethDrv_NextTransmitAddr(InstancePtr) 			\
 	((InstancePtr)->EmacLiteConfig.txBaseAddress + 			\
-		(InstancePtr)->NextTxBufferToUse) + XEL_TXBUFF_OFFSET
+		(InstancePtr)->NextTxBufferToUse)
 
 /****************************************************************************/
 /**
