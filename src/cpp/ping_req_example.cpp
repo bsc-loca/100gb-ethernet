@@ -72,7 +72,6 @@
 					before sending another request */
 #define NUM_PACK_CHECK_RX_PACK	100	/* Max number of pack to be checked
 					before to identify a Rx packet */
-// #define DELAY			5000000 /* Used to introduce delay */
 
 /*
  * Definitions for the locations and length of some of the fields in a
@@ -238,18 +237,10 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 {
 	u16 *TempPtr;
 	u16 *TxFramePtr;
-	// u16 *RxFramePtr;
 	u16 CheckSum;
-	// u32 NextTxBuffBaseAddr;
 	int Index;
 
 	TxFramePtr = (u16 *)TxFrame;
-	// RxFramePtr = (u16 *)RxFrame;
-
-	/*
-	 * Determine the next expected transmit buffer base address.
-	 */
-	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
 
 	/*
 	 * Add Destination MAC Address.
@@ -342,7 +333,6 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 	/*
 	 * Transmit the Frame.
 	 */
-	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
 	printf("Sending ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
 }
@@ -364,15 +354,9 @@ static void SendArpReqFrame(EthDrv *InstancePtr)
 {
 	u16 *TempPtr;
 	u16 *TxFramePtr;
-	// u32 NextTxBuffBaseAddr;
 	int Index;
 
 	TxFramePtr = (u16 *)TxFrame;
-
-	/*
-	 * Determine the next expected transmit buffer base address.
-	 */
-	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
 
 	/*
 	 * Add broadcast address.
@@ -448,7 +432,6 @@ static void SendArpReqFrame(EthDrv *InstancePtr)
 	/*
 	 * Transmit the Frame.
 	 */
-	// XEmacLite_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
 	printf("Sending ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
 }
@@ -629,8 +612,6 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	int Index;
 	int Count;
 	int EchoReplyStatus;
-	// XEmacLite_Config *ConfigPtr;
-	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
 	SeqNum = 0;
 	u32 RecvFrameLength = 0;
@@ -640,26 +621,12 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	/*
 	 * Initialize the EmacLite device.
 	 */
-	// ConfigPtr = XEmacLite_LookupConfig(DeviceId);
-	// if (ConfigPtr == NULL) {
-	// 	return XST_FAILURE;
-	// }
-	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
-	// 				ConfigPtr,
-	// 				ConfigPtr->BaseAddress);
 	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
 	if (Status != XST_SUCCESS) return Status;
 
 	/*
-	 * Set the MAC address.
-	 */
-	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	// ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
-
-	/*
 	 * Empty any existing receive frames.
 	 */
-	// XEmacLite_FlushReceive(EmacLiteInstPtr);
 	Status = ethDrv_FlushReceive(ethDrvInstPtr);
 	if (Status != XST_SUCCESS) return Status;
 
@@ -668,9 +635,6 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 		/*
 		 * Introduce delay.
 		 */
-		// Count = DELAY;
-		// while (Count--) {
-		// }
         sleep(1); // in seconds
 
 		/*
@@ -693,9 +657,6 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 			 */
 			Count = NUM_PACK_CHECK_RX_PACK;
 			while (RecvFrameLength == 0) {
-				// RecvFrameLength = XEmacLite_Recv(
-				// 			EmacLiteInstPtr,
-				// 			(u8 *)RxFrame);
 				RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
 
 				/*
@@ -711,8 +672,6 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 			 * Process the Receive frame.
 			 */
 			if (RecvFrameLength != 0) {
-				// EchoReplyStatus = ProcessRecvFrame(
-				// 			EmacLiteInstPtr);
 				EchoReplyStatus = ProcessRecvFrame(ethDrvInstPtr);
 			}
 			RecvFrameLength = 0;

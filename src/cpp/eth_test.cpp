@@ -834,7 +834,7 @@ int main(int argc, char *argv[])
         printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
         ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
         printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-        printf("\n------- Physical connection is set-up -------\n");
+        printf("\n------- Physical connection is established -------\n");
 
         while (true) {
           printf("Please choose particular IP-based test:\n");

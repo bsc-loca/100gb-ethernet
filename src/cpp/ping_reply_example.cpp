@@ -213,11 +213,6 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 	RxFramePtr = (u16 *)RxFrame;
 
 	/*
-	 * Determine the next expected Tx buffer address.
-	 */
-	// NextTxBuffBaseAddr = XEmacLite_NextTransmitAddr(InstancePtr);
-
-	/*
 	 * Check the packet type.
 	 */
 	Index = MAC_ADDR_LEN;
@@ -371,9 +366,6 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					/*
 					 * Transmit the Reply Packet.
 					 */
-					// XEmacLite_Send(InstancePtr,
-					// 		(u8 *)&TxFrame,
-					// 		ARP_PACKET_SIZE);
 	                printf("Sending ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
 					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_PACKET_SIZE);
 				}
@@ -543,9 +535,6 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					/*
 					 * Transmit the frame.
 					 */
-					// XEmacLite_Send(InstancePtr,
-					// 		(u8 *)&TxFrame,
-					// 		ICMP_PACKET_SIZE);
 	                printf("Sending ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
 					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PACKET_SIZE);
 
@@ -576,38 +565,21 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 *		ping replies as defined by MAX_PING_REPLIES.
 *
 ******************************************************************************/
-int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
+int pingReplyTest(XAxiDma& axiDma)
 {
 	int Status;
-	// XEmacLite *EmacLiteInstPtr = &EmacLiteInstance;
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
-	// XEmacLite_Config *ConfigPtr;
 	NumOfPingReplies = 0;
 
 	/*
 	 * Initialize the EmacLite device.
 	 */
-	// ConfigPtr = XEmacLite_LookupConfig(DeviceId);
-	// if (ConfigPtr == NULL) {
-	// 	return XST_FAILURE;
-	// }
-
-	// Status = XEmacLite_CfgInitialize(EmacLiteInstPtr,
-	// 				ConfigPtr,
-	// 				ConfigPtr->BaseAddress);
 	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
 	if (Status != XST_SUCCESS) return Status;
 
 	/*
-	 * Set the MAC address.
-	 */
-	// XEmacLite_SetMacAddress(EmacLiteInstPtr, LocalMacAddr);
-	// ethDrv_SetMacAddress(ethDrvInstPtr, LocalMacAddr);
-
-	/*
 	 * Empty any existing receive frames.
 	 */
-	// XEmacLite_FlushReceive(EmacLiteInstPtr);
 	Status = ethDrv_FlushReceive(ethDrvInstPtr);
 	if (Status != XST_SUCCESS) return Status;
 
@@ -617,15 +589,12 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 		 * Wait for a Receive packet.
 		 */
 		while (RecvFrameLength == 0) {
-			// RecvFrameLength = XEmacLite_Recv(EmacLiteInstPtr,
-			// 					(u8 *)RxFrame);
 			RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
 		}
 
 		/*
 		 * Process the Receive frame.
 		 */
-		// ProcessRecvFrame(EmacLiteInstPtr);
 		ProcessRecvFrame(ethDrvInstPtr);
 		RecvFrameLength = 0;
 
@@ -634,7 +603,6 @@ int pingReplyTest(XAxiDma& axiDma) //(u16 DeviceId)
 		 * specified by the user then exit out of this loop.
 		 */
 		if (NumOfPingReplies == MAX_PING_REPLIES) {
-
 			return XST_SUCCESS;
 		}
 
