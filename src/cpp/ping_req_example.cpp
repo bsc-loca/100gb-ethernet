@@ -65,13 +65,10 @@
 #define BROADCAST_ADDR 		0xFFFF 	/* Broadcast Address */
 #define CORRECT_CHECKSUM_VALUE	0xFFFF	/* Correct checksum value */
 #define ARP_REQ_PKT_SIZE	0x2A	/* ARP request packet size */
-#define ICMP_PKT_SIZE 		0x4A	/* ICMP packet length 74 Bytes
-					including Src and dest MAC Add */
+#define ICMP_PKT_SIZE 		0x4A	/* ICMP packet length 74 Bytes including Src and dest MAC Add */
 #define IP_ADDR_SIZE		4	/* IP Address size in Bytes */
-#define NUM_RX_PACK_CHECK_REQ	10	/* Max num of Rx pack to be checked
-					before sending another request */
-#define NUM_PACK_CHECK_RX_PACK	100	/* Max number of pack to be checked
-					before to identify a Rx packet */
+#define NUM_RX_PACK_CHECK_REQ	10	/* Max num of Rx pack to be checked	before sending another request */
+#define NUM_PACK_CHECK_RX_PACK	100000 /* Max number of pack to be checked before to identify a Rx packet */
 
 /*
  * Definitions for the locations and length of some of the fields in a
@@ -96,8 +93,7 @@
 #define ICMP_DATA_LEN 		18	/* ICMP data length */
 #define ICMP_DATA_CHECKSUM_LOC	18	/* ICMP data checksum location */
 #define ICMP_IDEN_FIELD_LOC	19	/* Identifier field loc */
-#define ICMP_DATA_LOC 		19	/* ICMP data loc including
-					identifier number and sequence number */
+#define ICMP_DATA_LOC 		19	/* ICMP data loc including identifier number and sequence number */
 #define ICMP_SEQ_NO_LOC		20	/* sequence number location */
 #define ICMP_DATA_FIELD_LEN 	20 	/* Data field length */
 #define ICMP_KNOWN_DATA_LOC	21	/* ICMP known data start loc */
@@ -333,7 +329,7 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 	/*
 	 * Transmit the Frame.
 	 */
-	printf("Sending ICMP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
+	printf("Sending ICMP ping request Pack: %d, Seq: %d, Pack size: %d \n", NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
 }
 
@@ -432,7 +428,7 @@ static void SendArpReqFrame(EthDrv *InstancePtr)
 	/*
 	 * Transmit the Frame.
 	 */
-	printf("Sending ARP ping request %d(%d) with packet size %d \n", NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
+	printf("Sending ARP ping request Pack: %d, Seq: %d, Pack size: %d \n", NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
 	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
 }
 
@@ -579,9 +575,9 @@ static int ProcessRecvFrame(EthDrv *InstancePtr)
 				}
 			}
 			if (DataWrong != 1) {
-				xil_printf("Packet No: %d ",
+				xil_printf("Packet: %d ",
 				NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts);
-				xil_printf("Seq NO %d Echo Packet received\r\n",
+				xil_printf("Seq: %d Echo Packet received\r\n",
 								SeqNum);
 				return XST_SUCCESS;
 			}
@@ -615,7 +611,6 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	EthDrv *ethDrvInstPtr = &ethDrvInstance;
 	SeqNum = 0;
 	u32 RecvFrameLength = 0;
-	EchoReplyStatus = XST_FAILURE;
 	NumOfPingReqPkts = NUM_OF_PING_REQ_PKTS;
 
 	/*
@@ -631,6 +626,7 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	if (Status != XST_SUCCESS) return Status;
 
 	while (NumOfPingReqPkts--) {
+	    EchoReplyStatus = XST_FAILURE;
 
 		/*
 		 * Introduce delay.

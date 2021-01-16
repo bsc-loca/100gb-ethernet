@@ -343,7 +343,7 @@ u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
 	Length = ((addr32[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
 #endif
-    // printf("Extracting Data length %d from address %X, offset %d \n", Length, BaseAddress, headerOffset);
+    printf("   Accepting packet with length/type 0x%X at mem addr 0x%X, offset %d \n", Length, BaseAddress, headerOffset);
 
 	return Length;
 }
