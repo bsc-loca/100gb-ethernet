@@ -122,8 +122,7 @@ static u8 LocalIpAddr[IP_ADDR_SIZE] =
 	172, 16, 63, 121
 };
 
-// static XEmacLite EmacLiteInstance;	/* Instance of the EmacLite driver */
-static EthDrv ethDrvInstance;	/* Instance of the EmacLite driver */
+static EthSyst ethSyst;	// Instance of the Ethernet Subsytem driver
 
 /*
  * Buffers used for Transmission and Reception of Packets. These are declared as
@@ -199,7 +198,7 @@ static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
 * @note		This function assumes MAC does not strip padding or CRC.
 *
 ******************************************************************************/
-static void ProcessRecvFrame(EthDrv *InstancePtr)
+static void ProcessRecvFrame(EthSyst& ethSyst)
 {
 	u16 *RxFramePtr;
 	u16 *TxFramePtr;
@@ -367,7 +366,7 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					 * Transmit the Reply Packet.
 					 */
 	                printf("Sending ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
-					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_PACKET_SIZE);
+					ethSyst.frameSend((u8 *)&TxFrame, ARP_PACKET_SIZE);
 				}
 			}
 		}
@@ -536,7 +535,7 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 					 * Transmit the frame.
 					 */
 	                printf("Sending ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
-					ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PACKET_SIZE);
+					ethSyst.frameSend((u8 *)&TxFrame, ICMP_PACKET_SIZE);
 
 					/*
 					 * Increment the number of
@@ -568,34 +567,30 @@ static void ProcessRecvFrame(EthDrv *InstancePtr)
 int pingReplyTest(XAxiDma& axiDma)
 {
 	int Status;
-	EthDrv *ethDrvInstPtr = &ethDrvInstance;
 	NumOfPingReplies = 0;
 
-	/*
-	 * Initialize the EmacLite device.
-	 */
-	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
+	Status = ethSyst.cfgInitialize(axiDma);
 	if (Status != XST_SUCCESS) return Status;
 
 	/*
 	 * Empty any existing receive frames.
 	 */
-	Status = ethDrv_FlushReceive(ethDrvInstPtr);
+	Status = ethSyst.flushReceive();
 	if (Status != XST_SUCCESS) return Status;
 
-	while (1) {
+	while (true) {
 
 		/*
 		 * Wait for a Receive packet.
 		 */
 		while (RecvFrameLength == 0) {
-			RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
+			RecvFrameLength = ethSyst.frameRecv((u8 *)RxFrame);
 		}
 
 		/*
 		 * Process the Receive frame.
 		 */
-		ProcessRecvFrame(ethDrvInstPtr);
+		ProcessRecvFrame(ethSyst);
 		RecvFrameLength = 0;
 
 		/*

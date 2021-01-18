@@ -78,21 +78,11 @@
 *		XEmacLite_PhyWrite functions to access the PHY device.
 *
 ******************************************************************************/
-int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
+int EthSyst::cfgInitialize(XAxiDma& axiDma)
 {
-	/*
-	 * Verify that each of the inputs are valid.
-	 */
-	Xil_AssertNonvoid(InstancePtr != NULL);
-
-	/*
-	 * Zero the provided instance memory.
-	 */
-	memset(InstancePtr, 0, sizeof(EthDrv));
-
-	InstancePtr->txBaseAddress = XPAR_TX_MEM_CPU_S_AXI_BASEADDR;
-	InstancePtr->rxBaseAddress = XPAR_RX_MEM_CPU_S_AXI_BASEADDR;
-	InstancePtr->axiDmaPtr = &axiDma;
+	txBaseAddress = XPAR_TX_MEM_CPU_S_AXI_BASEADDR;
+	rxBaseAddress = XPAR_RX_MEM_CPU_S_AXI_BASEADDR;
+	axiDmaPtr = &axiDma;
 
 	return XST_SUCCESS;
 }
@@ -113,7 +103,7 @@ int ethDrv_CfgInitialize(EthDrv *InstancePtr, XAxiDma& axiDma)
 * @note		None.
 *
 ******************************************************************************/
-void ethDrv_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
+void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 {
 	unsigned Index;
 	unsigned Length = ByteCount;
@@ -125,7 +115,7 @@ void ethDrv_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
 	volatile u8 *To8Ptr;
 	u8 *From8Ptr;
 
-	To32Ptr = (volatile u32*)DestPtr;
+	To32Ptr = (volatile u32*)txBaseAddress;
 
 	if ((((u32) SrcPtr) & 0x00000003) == 0) {
 
@@ -282,34 +272,23 @@ void ethDrv_AlignedWrite(void *SrcPtr, UINTPTR *DestPtr, unsigned ByteCount)
 * frame is transmitted.
 *
 ******************************************************************************/
-int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
+int EthSyst::frameSend(u8 *FramePtr, unsigned ByteCount)
 {
-	UINTPTR BaseAddress;
-
-	/*
-	 * Verify that each of the inputs are valid.
-	 */
-	Xil_AssertNonvoid(InstancePtr != NULL);
-
-	/*
-	 * Determine the expected TX buffer address.
-	 */
-	BaseAddress = InstancePtr->txBaseAddress;
 
     // Checking if the engine is doing transfer
-    while (!(XAxiDma_ReadReg(InstancePtr->axiDmaPtr->TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
-	         XAxiDma_Busy   (InstancePtr->axiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
+    while (!(XAxiDma_ReadReg(axiDmaPtr->TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
+	         XAxiDma_Busy   (axiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
       printf("Waiting untill previous Tx transfer finishes \n");
       // sleep(1); // in seconds, user wait process
     }
 
-	ethDrv_AlignedWrite(FramePtr, (UINTPTR *) BaseAddress, ByteCount);
+	alignedWrite(FramePtr, ByteCount);
 
 	/*
 	 * The frame is in the buffer, now send it.
 	 */
     ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XEL_MAX_TX_FRAME_SIZE));
-    int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
+    int status = XAxiDma_SimpleTransfer(axiDmaPtr, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
     if (XST_SUCCESS != status) {
        printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
 	          0, ByteCount, status);
@@ -331,9 +310,9 @@ int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount)
 * @note		None.
 *
 ******************************************************************************/
-u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
+u16 EthSyst::getReceiveDataLength(u16 headerOffset) {
 	u16 Length;
-    uint32_t* addr32 = reinterpret_cast<uint32_t*>(BaseAddress);
+    uint32_t* addr32 = reinterpret_cast<uint32_t*>(rxBaseAddress);
 
 #ifdef __LITTLE_ENDIAN__
 	Length = (addr32[headerOffset / sizeof(uint32_t)] &
@@ -343,7 +322,7 @@ u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
 	Length = ((addr32[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
 #endif
-    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", BaseAddress, Length, headerOffset);
+    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", rxBaseAddress, Length, headerOffset);
 
 	return Length;
 }
@@ -364,7 +343,7 @@ u16 ethDrv_GetReceiveDataLength(UINTPTR BaseAddress, u16 headerOffset) {
 * @note		None.
 *
 ******************************************************************************/
-void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
+void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 {
 	unsigned Index;
 	unsigned Length = ByteCount;
@@ -376,7 +355,7 @@ void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
 	u8 *To8Ptr;
 	volatile u8 *From8Ptr;
 
-	From32Ptr = (u32 *) SrcPtr;
+	From32Ptr = (u32 *)rxBaseAddress;
 
 	if ((((u32) DestPtr) & 0x00000003) == 0) {
 
@@ -510,24 +489,12 @@ void ethDrv_AlignedRead(UINTPTR *SrcPtr, void *DestPtr, unsigned ByteCount)
 * a frame arrives.
 *
 ******************************************************************************/
-u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
+u16 EthSyst::frameRecv(u8 *FramePtr)
 {
 	u16 LengthType;
 	u16 Length;
-	// u32 Register;
-	UINTPTR BaseAddress;
 
-	/*
-	 * Verify that each of the inputs are valid.
-	 */
-	Xil_AssertNonvoid(InstancePtr != NULL);
-
-	/*
-	 * Determine the expected buffer address.
-	 */
-	BaseAddress = InstancePtr->rxBaseAddress;
-
-	if (XAxiDma_Busy(InstancePtr->axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
+	if (XAxiDma_Busy(axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
 	  return 0;
     }
     // printf("Some Rx frame is received \n");
@@ -535,7 +502,7 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 	/*
 	 * Get the length of the frame that arrived.
 	 */
-	LengthType = ethDrv_GetReceiveDataLength(BaseAddress, XEL_HEADER_OFFSET);
+	LengthType = getReceiveDataLength(XEL_HEADER_OFFSET);
 
 	/*
 	 * Check if length is valid.
@@ -545,7 +512,7 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 
 		if (LengthType == XEL_ETHER_PROTO_TYPE_IP) {
 
-	        Length = ethDrv_GetReceiveDataLength(BaseAddress, XEL_HEADER_IP_LENGTH_OFFSET);
+	        Length = getReceiveDataLength(XEL_HEADER_IP_LENGTH_OFFSET);
 			Length += XEL_HEADER_SIZE + XEL_FCS_SIZE;
 
 		} else if (LengthType == XEL_ETHER_PROTO_TYPE_ARP) {
@@ -572,14 +539,14 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 		Length = LengthType + XEL_HEADER_SIZE + XEL_FCS_SIZE;
 	}
 
-	ethDrv_AlignedRead(((UINTPTR *) BaseAddress), FramePtr, Length);
+	alignedRead(FramePtr, Length);
 
 	/*
 	 * Acknowledge the frame.
 	 */
-	int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+	int status = XAxiDma_SimpleTransfer(axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
     if (XST_SUCCESS != status) {
-      printf("\nERROR: Ethernet XAxiDma Rx accept to addr %0X with max lenth %d failed with status %d\n",
+      printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
 		      0, XEL_MAX_FRAME_SIZE, status);
 	}
 
@@ -600,13 +567,13 @@ u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr)
 * @note		None.
 *
 *****************************************************************************/
-int ethDrv_FlushReceive(EthDrv *InstancePtr) {
+int EthSyst::flushReceive() {
   // Checking if the engine is already in accept process
-  while ((XAxiDma_ReadReg(InstancePtr->axiDmaPtr->RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
-	     !XAxiDma_Busy   (InstancePtr->axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
-    int status = XAxiDma_SimpleTransfer(InstancePtr->axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+  while ((XAxiDma_ReadReg(axiDmaPtr->RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
+	     !XAxiDma_Busy   (axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
+    int status = XAxiDma_SimpleTransfer(axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
     if (XST_SUCCESS != status) {
-      printf("\nERROR: Initial Ethernet XAxiDma Rx accept to addr %0X with max lenth %d failed with status %d\n",
+      printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
              0, XEL_MAX_FRAME_SIZE, status);
       return status;
     }

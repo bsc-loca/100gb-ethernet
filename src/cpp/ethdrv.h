@@ -188,15 +188,10 @@
 *
 *
 ******************************************************************************/
-#ifndef XEMACLITE_H		/* prevent circular inclusions */
-#define XEMACLITE_H		/* by using protection macros */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef ETHDRV_H  // prevent circular inclusions
+#define ETHDRV_H  // by using protection macros
 
 /***************************** Include Files *********************************/
-
 #include "xaxidma.h"
 
 #ifdef __ARMEL__
@@ -249,22 +244,21 @@ extern "C" {
 
 
 /**************************** Type Definitions *******************************/
-typedef struct {
-	UINTPTR txBaseAddress; /**< Tx mem base address */
-	UINTPTR rxBaseAddress; /**< Rx mem base address */
-    XAxiDma* axiDmaPtr; // AXI DMA instance definitions
-} EthDrv;
+class EthSyst {
+  UINTPTR txBaseAddress; // Tx mem base address
+  UINTPTR rxBaseAddress; // Rx mem base address
+  XAxiDma* axiDmaPtr;    // AXI DMA instance definitions
+
+  void alignedWrite(void*, unsigned);
+  void alignedRead (void*, unsigned);
+  u16 getReceiveDataLength(u16);
+  
+  public:
+  int cfgInitialize(XAxiDma&);
+  int flushReceive();
+  int frameSend(u8*, unsigned);
+  u16 frameRecv(u8*);
+};
 
 
-/************************** Function Prototypes ******************************/
-int ethDrv_CfgInitialize(EthDrv*, XAxiDma&);
-int ethDrv_FlushReceive(EthDrv *InstancePtr);
-int ethDrv_Send(EthDrv *InstancePtr, u8 *FramePtr, unsigned ByteCount);
-u16 ethDrv_Recv(EthDrv *InstancePtr, u8 *FramePtr);
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* end of protection macro */
+#endif // end of protection macro

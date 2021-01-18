@@ -129,8 +129,8 @@ static u8 DestIpAddress[IP_ADDR_SIZE] =
 };
 
 static u16 DestMacAddr[MAC_ADDR_LEN]; 	/* Destination MAC Address */
-// static XEmacLite EmacLiteInstance;	/* Instance of the EmacLite driver */
-static EthDrv ethDrvInstance;	/* Instance of the EmacLite driver */
+
+static EthSyst ethSyst;	// Instance of the Ethernet Subsytem driver
 
 /*
  * Known data transmitted in Echo request.
@@ -229,7 +229,7 @@ static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
 * @note		None.
 *
 ******************************************************************************/
-static void SendEchoReqFrame(EthDrv *InstancePtr)
+static void SendEchoReqFrame(EthSyst& ethSyst)
 {
 	u16 *TempPtr;
 	u16 *TxFramePtr;
@@ -330,7 +330,7 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 	 * Transmit the Frame.
 	 */
 	printf("Sending ICMP ping request Pack: %d, Seq: %d, Pack size: %d \n", NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ICMP_PKT_SIZE);
-	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ICMP_PKT_SIZE);
+	ethSyst.frameSend((u8 *)&TxFrame, ICMP_PKT_SIZE);
 }
 
 
@@ -346,7 +346,7 @@ static void SendEchoReqFrame(EthDrv *InstancePtr)
 * @note		None.
 *
 ******************************************************************************/
-static void SendArpReqFrame(EthDrv *InstancePtr)
+static void SendArpReqFrame(EthSyst& ethSyst)
 {
 	u16 *TempPtr;
 	u16 *TxFramePtr;
@@ -429,7 +429,7 @@ static void SendArpReqFrame(EthDrv *InstancePtr)
 	 * Transmit the Frame.
 	 */
 	printf("Sending ARP ping request Pack: %d, Seq: %d, Pack size: %d \n", NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
-	ethDrv_Send(InstancePtr, (u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
+	ethSyst.frameSend((u8 *)&TxFrame, ARP_REQ_PKT_SIZE);
 }
 
 
@@ -480,7 +480,7 @@ static int CompareData(u16 *LhsPtr, u16 *RhsPtr, int LhsLoc, int RhsLoc,
 * @note		This assumes MAC does not strip padding or CRC.
 *
 ******************************************************************************/
-static int ProcessRecvFrame(EthDrv *InstancePtr)
+static int ProcessRecvFrame(EthSyst& ethSyst)
 {
 	u16 *RxFramePtr;
 	u16 *TempPtr;
@@ -535,7 +535,7 @@ static int ProcessRecvFrame(EthDrv *InstancePtr)
 					/*
 					 * Send Echo request packet.
 					 */
-					SendEchoReqFrame(InstancePtr);
+					SendEchoReqFrame(ethSyst);
 				}
 			}
 		}
@@ -605,21 +605,17 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	int Index;
 	int Count;
 	int EchoReplyStatus;
-	EthDrv *ethDrvInstPtr = &ethDrvInstance;
 	SeqNum = 0;
 	u32 RecvFrameLength = 0;
 	NumOfPingReqPkts = NUM_OF_PING_REQ_PKTS;
 
-	/*
-	 * Initialize the EmacLite device.
-	 */
-	Status = ethDrv_CfgInitialize(ethDrvInstPtr, axiDma);
+	Status = ethSyst.cfgInitialize(axiDma);
 	if (Status != XST_SUCCESS) return Status;
 
 	/*
 	 * Empty any existing receive frames.
 	 */
-	Status = ethDrv_FlushReceive(ethDrvInstPtr);
+	Status = ethSyst.flushReceive();
 	if (Status != XST_SUCCESS) return Status;
 
 	while (NumOfPingReqPkts--) {
@@ -634,9 +630,9 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 		 * Send an ARP or an ICMP packet based on receive packet.
 		 */
 		if (SeqNum == 0) {
-			SendArpReqFrame(ethDrvInstPtr);
+			SendArpReqFrame(ethSyst);
 		} else {
-			SendEchoReqFrame(ethDrvInstPtr);
+			SendEchoReqFrame(ethSyst);
 		}
 
 		/*
@@ -650,7 +646,7 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 			 */
 			Count = NUM_PACK_CHECK_RX_PACK;
 			while (RecvFrameLength == 0) {
-				RecvFrameLength = ethDrv_Recv(ethDrvInstPtr, (u8 *)RxFrame);
+				RecvFrameLength = ethSyst.frameRecv((u8 *)RxFrame);
 
 				/*
 				 * To avoid infinite loop when no packet is
@@ -665,7 +661,7 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 			 * Process the Receive frame.
 			 */
 			if (RecvFrameLength != 0) {
-				EchoReplyStatus = ProcessRecvFrame(ethDrvInstPtr);
+				EchoReplyStatus = ProcessRecvFrame(ethSyst);
 			}
 			RecvFrameLength = 0;
 
