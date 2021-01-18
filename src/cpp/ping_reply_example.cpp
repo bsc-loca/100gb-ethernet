@@ -122,8 +122,6 @@ static u8 LocalIpAddr[IP_ADDR_SIZE] =
 	172, 16, 63, 121
 };
 
-static EthSyst ethSyst;	// Instance of the Ethernet Subsytem driver
-
 /*
  * Buffers used for Transmission and Reception of Packets. These are declared as
  * global so that they are not a part of the stack.
@@ -564,17 +562,12 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 *		ping replies as defined by MAX_PING_REPLIES.
 *
 ******************************************************************************/
-int pingReplyTest(XAxiDma& axiDma)
+int pingReplyTest(EthSyst& ethSyst)
 {
 	int Status;
 	NumOfPingReplies = 0;
 
-	Status = ethSyst.cfgInitialize(axiDma);
-	if (Status != XST_SUCCESS) return Status;
-
-	/*
-	 * Empty any existing receive frames.
-	 */
+    // Empty any existing receive frames.
 	Status = ethSyst.flushReceive();
 	if (Status != XST_SUCCESS) return Status;
 

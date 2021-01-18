@@ -245,16 +245,16 @@
 
 /**************************** Type Definitions *******************************/
 class EthSyst {
-  UINTPTR txBaseAddress; // Tx mem base address
-  UINTPTR rxBaseAddress; // Rx mem base address
-  XAxiDma* axiDmaPtr;    // AXI DMA instance definitions
+  XAxiDma* axiDmaPtr; // AXI DMA instance definitions
+  UINTPTR  txMemAddr; // Tx mem base address
+  UINTPTR  rxMemAddr; // Rx mem base address
 
   void alignedWrite(void*, unsigned);
   void alignedRead (void*, unsigned);
   u16 getReceiveDataLength(u16);
   
   public:
-  int cfgInitialize(XAxiDma&);
+  EthSyst(XAxiDma&, UINTPTR, UINTPTR);
   int flushReceive();
   int frameSend(u8*, unsigned);
   u16 frameRecv(u8*);

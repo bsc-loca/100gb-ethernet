@@ -78,13 +78,14 @@
 *		XEmacLite_PhyWrite functions to access the PHY device.
 *
 ******************************************************************************/
-int EthSyst::cfgInitialize(XAxiDma& axiDma)
+EthSyst::EthSyst(XAxiDma& axiDma,
+                 UINTPTR tx_mem_addr, // Tx mem base address
+                 UINTPTR rx_mem_addr  // Rx mem base address
+                )
 {
-	txBaseAddress = XPAR_TX_MEM_CPU_S_AXI_BASEADDR;
-	rxBaseAddress = XPAR_RX_MEM_CPU_S_AXI_BASEADDR;
 	axiDmaPtr = &axiDma;
-
-	return XST_SUCCESS;
+	txMemAddr = tx_mem_addr;
+	rxMemAddr = rx_mem_addr;
 }
 
 
@@ -115,7 +116,7 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 	volatile u8 *To8Ptr;
 	u8 *From8Ptr;
 
-	To32Ptr = (volatile u32*)txBaseAddress;
+	To32Ptr = (volatile u32*)txMemAddr;
 
 	if ((((u32) SrcPtr) & 0x00000003) == 0) {
 
@@ -312,7 +313,7 @@ int EthSyst::frameSend(u8 *FramePtr, unsigned ByteCount)
 ******************************************************************************/
 u16 EthSyst::getReceiveDataLength(u16 headerOffset) {
 	u16 Length;
-    uint32_t* addr32 = reinterpret_cast<uint32_t*>(rxBaseAddress);
+    uint32_t* addr32 = reinterpret_cast<uint32_t*>(rxMemAddr);
 
 #ifdef __LITTLE_ENDIAN__
 	Length = (addr32[headerOffset / sizeof(uint32_t)] &
@@ -322,7 +323,7 @@ u16 EthSyst::getReceiveDataLength(u16 headerOffset) {
 	Length = ((addr32[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
 			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
 #endif
-    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", rxBaseAddress, Length, headerOffset);
+    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", rxMemAddr, Length, headerOffset);
 
 	return Length;
 }
@@ -355,7 +356,7 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 	u8 *To8Ptr;
 	volatile u8 *From8Ptr;
 
-	From32Ptr = (u32 *)rxBaseAddress;
+	From32Ptr = (u32 *)rxMemAddr;
 
 	if ((((u32) DestPtr) & 0x00000003) == 0) {
 

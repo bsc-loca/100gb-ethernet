@@ -130,8 +130,6 @@ static u8 DestIpAddress[IP_ADDR_SIZE] =
 
 static u16 DestMacAddr[MAC_ADDR_LEN]; 	/* Destination MAC Address */
 
-static EthSyst ethSyst;	// Instance of the Ethernet Subsytem driver
-
 /*
  * Known data transmitted in Echo request.
  */
@@ -599,7 +597,7 @@ static int ProcessRecvFrame(EthSyst& ethSyst)
 * @note		None.
 *
 ******************************************************************************/
-int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
+int pingReqTest(EthSyst& ethSyst) //(u16 DeviceId)
 {
 	int Status;
 	int Index;
@@ -609,12 +607,7 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 	u32 RecvFrameLength = 0;
 	NumOfPingReqPkts = NUM_OF_PING_REQ_PKTS;
 
-	Status = ethSyst.cfgInitialize(axiDma);
-	if (Status != XST_SUCCESS) return Status;
-
-	/*
-	 * Empty any existing receive frames.
-	 */
+    // Empty any existing receive frames.
 	Status = ethSyst.flushReceive();
 	if (Status != XST_SUCCESS) return Status;
 

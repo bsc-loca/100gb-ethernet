@@ -21,11 +21,12 @@
 #include "xaxidma.h"
 #include "../../../project/ethernet_test_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
+#include "../../../src/cpp/ethdrv.h"
 
 // using namespace std;
 
-int pingReplyTest(XAxiDma&); //(u16 DeviceId);
-int pingReqTest  (XAxiDma&); //(u16 DeviceId);
+int pingReplyTest(EthSyst&); //(u16 DeviceId);
+int pingReqTest  (EthSyst&); //(u16 DeviceId);
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
     printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
@@ -825,6 +826,9 @@ int main(int argc, char *argv[])
         printf("%c\n", confirm);
         if (confirm != 'y') break;
 
+         // Instance of the Ethernet Subsytem driver
+        EthSyst ethSyst(axiDma, XPAR_TX_MEM_CPU_S_AXI_BASEADDR,
+                                XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
         ethCoreSetup(false);
         axiDmaSetup();
         switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
@@ -848,7 +852,7 @@ int main(int argc, char *argv[])
           switch (choice) {
             case 'p': {
               printf("------- Ping Reply test -------\n");
-              int status = pingReplyTest(axiDma);
+              int status = pingReplyTest(ethSyst);
               if (status != XST_SUCCESS) {
                 printf("\nERROR: Ping Reply test failed with status %d\n", status);
                 exit(1);
@@ -859,7 +863,7 @@ int main(int argc, char *argv[])
 
             case 'q': {
               printf("------- Ping Request test -------\n");
-            	int status = pingReqTest(axiDma);
+            	int status = pingReqTest(ethSyst);
 	            if (status != XST_SUCCESS) {
 		            printf("\nERROR: Ping Request test failed with status %d\n", status);
                 exit(1);
