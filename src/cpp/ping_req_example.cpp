@@ -68,7 +68,7 @@
 #define ICMP_PKT_SIZE 		0x4A	/* ICMP packet length 74 Bytes including Src and dest MAC Add */
 #define IP_ADDR_SIZE		4	/* IP Address size in Bytes */
 #define NUM_RX_PACK_CHECK_REQ	10	/* Max num of Rx pack to be checked	before sending another request */
-#define NUM_PACK_CHECK_RX_PACK	100000 /* Max number of pack to be checked before to identify a Rx packet */
+#define NUM_PACK_CHECK_RX_PACK	10000 /* Max number of pack to be checked before to identify a Rx packet */
 
 /*
  * Definitions for the locations and length of some of the fields in a
@@ -575,10 +575,7 @@ static int ProcessRecvFrame(EthDrv *InstancePtr)
 				}
 			}
 			if (DataWrong != 1) {
-				xil_printf("Packet: %d ",
-				NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts);
-				xil_printf("Seq: %d Echo Packet received\r\n",
-								SeqNum);
+				printf("PING PASSED: Packet: %d, Seq: %d, Echo Packet received\r\n",  NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts, SeqNum);
 				return XST_SUCCESS;
 			}
 		}
@@ -685,12 +682,8 @@ int pingReqTest(XAxiDma& axiDma) //(u16 DeviceId)
 		 * If no echo reply packet is received, it reports
 		 * request timed out.
 		 */
-		if (EchoReplyStatus == XST_FAILURE) {
-			xil_printf("Packet No: %d",
-				NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts);
-			xil_printf(" Seq NO %d Request timed out\r\n",
-							SeqNum);
-		}
+		if (EchoReplyStatus == XST_FAILURE)
+          printf("PING FAILED: Packet: %d, Seq: %d, Request timed out\r\n", NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts, SeqNum);
 	}
 	return XST_SUCCESS;
 }
