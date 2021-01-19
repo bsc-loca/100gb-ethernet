@@ -68,7 +68,7 @@
 #define ICMP_PKT_SIZE 		0x4A	/* ICMP packet length 74 Bytes including Src and dest MAC Add */
 #define IP_ADDR_SIZE		4	/* IP Address size in Bytes */
 #define NUM_RX_PACK_CHECK_REQ	10	/* Max num of Rx pack to be checked	before sending another request */
-#define NUM_PACK_CHECK_RX_PACK	10000 /* Max number of pack to be checked before to identify a Rx packet */
+#define NUM_PACK_CHECK_RX_PACK	100000 /* Max number of pack to be checked before to identify a Rx packet */
 
 /*
  * Definitions for the locations and length of some of the fields in a
