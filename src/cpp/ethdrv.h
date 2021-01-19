@@ -192,7 +192,11 @@
 #define ETHDRV_H  // by using protection macros
 
 /***************************** Include Files *********************************/
+// #include "xparameters.h"
 #include "xaxidma.h"
+#include "../../project/ethernet_test_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
+#include "xgpio.h"
+#include "xaxis_switch.h"
 
 #ifdef __ARMEL__
 #ifndef __LITTLE_ENDIAN__
@@ -245,16 +249,44 @@
 
 /**************************** Type Definitions *******************************/
 class EthSyst {
-  XAxiDma* axiDmaPtr; // AXI DMA instance definitions
-  UINTPTR  txMemAddr; // Tx mem base address
-  UINTPTR  rxMemAddr; // Rx mem base address
+  uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_ETH100GB_BASEADDR); // Ethernet core base address
+  //100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+  enum {
+    GT_RESET_REG          = GT_RESET_REG_OFFSET          / sizeof(uint32_t),
+    RESET_REG             = RESET_REG_OFFSET             / sizeof(uint32_t),
+    CORE_VERSION_REG      = CORE_VERSION_REG_OFFSET      / sizeof(uint32_t),
+    CORE_MODE_REG         = CORE_MODE_REG_OFFSET         / sizeof(uint32_t),
+    SWITCH_CORE_MODE_REG  = SWITCH_CORE_MODE_REG_OFFSET  / sizeof(uint32_t),
+    CONFIGURATION_TX_REG1 = CONFIGURATION_TX_REG1_OFFSET / sizeof(uint32_t),
+    CONFIGURATION_RX_REG1 = CONFIGURATION_RX_REG1_OFFSET / sizeof(uint32_t),
+    STAT_TX_STATUS_REG    = STAT_TX_STATUS_REG_OFFSET    / sizeof(uint32_t),
+    STAT_RX_STATUS_REG    = STAT_RX_STATUS_REG_OFFSET    / sizeof(uint32_t),
+    GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
+  };
+  // Ethernet core control via pins
+  uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
+  enum {
+    TX_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t),
+    RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
+  };
 
   void alignedWrite(void*, unsigned);
   void alignedRead (void*, unsigned);
   u16 getReceiveDataLength(u16);
   
   public:
-  EthSyst(XAxiDma&, UINTPTR, UINTPTR);
+  XAxiDma* axiDmaPtr; // AXI DMA instance definitions
+  uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
+  uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
+
+  EthSyst();
+  void ethCoreInit(bool);
+  void ethTxRxEnable();
+  void ethTxRxDisable();
+  void axiDmaInit();
+  void switch_CPU_DMAxEth_LB(bool, bool);
+  void ethSystInit();
+
   int flushReceive();
   int frameSend(u8*, unsigned);
   u16 frameRecv(u8*);
