@@ -108,7 +108,7 @@
 /*
  * Set up a local MAC address.
  */
-static u8 LocalMacAddr[XEL_MAC_ADDR_SIZE] =
+static uint8_t LocalMacAddr[XEL_MAC_ADDR_SIZE] =
 {
 	0x00, 0x0A, 0x35, 0x02, 0x22, 0x5E
 };
@@ -117,7 +117,7 @@ static u8 LocalMacAddr[XEL_MAC_ADDR_SIZE] =
  * The IP address was set to 172.16.63.121. User need to set a free IP address
  * based on the network on which this example is to be run.
  */
-static u8 LocalIpAddr[IP_ADDR_SIZE] =
+static uint8_t LocalIpAddr[IP_ADDR_SIZE] =
 {
 	172, 16, 63, 121
 };
@@ -126,18 +126,18 @@ static u8 LocalIpAddr[IP_ADDR_SIZE] =
  * Buffers used for Transmission and Reception of Packets. These are declared as
  * global so that they are not a part of the stack.
  */
-static u8 RxFrame[XEL_MAX_FRAME_SIZE];
-static u8 TxFrame[XEL_MAX_FRAME_SIZE];
+static uint8_t RxFrame[XEL_MAX_FRAME_SIZE];
+static uint8_t TxFrame[XEL_MAX_FRAME_SIZE];
 
 /*
  * Variable used to indicate the length of the received frame.
  */
-u32 RecvFrameLength = 0;
+uint32_t RecvFrameLength = 0;
 
 /*
  * Variable used to indicate the number of Ping replies sent.
  */
-u32 NumOfPingReplies;
+uint32_t NumOfPingReplies;
 
 
 /*****************************************************************************/
@@ -158,10 +158,10 @@ u32 NumOfPingReplies;
 * 		complement of this return value will give the final checksum.
 *
 ******************************************************************************/
-static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
+static uint16_t CheckSumCalculation(uint16_t* RxFramePtr, int StartLoc, int Length)
 {
-	u32 Sum = 0;
-	u16 CheckSum = 0;
+	uint32_t Sum = 0;
+	uint16_t CheckSum = 0;
 	int Index;
 
 	/*
@@ -198,22 +198,21 @@ static u16 CheckSumCalculation(u16 *RxFramePtr, int StartLoc, int Length)
 ******************************************************************************/
 static void ProcessRecvFrame(EthSyst& ethSyst)
 {
-	u16 *RxFramePtr;
-	u16 *TxFramePtr;
-	u16 *TempPtr;
-	u16 CheckSum;
-	// u32 NextTxBuffBaseAddr;
+	uint16_t* RxFramePtr;
+	uint16_t* TxFramePtr;
+	uint16_t* TempPtr;
+	uint16_t  CheckSum;
 	int Index;
 	int PacketType = 0;
 
-	TxFramePtr = (u16 *)TxFrame;
-	RxFramePtr = (u16 *)RxFrame;
+	TxFramePtr = (uint16_t*)TxFrame;
+	RxFramePtr = (uint16_t*)RxFrame;
 
 	/*
 	 * Check the packet type.
 	 */
 	Index = MAC_ADDR_LEN;
-	TempPtr = (u16 *)LocalMacAddr;
+	TempPtr = (uint16_t*)LocalMacAddr;
 	while (Index--) {
 		if (Xil_Ntohs((*(RxFramePtr + Index)) == BROADCAST_ADDR) &&
 					(PacketType != MAC_MATCHED_PACKET)) {
@@ -241,7 +240,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 			/*
 			 * IP address of the local machine.
 			 */
-			TempPtr = (u16 *)LocalIpAddr;
+			TempPtr = (uint16_t*)LocalIpAddr;
 
 			/*
 			 * Check destination IP address of the packet with
@@ -275,7 +274,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * to the reply packet.
 					 */
 					Index = 0;
-					TempPtr = (u16 *)LocalMacAddr;
+					TempPtr = (uint16_t*)LocalMacAddr;
 					while (Index < MAC_ADDR_LEN) {
 						*TxFramePtr++ = *TempPtr++;
 						Index++;
@@ -308,7 +307,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * Add local MAC Address
 					 * to the reply packet.
 					 */
-					TempPtr = (u16 *)LocalMacAddr;
+					TempPtr = (uint16_t*)LocalMacAddr;
 					Index = 0;
 					while (Index < MAC_ADDR_LEN) {
 						*TxFramePtr++ = *TempPtr++;
@@ -319,7 +318,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * Add local IP Address
 					 * to the reply packet.
 					 */
-					TempPtr = (u16 *)LocalIpAddr;
+					TempPtr = (uint16_t*)LocalIpAddr;
 					Index = 0;
 					while (Index < IP_ADDR_LEN) {
 						*TxFramePtr++ = *TempPtr++ ;
@@ -364,7 +363,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * Transmit the Reply Packet.
 					 */
 	                printf("Sending ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
-					ethSyst.frameSend((u8 *)&TxFrame, ARP_PACKET_SIZE);
+					ethSyst.frameSend(TxFrame, ARP_PACKET_SIZE);
 				}
 			}
 		}
@@ -415,7 +414,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * to the reply packet.
 					 */
 					Index = 0;
-					TempPtr = (u16 *)LocalMacAddr;
+					TempPtr = (uint16_t*)LocalMacAddr;
 					while (Index < MAC_ADDR_LEN) {
 						*TxFramePtr++ = *TempPtr++;
 						Index++;
@@ -466,7 +465,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * Add Source IP address
 					 */
 					Index = 0;
-					TempPtr = (u16 *)LocalIpAddr;
+					TempPtr = (uint16_t*)LocalIpAddr;
 					while (Index < IP_ADDR_LEN) {
 						*TxFramePtr++ = *TempPtr++;
 						Index++;
@@ -488,7 +487,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * add it in the appropriate field.
 					 */
 					CheckSum = CheckSumCalculation(
-							(u16 *)TxFrame,
+							(uint16_t*)TxFrame,
 							IP_HDR_START_LOC,
 							IP_HDR_LEN);
 					CheckSum = ~CheckSum;
@@ -522,7 +521,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * add it in the appropriate field.
 					 */
 					CheckSum = CheckSumCalculation(
-							(u16 *)TxFrame,
+							(uint16_t*)TxFrame,
 							ICMP_DATA_START_LOC,
 							ICMP_DATA_FIELD_LEN);
 					CheckSum = ~CheckSum;
@@ -533,7 +532,7 @@ static void ProcessRecvFrame(EthSyst& ethSyst)
 					 * Transmit the frame.
 					 */
 	                printf("Sending ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
-					ethSyst.frameSend((u8 *)&TxFrame, ICMP_PACKET_SIZE);
+					ethSyst.frameSend(TxFrame, ICMP_PACKET_SIZE);
 
 					/*
 					 * Increment the number of
@@ -577,7 +576,7 @@ int pingReplyTest(EthSyst& ethSyst)
 		 * Wait for a Receive packet.
 		 */
 		while (RecvFrameLength == 0) {
-			RecvFrameLength = ethSyst.frameRecv((u8 *)RxFrame);
+			RecvFrameLength = ethSyst.frameRecv(RxFrame);
 		}
 
 		/*

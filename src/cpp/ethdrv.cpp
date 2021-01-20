@@ -53,7 +53,8 @@
 
 #include "../../../src/cpp/ethdrv.h"
 
-static XAxiDma axiDma; // AXI DMA instance definitions (by some XAxiDma instance requires to be global)
+
+static XAxiDma axiDma; // AXI DMA instance definitions (by some means XAxiDma instance requires to be global)
 
 //*************************************************************************
 EthSyst::EthSyst()
@@ -369,22 +370,22 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 {
 	unsigned Index;
 	unsigned Length = ByteCount;
-	volatile u32 AlignBuffer;
-	volatile u32 *To32Ptr;
-	u32 *From32Ptr;
-	volatile u16 *To16Ptr;
-	u16 *From16Ptr;
-	volatile u8 *To8Ptr;
-	u8 *From8Ptr;
+	volatile uint32_t AlignBuffer;
+	volatile uint32_t *To32Ptr;
+	uint32_t* From32Ptr;
+	volatile uint16_t* To16Ptr;
+	uint16_t* From16Ptr;
+	volatile uint8_t* To8Ptr;
+	uint8_t* From8Ptr;
 
-	To32Ptr = (volatile u32*)txMem;
+	To32Ptr = (volatile uint32_t*)txMem;
 
-	if ((((u32) SrcPtr) & 0x00000003) == 0) {
+	if ((((uint32_t) SrcPtr) & 0x00000003) == 0) {
 
 		/*
 		 * Word aligned buffer, no correction needed.
 		 */
-		From32Ptr = (u32 *) SrcPtr;
+		From32Ptr = (uint32_t*) SrcPtr;
 
 		while (Length > 3) {
 			/*
@@ -403,17 +404,17 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 		 first.
 		 */
 		AlignBuffer = 0;
-		To8Ptr = (u8 *) &AlignBuffer;
-		From8Ptr = (u8 *) From32Ptr;
+		To8Ptr   = (uint8_t*) &AlignBuffer;
+		From8Ptr = (uint8_t*) From32Ptr;
 
 	}
-	else if ((((u32) SrcPtr) & 0x00000001) != 0) {
+	else if ((((uint32_t) SrcPtr) & 0x00000001) != 0) {
 		/*
 		 * Byte aligned buffer, correct.
 		 */
 		AlignBuffer = 0;
-		To8Ptr = (u8 *) &AlignBuffer;
-		From8Ptr = (u8 *) SrcPtr;
+		To8Ptr   = (uint8_t*) &AlignBuffer;
+		From8Ptr = (uint8_t*) SrcPtr;
 
 		while (Length > 3) {
 			/*
@@ -431,7 +432,7 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 			/*.
 			 * Reset the temporary buffer pointer and adjust length.
 			 */
-			To8Ptr = (u8 *) &AlignBuffer;
+			To8Ptr = (uint8_t*) &AlignBuffer;
 			Length -= 4;
 		}
 
@@ -440,7 +441,7 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 		 * first.
 		 */
 		AlignBuffer = 0;
-		To8Ptr = (u8 *) &AlignBuffer;
+		To8Ptr = (uint8_t*) &AlignBuffer;
 
 	}
 	else {
@@ -458,8 +459,9 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 		 * rules'
 		 */
 
-		To16Ptr = (u16 *) ((void *) &AlignBuffer);
-		From16Ptr = (u16 *) SrcPtr;
+		// To16Ptr   = (uint16_t*) ((void*) &AlignBuffer);
+		To16Ptr   = (uint16_t*) &AlignBuffer;
+		From16Ptr = (uint16_t*) SrcPtr;
 
 		while (Length > 3) {
 			/*
@@ -486,7 +488,8 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 			 * 'dereferencing type-punned pointer will break
 			 * strict-aliasing  rules'
 			 */
-			To16Ptr = (u16 *) ((void *) &AlignBuffer);
+			// To16Ptr = (uint16_t*) ((void*) &AlignBuffer);
+			To16Ptr = (uint16_t*) &AlignBuffer;
 			Length -= 4;
 		}
 
@@ -495,8 +498,8 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 		 * first.
 		 */
 		AlignBuffer = 0;
-		To8Ptr = (u8 *) &AlignBuffer;
-		From8Ptr = (u8 *) From16Ptr;
+		To8Ptr   = (uint8_t*) &AlignBuffer;
+		From8Ptr = (uint8_t*) From16Ptr;
 	}
 
 	/*
@@ -534,7 +537,7 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 * frame is transmitted.
 *
 ******************************************************************************/
-int EthSyst::frameSend(u8 *FramePtr, unsigned ByteCount)
+int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 {
 
     // Checking if the engine is doing transfer
@@ -572,20 +575,19 @@ int EthSyst::frameSend(u8 *FramePtr, unsigned ByteCount)
 * @note		None.
 *
 ******************************************************************************/
-u16 EthSyst::getReceiveDataLength(u16 headerOffset) {
-	u16 Length;
+uint16_t EthSyst::getReceiveDataLength(uint16_t headerOffset) {
 
 #ifdef __LITTLE_ENDIAN__
-	Length = (rxMem[headerOffset / sizeof(uint32_t)] &
-			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
-	Length = (u16) (((Length & 0xFF00) >> 8) | ((Length & 0x00FF) << 8));
+	uint16_t length = (rxMem[headerOffset / sizeof(uint32_t)] &
+                      (XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+	length = ((length & 0xFF00) >> 8) | ((length & 0x00FF) << 8);
 #else
-	Length = ((rxMem[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
-			(XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+	uint16_t length = ((rxMem[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
+                      (XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
 #endif
-    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", size_t(rxMem), Length, headerOffset);
+    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", size_t(rxMem), length, headerOffset);
 
-	return Length;
+	return length;
 }
 
 
@@ -608,22 +610,22 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 {
 	unsigned Index;
 	unsigned Length = ByteCount;
-	volatile u32 AlignBuffer;
-	u32 *To32Ptr;
-	volatile u32 *From32Ptr;
-	u16 *To16Ptr;
-	volatile u16 *From16Ptr;
-	u8 *To8Ptr;
-	volatile u8 *From8Ptr;
+	volatile uint32_t AlignBuffer;
+	uint32_t* To32Ptr;
+	volatile uint32_t* From32Ptr;
+	uint16_t* To16Ptr;
+	volatile uint16_t* From16Ptr;
+	uint8_t* To8Ptr;
+	volatile uint8_t* From8Ptr;
 
-	From32Ptr = (u32 *)rxMem;
+	From32Ptr = (uint32_t*)rxMem;
 
-	if ((((u32) DestPtr) & 0x00000003) == 0) {
+	if ((((uint32_t) DestPtr) & 0x00000003) == 0) {
 
 		/*
 		 * Word aligned buffer, no correction needed.
 		 */
-		To32Ptr = (u32 *) DestPtr;
+		To32Ptr = (uint32_t*) DestPtr;
 
 		while (Length > 3) {
 			/*
@@ -640,21 +642,21 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 		/*
 		 * Set up to read the remaining data.
 		 */
-		To8Ptr = (u8 *) To32Ptr;
+		To8Ptr = (uint8_t*) To32Ptr;
 
 	}
-	else if ((((u32) DestPtr) & 0x00000001) != 0) {
+	else if ((((uint32_t) DestPtr) & 0x00000001) != 0) {
 		/*
 		 * Byte aligned buffer, correct.
 		 */
-		To8Ptr = (u8 *) DestPtr;
+		To8Ptr = (uint8_t*) DestPtr;
 
 		while (Length > 3) {
 			/*
 			 * Copy each word into the temporary buffer.
 			 */
 			AlignBuffer = *From32Ptr++;
-			From8Ptr = (u8 *) &AlignBuffer;
+			From8Ptr = (uint8_t*) &AlignBuffer;
 
 			/*
 			 * Write data to destination.
@@ -674,7 +676,7 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 		/*
 		 * Half-Word aligned buffer, correct.
 		 */
-		To16Ptr = (u16 *) DestPtr;
+		To16Ptr = (uint16_t*) DestPtr;
 
 		while (Length > 3) {
 			/*
@@ -690,7 +692,8 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 			 * 'dereferencing type-punned pointer will break
 			 *  strict-aliasing rules'
 			 */
-			From16Ptr = (u16 *) ((void *) &AlignBuffer);
+			// From16Ptr = (uint16_t*) ((void*) &AlignBuffer);
+			From16Ptr = (uint16_t*) &AlignBuffer;
 
 			/*
 			 * Write data to destination.
@@ -708,14 +711,14 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 		/*
 		 * Set up to read the remaining data.
 		 */
-		To8Ptr = (u8 *) To16Ptr;
+		To8Ptr = (uint8_t*) To16Ptr;
 	}
 
 	/*
 	 * Read the remaining data.
 	 */
 	AlignBuffer = *From32Ptr++;
-	From8Ptr = (u8 *) &AlignBuffer;
+	From8Ptr = (uint8_t*) &AlignBuffer;
 
 	for (Index = 0; Index < Length; Index++) {
 		*To8Ptr++ = *From8Ptr++;
@@ -750,10 +753,10 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 * a frame arrives.
 *
 ******************************************************************************/
-u16 EthSyst::frameRecv(u8 *FramePtr)
+uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 {
-	u16 LengthType;
-	u16 Length;
+	uint16_t LengthType;
+	uint16_t Length;
 
 	if (XAxiDma_Busy(axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
 	  return 0;

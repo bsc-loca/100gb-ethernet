@@ -272,7 +272,7 @@ class EthSyst {
 
   void alignedWrite(void*, unsigned);
   void alignedRead (void*, unsigned);
-  u16 getReceiveDataLength(u16);
+  uint16_t getReceiveDataLength(uint16_t);
   
   public:
   XAxiDma* axiDmaPtr; // AXI DMA instance definitions
@@ -288,8 +288,8 @@ class EthSyst {
   void ethSystInit();
 
   int flushReceive();
-  int frameSend(u8*, unsigned);
-  u16 frameRecv(u8*);
+  int frameSend(uint8_t*, unsigned);
+  uint16_t frameRecv(uint8_t*);
 };
 
 
