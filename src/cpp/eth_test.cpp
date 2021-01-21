@@ -281,15 +281,15 @@ int main(int argc, char *argv[])
 
         printf("DMA: Transmitting %d whole packets with length %d bytes to channel with depth %d words\n",
                 DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS, CPU_PACKET_LEN, DMA_TX_LOOPBACK_DEPTH);
-        // ethSyst.axiDmaPtr->HasSg = true; // checking debug messages work in driver call
+        // ethSyst.axiDma.HasSg = true; // checking debug messages work in driver call
         size_t dmaMemPtr = 0;
         for (size_t packet = 0; packet < DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
-		      int status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      while (XAxiDma_Busy(ethSyst.axiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
+		      while (XAxiDma_Busy(&(ethSyst.axiDma), XAXIDMA_DMA_TO_DEVICE)) {
             printf("Waiting untill Tx transfer %d finishes \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
@@ -311,15 +311,15 @@ int main(int argc, char *argv[])
 
         printf("DMA: Receiving %d whole packets with length %d bytes from channel with depth %d words \n",
                 DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS, CPU_PACKET_LEN, DMA_RX_LOOPBACK_DEPTH);
-        // ethSyst.axiDmaPtr->HasSg = true; // checking debug messages work in driver call
+        // ethSyst.axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
         for (size_t packet = 0; packet < DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS; packet++) {
-		      int status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      while (XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DEVICE_TO_DMA)) {
+		      while (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) {
             printf("Waiting untill Rx transfer %d finishes \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
@@ -348,21 +348,21 @@ int main(int argc, char *argv[])
 
         printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
                 txrxMemSize/DMA_PACKET_LEN, DMA_PACKET_LEN, txrxMemSize);
-        // ethSyst.axiDmaPtr->HasSg = true; // checking debug messages work in driver call
+        // ethSyst.axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
         for (size_t packet = 0; packet < txrxMemSize/DMA_PACKET_LEN; packet++) {
-		      int status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+		      status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr, DMA_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      while ((XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DEVICE_TO_DMA)) ||
-			           (XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DMA_TO_DEVICE))) {
+		      while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
+			           (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
             // printf("Waiting untill last Tx/Rx transfer finishes \n");
             // sleep(1); // in seconds, user wait process
           }
@@ -391,23 +391,23 @@ int main(int argc, char *argv[])
 
         printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
                 txrxMemSize/ETH_MEMPACK_SIZE, ETH_PACKET_LEN, txrxMemSize);
-        // ethSyst.axiDmaPtr->HasSg = true; // checking debug messages work in driver call
+        // ethSyst.axiDma.HasSg = true; // checking debug messages work in driver call
         dmaMemPtr = 0;
         for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++) {
-		      int status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr,
+		      status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr,
                                           ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR), // decreasing length for some packets
                                           XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      while ((XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DEVICE_TO_DMA)) ||
-			           (XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DMA_TO_DEVICE))) {
+		      while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
+			           (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
             // printf("Waiting untill Tx/Rx transfer finishes \n");
             // sleep(1); // in seconds, user wait process
     	  	}
@@ -475,24 +475,24 @@ int main(int argc, char *argv[])
 
         printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
                 txrxMemSize/ETH_MEMPACK_SIZE, ETH_PACKET_LEN, txrxMemSize);
-        // ethSyst.axiDmaPtr->HasSg = true; // checking debug messages work in driver call
+        // ethSyst.axiDma.HasSg = true; // checking debug messages work in driver call
         size_t dmaMemPtr = 0;
         for (size_t packet = 0; packet < txrxMemSize/ETH_MEMPACK_SIZE; packet++) {
-		      int status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
           if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
-		      status = XAxiDma_SimpleTransfer(ethSyst.axiDmaPtr, (UINTPTR)dmaMemPtr,
+		      status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), (UINTPTR)dmaMemPtr,
                                           ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR), // decreasing length for some packets
                                           XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
             printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
-		      while ((XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DEVICE_TO_DMA)) ||
-			           (XAxiDma_Busy(ethSyst.axiDmaPtr,XAXIDMA_DMA_TO_DEVICE))) {
+		      while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
+			           (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
             // printf("Waiting untill Tx/Rx transfer finishes \n");
             // sleep(1); // in seconds, user wait process
           }

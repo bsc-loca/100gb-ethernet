@@ -254,11 +254,10 @@ class EthSyst {
   uint16_t getReceiveDataLength(uint16_t);
   
   public:
-  XAxiDma* axiDmaPtr; // AXI DMA instance definitions
+  XAxiDma axiDma; // AXI DMA instance definitions
   uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
   uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
 
-  EthSyst();
   void ethCoreInit(bool);
   void ethTxRxEnable();
   void ethTxRxDisable();

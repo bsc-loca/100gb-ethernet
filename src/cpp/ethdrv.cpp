@@ -53,15 +53,6 @@
 #include "ethdrv.h"
 
 
-static XAxiDma axiDma; // AXI DMA instance definitions (by some means XAxiDma instance requires to be global)
-
-//*************************************************************************
-EthSyst::EthSyst()
-{
-  axiDmaPtr = &axiDma;
-}
-
-
 //***************** Initialization of 100Gb Ethernet Core *****************
 void EthSyst::ethCoreInit(bool gtLoopback) {
   printf("------- Initializing Ethernet Core -------\n");
@@ -235,52 +226,52 @@ void EthSyst::axiDmaInit() {
     exit(1);
   }
   // XAxiDma definitions initialization
-  int status = XAxiDma_CfgInitialize(axiDmaPtr, cfgPtr);
+  int status = XAxiDma_CfgInitialize(&axiDma, cfgPtr);
   if (XST_SUCCESS != status) {
     printf("\nERROR: XAxiDma initialization failed with status %d\n", status);
     exit(1);
   }
  	// XAxiDma reset with checking if reset is done 
-  status = XAxiDma_Selftest(axiDmaPtr);
+  status = XAxiDma_Selftest(&axiDma);
   if (XST_SUCCESS != status) {
     printf("\nERROR: XAxiDma selftest(reset) failed with status %d\n", status);
     exit(1);
   }
   // Confirming XAxiDma is not in Scatter-Gather mode
- 	if(XAxiDma_HasSg(axiDmaPtr)) {
+ 	if(XAxiDma_HasSg(&axiDma)) {
 	  printf("\nERROR: XAxiDma configured as Scatter-Gather mode \n");
     exit(1);
   }
  	// Disable interrupts, we use polling mode
-  XAxiDma_IntrDisable(axiDmaPtr, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
-  XAxiDma_IntrDisable(axiDmaPtr, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
+  XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
+  XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
 
   printf("XAxiDma is initialized and reset: \n");
-  printf("Initialized              = %d  \n", axiDmaPtr->Initialized);
-  printf("RegBase                  = %d  \n", axiDmaPtr->RegBase);
-  printf("HasMm2S                  = %d  \n", axiDmaPtr->HasMm2S);
-  printf("HasS2Mm                  = %d  \n", axiDmaPtr->HasS2Mm);
-  printf("HasSg                    = %d  \n", axiDmaPtr->HasSg);
-  printf("TxNumChannels            = %d  \n", axiDmaPtr->TxNumChannels);
-  printf("RxNumChannels            = %d  \n", axiDmaPtr->RxNumChannels);
-  printf("MicroDmaMode             = %d  \n", axiDmaPtr->MicroDmaMode);
-  printf("AddrWidth                = %d  \n", axiDmaPtr->AddrWidth);
-  printf("TxBdRing.DataWidth       = %d  \n", axiDmaPtr->TxBdRing.DataWidth);
-  printf("TxBdRing.Addr_ext        = %d  \n", axiDmaPtr->TxBdRing.Addr_ext);
-  printf("TxBdRing.MaxTransferLen  = %lX \n", axiDmaPtr->TxBdRing.MaxTransferLen);
-  printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDmaPtr->TxBdRing.FirstBdPhysAddr);
-  printf("TxBdRing.FirstBdAddr     = %d  \n", axiDmaPtr->TxBdRing.FirstBdAddr);
-  printf("TxBdRing.LastBdAddr      = %d  \n", axiDmaPtr->TxBdRing.LastBdAddr);
-  printf("TxBdRing.Length          = %lX \n", axiDmaPtr->TxBdRing.Length);
-  printf("TxBdRing.Separation      = %d  \n", axiDmaPtr->TxBdRing.Separation);
-  printf("TxBdRing.Cyclic          = %d  \n", axiDmaPtr->TxBdRing.Cyclic);
+  printf("Initialized              = %d  \n", axiDma.Initialized);
+  printf("RegBase                  = %d  \n", axiDma.RegBase);
+  printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
+  printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
+  printf("HasSg                    = %d  \n", axiDma.HasSg);
+  printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
+  printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
+  printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
+  printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
+  printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
+  printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
+  printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
+  printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
+  printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
+  printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
+  printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
+  printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
+  printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
   printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
   printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
   printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
   printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
 
-  printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(axiDmaPtr,XAXIDMA_DEVICE_TO_DMA));
-  printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(axiDmaPtr,XAXIDMA_DMA_TO_DEVICE));
+  printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
+  printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
 }
 
 
@@ -335,9 +326,9 @@ void EthSyst::ethSystInit() {
 //***************** Flush the Receive buffers. All data will be lost. *****************
 int EthSyst::flushReceive() {
   // Checking if the engine is already in accept process
-  while ((XAxiDma_ReadReg(axiDmaPtr->RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
-	     !XAxiDma_Busy   (axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
-    int status = XAxiDma_SimpleTransfer(axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+  while ((XAxiDma_ReadReg(axiDma.RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
+	     !XAxiDma_Busy   (&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
+    int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
     if (XST_SUCCESS != status) {
       printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
              0, XEL_MAX_FRAME_SIZE, status);
@@ -540,8 +531,8 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 {
 
     // Checking if the engine is doing transfer
-    while (!(XAxiDma_ReadReg(axiDmaPtr->TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
-	         XAxiDma_Busy   (axiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
+    while (!(XAxiDma_ReadReg(axiDma.TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
+	         XAxiDma_Busy   (&axiDma, XAXIDMA_DMA_TO_DEVICE)) {
       printf("Waiting untill previous Tx transfer finishes \n");
       // sleep(1); // in seconds, user wait process
     }
@@ -552,7 +543,7 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 	 * The frame is in the buffer, now send it.
 	 */
     ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XEL_MAX_TX_FRAME_SIZE));
-    int status = XAxiDma_SimpleTransfer(axiDmaPtr, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
+    int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
     if (XST_SUCCESS != status) {
        printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
 	          0, ByteCount, status);
@@ -755,7 +746,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	uint16_t LengthType;
 	uint16_t Length;
 
-	if (XAxiDma_Busy(axiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
+	if (XAxiDma_Busy(&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
 	  return 0;
     }
     // printf("Some Rx frame is received \n");
@@ -805,7 +796,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	/*
 	 * Acknowledge the frame.
 	 */
-	int status = XAxiDma_SimpleTransfer(axiDmaPtr, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+	int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
     if (XST_SUCCESS != status) {
       printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
 		      0, XEL_MAX_FRAME_SIZE, status);
