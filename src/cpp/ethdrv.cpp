@@ -1,12 +1,11 @@
-/******************************************************************************
-* Copyright (C) 2004 - 2020 Xilinx, Inc.  All rights reserved.
-* SPDX-License-Identifier: MIT
-******************************************************************************/
-
 /*****************************************************************************/
 /**
 *
-* @file taken from Xilinx xemaclite.c
+* @file Initially started from Xilinx xemaclite.c
+*
+* Copyright (C) 2004 - 2020 Xilinx, Inc.  All rights reserved.
+* SPDX-License-Identifier: MIT
+*
 * @addtogroup emaclite_v4_6
 * @{
 *
@@ -51,7 +50,7 @@
 #include <unistd.h>
 #include <algorithm>
 
-#include "../../../src/cpp/ethdrv.h"
+#include "ethdrv.h"
 
 
 static XAxiDma axiDma; // AXI DMA instance definitions (by some means XAxiDma instance requires to be global)
@@ -578,12 +577,10 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 uint16_t EthSyst::getReceiveDataLength(uint16_t headerOffset) {
 
 #ifdef __LITTLE_ENDIAN__
-	uint16_t length = (rxMem[headerOffset / sizeof(uint32_t)] &
-                      (XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+	uint16_t length = rxMem[headerOffset / sizeof(uint32_t)];
 	length = ((length & 0xFF00) >> 8) | ((length & 0x00FF) << 8);
 #else
-	uint16_t length = ((rxMem[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT) &
-                      (XEL_RPLR_LENGTH_MASK_HI | XEL_RPLR_LENGTH_MASK_LO));
+	uint16_t length = rxMem[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT;
 #endif
     printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", size_t(rxMem), length, headerOffset);
 

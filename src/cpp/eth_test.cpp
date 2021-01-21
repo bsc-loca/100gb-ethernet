@@ -16,12 +16,10 @@
 // #include <sys/stat.h>
 
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
-#include "../../../src/cpp/ethdrv.h"
+#include "ethdrv.h"
+#include "ping_test.h"
 
 // using namespace std;
-
-int pingReplyTest(EthSyst&);
-int pingReqTest  (EthSyst&);
 
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
@@ -546,7 +544,8 @@ int main(int argc, char *argv[])
           switch (choice) {
             case 'p': {
               printf("------- Ping Reply test -------\n");
-              int status = pingReplyTest(ethSyst);
+              PingReplyTest pingReplyTest(&ethSyst);
+              int status = pingReplyTest.pingReply();
               if (status != XST_SUCCESS) {
                 printf("\nERROR: Ping Reply test failed with status %d\n", status);
                 exit(1);
@@ -557,7 +556,8 @@ int main(int argc, char *argv[])
 
             case 'q': {
               printf("------- Ping Request test -------\n");
-            	int status = pingReqTest(ethSyst);
+              PingReqstTest pingReqstTest(&ethSyst);
+            	int status = pingReqstTest.pingReqst();
 	            if (status != XST_SUCCESS) {
 		            printf("\nERROR: Ping Request test failed with status %d\n", status);
                 exit(1);
