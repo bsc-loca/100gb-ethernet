@@ -44,6 +44,9 @@
 #include "xintc.h"
 #include "xtmrctr_l.h"
 
+#define MHZ (66)
+#define TIMER_TLR (1500000*((float)MHZ/100))
+
 void
 xadapter_timer_handler(void *p)
 {
@@ -62,9 +65,6 @@ xadapter_timer_handler(void *p)
 
 	XIntc_AckIntr(XPAR_INTC_0_BASEADDR, PLATFORM_TIMER_INTERRUPT_MASK);
 }
-
-#define MHZ (66)
-#define TIMER_TLR (1500000*((float)MHZ/100))
 
 void
 platform_setup_timer()

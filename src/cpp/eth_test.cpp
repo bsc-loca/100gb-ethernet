@@ -23,6 +23,8 @@
 
 int udp_perf_client();
 int udp_perf_server();
+int tcp_perf_client();
+int tcp_perf_server();
 
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
@@ -539,8 +541,10 @@ int main(int argc, char *argv[])
           printf("Please choose particular IP-based test:\n");
           printf("  Ping reply test:      p\n");
           printf("  Ping request test:    q\n");
-          printf("  LwIP UDP Perf Client: c\n");
-          printf("  LwIP UDP Perf Server: s\n");
+          printf("  LwIP UDP Perf Server: u\n");
+          printf("  LwIP UDP Perf Client: d\n");
+          printf("  LwIP TCP Perf Server: t\n");
+          printf("  LwIP TCP Perf Client: c\n");
           printf("  Exit to main menu:    e\n");
           char choice;
           scanf("%s", &choice);
@@ -571,7 +575,18 @@ int main(int argc, char *argv[])
             }
             break;
 
-            case 'c': {
+            case 'u': {
+              printf("------- LwIP UDP Perf Server -------\n");
+            	int status = udp_perf_server();
+	            if (status != XST_SUCCESS) {
+		            printf("\nERROR: LwIP UDP Perf Server failed with status %d\n", status);
+                exit(1);
+	            }
+              printf("------- LwIP UDP Perf Server finished -------\n\n");
+            }
+            break;
+
+            case 'd': {
               printf("------- LwIP UDP Perf Client -------\n");
             	int status = udp_perf_client();
 	            if (status != XST_SUCCESS) {
@@ -582,14 +597,25 @@ int main(int argc, char *argv[])
             }
             break;
 
-            case 's': {
-              printf("------- LwIP UDP Perf Server -------\n");
-            	int status = udp_perf_server();
+            case 't': {
+              printf("------- LwIP TCP Perf Server -------\n");
+            	int status = tcp_perf_server();
 	            if (status != XST_SUCCESS) {
-		            printf("\nERROR: LwIP UDP Perf Server failed with status %d\n", status);
+		            printf("\nERROR: LwIP TCP Perf Server failed with status %d\n", status);
                 exit(1);
 	            }
-              printf("------- LwIP UDP Perf Server finished -------\n\n");
+              printf("------- LwIP TCP Perf Server finished -------\n\n");
+            }
+            break;
+
+            case 'c': {
+              printf("------- LwIP TCP Perf Client -------\n");
+            	int status = tcp_perf_client();
+	            if (status != XST_SUCCESS) {
+		            printf("\nERROR: LwIP TCP Perf Client failed with status %d\n", status);
+                exit(1);
+	            }
+              printf("------- LwIP TCP Perf Client finished -------\n\n");
             }
             break;
 

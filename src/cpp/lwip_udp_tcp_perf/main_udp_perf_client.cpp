@@ -54,7 +54,7 @@ extern volatile int TcpSlowTmrFlag;
 
 void platform_enable_interrupts(void);
 void start_udp_client_app(void);
-void transfer_data(void);
+void trans_udp_client_data(void);
 void print_udp_client_app_header(void);
 
 #if defined (__arm__) && !defined (ARMR5)
@@ -197,7 +197,7 @@ int udp_perf_client()
 			TcpSlowTmrFlag = 0;
 		}
 		xemacif_input(netif);
-		transfer_data();
+		trans_udp_client_data();
 	}
 
 	/* never reached */

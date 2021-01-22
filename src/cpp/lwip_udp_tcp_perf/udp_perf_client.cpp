@@ -212,7 +212,7 @@ static void udp_packet_send(u8_t finished)
 }
 
 /** Transmit data on a udp session */
-void transfer_data(void)
+void trans_udp_client_data(void)
 {
 	int i = 0;
 	for (i = 0; i < NUM_OF_PARALLEL_CLIENTS; i++) {

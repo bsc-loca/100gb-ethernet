@@ -68,13 +68,10 @@ timer_callback()
 
 		odd = !odd;
 		if (odd) {
-
+			TcpSlowTmrFlag = 1;
 #if LWIP_DHCP==1
 			dhcp_timer++;
 			dhcp_timoutcntr--;
-#endif
-			TcpSlowTmrFlag = 1;
-#if LWIP_DHCP==1
 			dhcp_fine_tmr();
 			if (dhcp_timer >= 120) {
 				dhcp_coarse_tmr();
