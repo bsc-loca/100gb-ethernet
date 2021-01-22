@@ -209,21 +209,19 @@
 #define XEL_MTU_SIZE			1500 // Max size of data in frame
 #define XEL_FCS_SIZE			4    // Size of CRC
 
-#define XEL_HEADER_OFFSET		12 // Offset to length field
-#define XEL_HEADER_SHIFT		16 // Right shift value to align length
+#define XEL_HEADER_OFFSET		        12 // Offset to length field
+#define XEL_HEADER_IP_LENGTH_OFFSET	16 // IP Length Offset
+#define XEL_HEADER_SHIFT	         	16 // Right shift value to align length
 
 #define XEL_MAX_FRAME_SIZE    (XEL_HEADER_SIZE+XEL_MTU_SIZE+XEL_FCS_SIZE)	// Max length of Rx frame used if length/type fieldcontains the type(> 1500)
 #define XEL_MAX_TX_FRAME_SIZE (XEL_HEADER_SIZE+XEL_MTU_SIZE) // Max length of Tx frame
-
-#define XEL_MAC_ADDR_SIZE		6	 // length of MAC address
+#define XEL_ARP_PACKET_SIZE	28 // Max ARP packet size
 #define ETH_MIN_PACK_SIZE   64 // Minimum packet size, limitation by 100Gb Ethernet core
 
 #define XEL_ETHER_PROTO_TYPE_IP		0x0800  // IP Protocol
 #define XEL_ETHER_PROTO_TYPE_ARP	0x0806  // ARP Protocol
 #define XEL_ETHER_PROTO_TYPE_VLAN	0x8100  // VLAN Tagged
-#define XEL_ARP_PACKET_SIZE		      28    // Max ARP packet size
-#define XEL_HEADER_IP_LENGTH_OFFSET	16  	// IP Length Offset
-#define XEL_VLAN_TAG_SIZE		        4     // VLAN Tag Size
+#define XEL_VLAN_TAG_SIZE		      4       // VLAN Tag Size
 
 
 /**************************** Type Definitions *******************************/
