@@ -40,7 +40,7 @@ static char send_buf[UDP_SEND_BUFSIZE];
 /* End time in ms */
 #define END_TIME (UDP_TIME_INTERVAL * 1000)
 
-void print_app_header(void)
+void print_udp_client_app_header(void)
 {
 	xil_printf("UDP client connecting to %s on port %d\r\n",
 			UDP_SERVER_IP_ADDRESS, UDP_CONN_PORT);
@@ -252,7 +252,7 @@ void transfer_data(void)
 	udp_packet_send(!FINISH);
 }
 
-void start_application(void)
+void start_udp_client_app(void)
 {
 	err_t err;
 	ip_addr_t remote_addr;

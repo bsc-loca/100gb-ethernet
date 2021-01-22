@@ -53,9 +53,9 @@ extern volatile int TcpSlowTmrFlag;
 #define DEFAULT_GW_ADDRESS	"192.168.1.1"
 
 void platform_enable_interrupts(void);
-void start_application(void);
+void start_udp_client_app(void);
 void transfer_data(void);
-void print_app_header(void);
+void print_udp_client_app_header(void);
 
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
@@ -71,7 +71,8 @@ int IicPhyReset(void);
 #endif
 #endif
 
-struct netif server_netif;
+// struct netif server_netif;
+extern struct netif server_netif;
 
 static void print_ip(char *msg, ip_addr_t *ip)
 {
@@ -180,10 +181,10 @@ int udp_perf_client()
 	xil_printf("\r\n");
 
 	/* print app header */
-	print_app_header();
+	print_udp_client_app_header();
 
 	/* start the application*/
-	start_application();
+	start_udp_client_app();
 	xil_printf("\r\n");
 
 	while (1) {

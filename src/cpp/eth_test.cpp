@@ -22,6 +22,7 @@
 // using namespace std;
 
 int udp_perf_client();
+int udp_perf_server();
 
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
@@ -539,6 +540,7 @@ int main(int argc, char *argv[])
           printf("  Ping reply test:      p\n");
           printf("  Ping request test:    q\n");
           printf("  LwIP UDP Perf Client: c\n");
+          printf("  LwIP UDP Perf Server: s\n");
           printf("  Exit to main menu:    e\n");
           char choice;
           scanf("%s", &choice);
@@ -577,6 +579,17 @@ int main(int argc, char *argv[])
                 exit(1);
 	            }
               printf("------- LwIP UDP Perf Client finished -------\n\n");
+            }
+            break;
+
+            case 's': {
+              printf("------- LwIP UDP Perf Server -------\n");
+            	int status = udp_perf_server();
+	            if (status != XST_SUCCESS) {
+		            printf("\nERROR: LwIP UDP Perf Server failed with status %d\n", status);
+                exit(1);
+	            }
+              printf("------- LwIP UDP Perf Server finished -------\n\n");
             }
             break;
 
