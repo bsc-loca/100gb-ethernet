@@ -30,7 +30,7 @@
 
 #include "udp_perf_server.h"
 
-extern struct netif server_netif;
+extern netif udp_server_netif;
 static struct udp_pcb *pcb;
 static struct perf_stats server;
 /* Report interval in ms */
@@ -41,7 +41,7 @@ void print_udp_server_app_header(void)
 	xil_printf("UDP server listening on port %d\r\n",
 			UDP_CONN_PORT);
 	xil_printf("On Host: Run $iperf -c %s -i %d -t 300 -u -b <bandwidth>\r\n",
-			inet_ntoa(server_netif.ip_addr),
+			inet_ntoa(udp_server_netif.ip_addr),
 			INTERIM_REPORT_INTERVAL);
 
 }
@@ -49,7 +49,7 @@ void print_udp_server_app_header(void)
 static void print_udp_conn_stats(void)
 {
 	xil_printf("[%3d] local %s port %d connected with ",
-			server.client_id, inet_ntoa(server_netif.ip_addr),
+			server.client_id, inet_ntoa(udp_server_netif.ip_addr),
 			UDP_CONN_PORT);
 	xil_printf("%s port %d\r\n", inet_ntoa(pcb->remote_ip),
 			pcb->remote_port);

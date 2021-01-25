@@ -70,8 +70,7 @@ int IicPhyReset(void);
 #endif
 #endif
 
-// struct netif server_netif;
-extern struct netif server_netif;
+struct netif udp_server_netif;
 
 static void print_ip(const char* msg, ip_addr_t *ip)
 {
@@ -115,7 +114,7 @@ int udp_perf_server()
 	unsigned char mac_ethernet_address[] = {
 		0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
 
-	netif = &server_netif;
+	netif = &udp_server_netif;
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
 		XPAR_GIGE_PCS_PMA_1000BASEX_CORE_PRESENT == 1

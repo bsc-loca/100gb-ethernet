@@ -30,7 +30,7 @@
 
 #include "tcp_perf_server.h"
 
-extern struct netif server_netif;
+extern netif tcp_server_netif;
 static struct tcp_pcb *c_pcb;
 static struct perf_stats server;
 
@@ -40,11 +40,11 @@ void print_tcp_server_app_header(void)
 			TCP_CONN_PORT);
 #if LWIP_IPV6==1
 	xil_printf("On Host: Run $iperf -V -c %s%%<interface> -i %d -t 300 -w 2M\r\n",
-			inet6_ntoa(server_netif.ip6_addr[0]),
+			inet6_ntoa(tcp_server_netif.ip6_addr[0]),
 			INTERIM_REPORT_INTERVAL);
 #else
 	xil_printf("On Host: Run $iperf -c %s -i %d -t 300 -w 2M\r\n",
-			inet_ntoa(server_netif.ip_addr),
+			inet_ntoa(tcp_server_netif.ip_addr),
 			INTERIM_REPORT_INTERVAL);
 #endif /* LWIP_IPV6 */
 }

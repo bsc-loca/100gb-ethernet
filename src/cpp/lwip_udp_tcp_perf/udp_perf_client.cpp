@@ -30,7 +30,7 @@
 
 #include "udp_perf_client.h"
 
-extern struct netif server_netif;
+extern netif udp_client_netif;
 static struct udp_pcb *pcb[NUM_OF_PARALLEL_CLIENTS];
 static struct perf_stats client;
 static char send_buf[UDP_SEND_BUFSIZE];
@@ -51,7 +51,7 @@ void print_udp_client_app_header(void)
 static void print_udp_conn_stats(void)
 {
 	xil_printf("[%3d] local %s port %d connected with ",
-			client.client_id, inet_ntoa(server_netif.ip_addr),
+			client.client_id, inet_ntoa(udp_client_netif.ip_addr),
 			pcb[0]->local_port);
 	xil_printf("%s port %d\r\n",inet_ntoa(pcb[0]->remote_ip),
 			pcb[0]->remote_port);
