@@ -52,6 +52,7 @@
 
 #include "ethdrv.h"
 
+using namespace EthDefs;
 
 //***************** Initialization of 100Gb Ethernet Core *****************
 void EthSyst::ethCoreInit(bool gtLoopback) {

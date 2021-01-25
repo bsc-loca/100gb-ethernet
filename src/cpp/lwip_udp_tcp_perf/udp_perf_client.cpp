@@ -220,9 +220,9 @@ void trans_udp_client_data(void)
 			return;
 	}
 
-	if (END_TIME || REPORT_INTERVAL_TIME) {
+	if (END_TIME !=0 || REPORT_INTERVAL_TIME !=0) {
 		u64_t now = get_time_ms();
-		if (REPORT_INTERVAL_TIME) {
+		if (REPORT_INTERVAL_TIME !=0) {
 			if (client.i_report.start_time) {
 				u64_t diff_ms = now - client.i_report.start_time;
 				if (diff_ms >= REPORT_INTERVAL_TIME) {
@@ -235,7 +235,7 @@ void trans_udp_client_data(void)
 			}
 		}
 
-		if (END_TIME) {
+		if (END_TIME !=0) {
 			/* this session is time-limited */
 			u64_t diff_ms = now - client.start_time;
 			if (diff_ms >= END_TIME) {

@@ -230,7 +230,7 @@ static void udp_recv_perf_traffic(void *arg, struct udp_pcb *tpcb,
 	/* Record total bytes for final report */
 	server.total_bytes += p->tot_len;
 
-	if (REPORT_INTERVAL_TIME) {
+	if (REPORT_INTERVAL_TIME !=0) {
 		u64_t now = get_time_ms();
 
 		server.i_report.cnt_datagrams++;

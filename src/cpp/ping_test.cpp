@@ -5,13 +5,6 @@
 #include "ping_test.h"
 
 
-//********* User Test run definitions ************ 
-#define NUM_OF_PING_REQ_PKTS    10     // Number of ping req it generates, change this parameter to limit the number of ping requests sent by this program.
-#define NUM_RX_PACK_CHECK_REQ	10	   // Max num of Rx pack to be checked	before sending another request
-#define NUM_PACK_CHECK_RX_PACK	100000 // Max number of pack to be checked before to identify a Rx packet
-#define MAX_PING_REPLIES	    10     // Maximum number of ping replies, change this parameter to limit the number of ping replies sent by this program.
-
-
 //*********** Ping Request Class *************
 /**
 * Initially started from Xilinx xemaclite_ping_req_example.c
@@ -388,9 +381,7 @@ int PingReqstTest::ProcessRcvFrame()
 		/*
 		 * Check ARP type.
 		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
-				XEL_ETHER_PROTO_TYPE_ARP ) {
-
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_ARP ) {
 			/*
 			 * Check ARP status.
 			 */
@@ -430,9 +421,7 @@ int PingReqstTest::ProcessRcvFrame()
 		/*
 		 * Check for IP type.
 		 */
-		else if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
-						XEL_ETHER_PROTO_TYPE_IP) {
-
+		else if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_IP) {
 			/*
 			 * Calculate checksum.
 			 */
@@ -661,9 +650,7 @@ void PingReplyTest::ProcessRcvFrame()
 		/*
 		 * Check for an ARP Packet if so generate a reply.
 		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
-				XEL_ETHER_PROTO_TYPE_ARP) {
-
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_ARP) {
 			/*
 			 * IP address of the local machine.
 			 */
@@ -804,9 +791,7 @@ void PingReplyTest::ProcessRcvFrame()
 		/*
 		 * Check ICMP packet.
 		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) ==
-						XEL_ETHER_PROTO_TYPE_IP) {
-
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_IP) {
 			/*
 			 * Check the IP header checksum.
 			 */

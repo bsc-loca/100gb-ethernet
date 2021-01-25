@@ -14,72 +14,17 @@
 //***************************** Include Files *********************************
 #include "ethdrv.h"
 
-
-/************************** Ethernet Definitions *****************************/
-#define BROADCAST_PACKET    1 // Broadcast packet
-#define MAC_MATCHED_PACKET  2 // Dest MAC matched with local MAC
-#define IP_ADDR_SIZE        4 // IP Address size in Bytes
-#define HW_TYPE             0x01	  // Hardware type (10/100 Mbps)
-#define IP_VERSION          0x0604	// IP version ipv4/ipv6
-#define ARP_REQUEST         0x0001	// ARP Request bits in Rx packet
-#define ARP_REPLY           0x0002  // ARP status bits indicating reply
-#define ARP_REQ_PKT_SIZE    0x2A	  // ARP request packet size
-#define ARP_PACKET_SIZE     0x3C    // ARP packet len 60 Bytes
-#define ECHO_REPLY          0x00    // Echo reply */
-#define ICMP_PACKET_SIZE    0x4A    // ICMP packet length 74 Bytes including Src and Dest MAC Address
-#define BROADCAST_ADDR      0xFFFF  // Broadcast Address
-#define CORRECT_CKSUM_VALUE 0xFFFF  // Correct checksum value
-#define IDENT_FIELD_VALUE   0x9263	// Identification field (random num)
-#define IDEN_NUM            0x02	  // ICMP identifier number
-
-//--- Definitions for the locations and length of some of the fields in a IP packet. The lengths are defined in Half-Words (2 bytes).
-#define SRC_MAC_ADDR_LOC     3 // Source MAC address location
-#define MAC_ADDR_LEN         3 // MAC address length
-#define ETHER_PROTO_TYPE_LOC 6 // Ethernet Proto type location
-#define ETHER_PROTO_TYPE_LEN 1 // Ethernet protocol Type length
-
-#define ARP_HW_TYPE_LEN       1  // Hardware Type length
-#define ARP_PROTO_TYPE_LEN    1  // Protocol Type length
-#define ARP_HW_ADD_LEN        1  // Hardware address length
-#define ARP_PROTO_ADD_LEN     1  // Protocol address length
-#define ARP_ZEROS_LEN         9  // Length to be filled with zeros
-#define ARP_REQ_STATUS_LOC    10 // ARP request location
-#define ARP_REQ_SRC_IP_LOC    14 // Src IP address location of ARP request
-#define ARP_REQ_DEST_IP_LOC_1 19 // Destination IP's 1st half word location
-#define ARP_REQ_DEST_IP_LOC_2 20 // Destination IP's 2nd half word location
-
-#define IP_VERSION_LEN     1  // IP Version length
-#define IP_PACKET_LEN      1  // IP Packet length field
-#define IP_TTL_ICM_LEN     1  // Time to live and ICM fields length
-#define IP_HDR_START_LOC   7  // IP header start location
-#define IP_HEADER_INFO_LEN 7  // IP header information length
-#define IP_HDR_LEN         10 // IP Header length
-#define IP_FRAG_FIELD_LOC  10 // Fragment field location
-#define IP_FRAG_FIELD_LEN  1  // Fragment field len in ICMP packet
-#define IP_CHECKSUM_LOC    12 // IP header checksum location
-#define IP_CSUM_LOC_BACK   5  // IP checksum location from end of frame
-#define IP_REQ_SRC_IP_LOC  13 // Src IP add loc of ICMP req
-#define IP_REQ_DEST_IP_LOC 15 // Dest IP add loc of ICMP req
-#define IP_ADDR_LEN        2  // Size of IP address in half-words
-
-#define ICMP_TYPE_LEN           1  // ICMP Type length
-#define ICMP_REQ_SRC_IP_LOC     13 // Src IP address location of ICMP request
-#define ICMP_ECHO_FIELD_LOC     17 // Echo field location
-#define ICMP_ECHO_FIELD_LEN     2  // Echo field length in half-words
-#define ICMP_DATA_START_LOC     17 // Data field start location
-#define ICMP_DATA_FIELD_LEN     20 // Data field length
-#define ICMP_DATA_LEN           18 // ICMP data length
-#define ICMP_DATA_LOC           19 // ICMP data location including identifier number and sequence number
-#define ICMP_DATA_CHECKSUM_LOC	18 // ICMP data checksum location
-#define ICMP_DATA_CSUM_LOC_BACK 19 // Data checksum location from end of frame
-#define ICMP_IDEN_FIELD_LOC     19 // Identifier field loc
-#define ICMP_SEQ_NO_LOC         20 // sequence number location
-#define ICMP_KNOWN_DATA_LOC     21 // ICMP known data start loc
-#define ICMP_KNOWN_DATA_LEN     16 // ICMP known data length
-
+using namespace EthDefs;
 
 //*********** Ping Request Class *************
 class PingReqstTest {
+  // User Test run definitions
+  enum {
+    NUM_OF_PING_REQ_PKTS   = 10,    // Number of ping req it generates, change this parameter to limit the number of ping requests sent by this program.
+    NUM_RX_PACK_CHECK_REQ  = 10,	  // Max num of Rx pack to be checked	before sending another request
+    NUM_PACK_CHECK_RX_PACK = 100000 // Max number of pack to be checked before to identify a Rx packet
+  };
+
   // Set up a local MAC address.
   uint8_t  LocalMacAddr[MAC_ADDR_LEN * sizeof(uint16_t)] = {0x00, 0x0A, 0x35, 0x03, 0x02, 0x01};
   uint16_t DestMacAddr [MAC_ADDR_LEN]; // Destination MAC Address
@@ -119,6 +64,11 @@ class PingReqstTest {
 
 //*********** Ping Reply Class *************
 class PingReplyTest {
+  // User Test run definitions
+  enum {
+    MAX_PING_REPLIES = 10 // Maximum number of ping replies, change this parameter to limit the number of ping replies sent by this program.
+  };
+
   // Set up a local MAC address.
   uint8_t LocalMacAddr[MAC_ADDR_LEN * sizeof(uint16_t)] = {0x00, 0x0A, 0x35, 0x02, 0x22, 0x5E};
 
