@@ -193,7 +193,7 @@
 /***************************** Include Files *********************************/
 // #include "xparameters.h"
 #include "xaxidma.h"
-#include "../../../project/ethernet_test_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
+#include "../../../../project/ethernet_test_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
 #include "xgpio.h"
 #include "xaxis_switch.h"
 

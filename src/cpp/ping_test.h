@@ -12,7 +12,7 @@
 
 
 //***************************** Include Files *********************************
-#include "ethdrv.h"
+#include "eth_hw/ethdrv.h"
 
 using namespace EthDefs;
 
