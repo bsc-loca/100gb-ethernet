@@ -615,7 +615,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 
-XStatus init_axi_dma(struct xemac_s *xemac)
+err_enum_t init_axi_dma(struct xemac_s *xemac)
 {
 	XAxiDma_Config *dmaconfig;
 	XAxiDma_Bd bdtemplate;
@@ -624,7 +624,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 	struct pbuf *p;
 	XStatus status;
 	u32_t i;
-	UINTPTR baseaddr;
+	// UINTPTR baseaddr;
 
 	xaxiemacif_s *xaxiemacif = (xaxiemacif_s *)(xemac->state);
 	/*
@@ -685,9 +685,25 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 		return ERR_IF;
 	}
 	/* initialize DMA */
-	baseaddr = xaxiemacif->axi_ethernet.Config.AxiDevBaseAddress;
-	dmaconfig = XAxiDma_LookupConfigBaseAddr(baseaddr);
-	XAxiDma_CfgInitialize(&xaxiemacif->axidma, dmaconfig);
+	// baseaddr = xaxiemacif->axi_ethernet.Config.AxiDevBaseAddress;
+	// dmaconfig = XAxiDma_LookupConfigBaseAddr(baseaddr);
+	dmaconfig = XAxiDma_LookupConfigBaseAddr(XPAR_ETH_DMA_BASEADDR);
+    // dmaconfig = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
+    if (!dmaconfig || dmaconfig->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
+      printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
+      return ERR_IF;
+    }
+	status = XAxiDma_CfgInitialize(&xaxiemacif->axidma, dmaconfig);
+    if (XST_SUCCESS != status) {
+      printf("\nERROR: XAxiDma initialization failed with status %ld\n", status);
+      return ERR_IF;
+    }
+    // XAxiDma reset with checking if reset is done 
+    status = XAxiDma_Selftest(&xaxiemacif->axidma);
+    if (XST_SUCCESS != status) {
+      printf("\nERROR: XAxiDma selftest(reset) failed with status %ld\n", status);
+      return ERR_IF;
+    }
 
 	rxringptr = XAxiDma_GetRxRing(&xaxiemacif->axidma);
 	txringptr = XAxiDma_GetTxRing(&xaxiemacif->axidma);
@@ -719,11 +735,13 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 				     (UINTPTR) xaxiemacif->tx_bdspace, BD_ALIGNMENT,
 				     XLWIP_CONFIG_N_TX_DESC);
 	if (status != XST_SUCCESS) {
+		LWIP_DEBUGF(NETIF_DEBUG, ("Error setting up TxBD space\r\n"));
 		return ERR_IF;
 	}
 	/* We reuse the bd template, as the same one will work for both rx and tx. */
 	status = XAxiDma_BdRingClone(txringptr, &bdtemplate);
 	if (status != XST_SUCCESS) {
+		LWIP_DEBUGF(NETIF_DEBUG, ("Error initializing TxBD space\r\n"));
 		return ERR_IF;
 	}
 	/* Allocate RX descriptors, 1 RxBD at a time.*/
@@ -947,7 +965,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 #endif
 #endif
 #endif
-	return 0;
+	return ERR_OK;
 }
 
 #if XPAR_INTC_0_HAS_FAST == 1
@@ -966,6 +984,8 @@ static void axidma_sendfast_handler(void)
 /****************************** Fast Error Handler ***************************/
 static void xaxiemac_errorfast_handler(void)
 {
-	xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
+	// xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
+	printf("MEEP: xaxiemac_errorfast_handler() is not defined so far. \n");
+	exit(1);
 }
 #endif

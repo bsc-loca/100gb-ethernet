@@ -48,7 +48,7 @@ bsp config n_rx_descriptors 512
 # for TCP client/server and UDP client only
 bsp config n_tx_descriptors 512
 
-bsp config -append extra_compiler_flags {-DDEBUG -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET -I../../../../../../../../../src/cpp/eth_hw}
+bsp config -append extra_compiler_flags {-DDEBUG -DLWIP_DEBUG -DNETIF_DEBUG=LWIP_DBG_ON -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET -I../../../../../../../../../src/cpp/eth_hw}
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc
@@ -158,7 +158,7 @@ app report eth_test
 #config the app
 importsources -name eth_test -path ./src/cpp/ 
 app config -name eth_test -set build-config release
-app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og}
+app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og -DLWIP_DEBUG -DNETIF_DEBUG=LWIP_DBG_ON}
 # by default:_STACK_SIZE=0x400, _HEAP_SIZE=0x800
 app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x10000}
 # app config -name eth_test -add libraries xil   # (-l for lib of drivers for components from the platform (XSA), linked automatically (-L,-l))

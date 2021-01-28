@@ -360,7 +360,13 @@ static err_t low_level_init(struct netif *netif)
 	// if (XAxiEthernet_IsDma(&xaxiemacif->axi_ethernet)) {
 #ifdef XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA
 		/* initialize the DMA engine */
-		init_axi_dma(xemac);
+    printf("Starting DMA initialization \n");
+    err_enum_t status = init_axi_dma(xemac);
+    if (ERR_OK != status) {
+      printf("\nERROR: DMA initialization failed with status %d\n", status);
+      return ERR_IF;
+    } else printf("DMA is initialized successfuly \n");
+
 // #endif
 	// } else if (XAxiEthernet_IsFifo(&xaxiemacif->axi_ethernet)) {
 // #ifdef XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_FIFO

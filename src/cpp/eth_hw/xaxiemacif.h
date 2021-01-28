@@ -49,6 +49,7 @@ extern "C" {
 #elif XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_MCDMA
 #include "xmcdma.h"
 #else
+#define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA
 #include "xaxidma.h"
 #include "xaxidma_hw.h"
 #endif
@@ -117,7 +118,7 @@ s32_t process_sent_bds(XAxiDma_BdRing *txring);
 XStatus init_axi_mcdma(struct xemac_s *xemac);
 XStatus axi_mcdma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p);
 #else
-XStatus init_axi_dma(struct xemac_s *xemac);
+err_enum_t init_axi_dma(struct xemac_s *xemac);
 XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p);
 #endif
 #endif

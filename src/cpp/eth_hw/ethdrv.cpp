@@ -223,7 +223,7 @@ void EthSyst::axiDmaInit() {
   // Initialize the XAxiDma device.
   XAxiDma_Config *cfgPtr = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
   if (!cfgPtr || cfgPtr->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
-    printf("\nERROR: No config found for XAxiDma %d\n", XPAR_ETH_DMA_DEVICE_ID);
+    printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
     exit(1);
   }
   // XAxiDma definitions initialization
@@ -232,18 +232,18 @@ void EthSyst::axiDmaInit() {
     printf("\nERROR: XAxiDma initialization failed with status %d\n", status);
     exit(1);
   }
- 	// XAxiDma reset with checking if reset is done 
+  // XAxiDma reset with checking if reset is done 
   status = XAxiDma_Selftest(&axiDma);
   if (XST_SUCCESS != status) {
     printf("\nERROR: XAxiDma selftest(reset) failed with status %d\n", status);
     exit(1);
   }
   // Confirming XAxiDma is not in Scatter-Gather mode
- 	if(XAxiDma_HasSg(&axiDma)) {
-	  printf("\nERROR: XAxiDma configured as Scatter-Gather mode \n");
+  if(XAxiDma_HasSg(&axiDma)) {
+    printf("\nERROR: XAxiDma configured as Scatter-Gather mode \n");
     exit(1);
   }
- 	// Disable interrupts, we use polling mode
+  // Disable interrupts, we use polling mode
   XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
   XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
 
