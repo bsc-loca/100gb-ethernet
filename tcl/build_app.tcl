@@ -44,10 +44,11 @@ bsp config tcp_snd_buf 65535
 # for TCP client/server only
 bsp config tcp_wnd 65535
 # for TCP client/server and UDP server only
-bsp config n_rx_descriptors 512
+# bsp config n_rx_descriptors 512
 # for TCP client/server and UDP client only
 bsp config n_tx_descriptors 512
 
+# -DPBUF_DEBUG=LWIP_DBG_ON
 bsp config -append extra_compiler_flags {-DDEBUG -DLWIP_DEBUG -DNETIF_DEBUG=LWIP_DBG_ON -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET -I../../../../../../../../../src/cpp/eth_hw}
 # bsp regenerate
 #Report created BSP

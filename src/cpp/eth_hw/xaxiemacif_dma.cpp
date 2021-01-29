@@ -81,7 +81,7 @@
 
 #endif
 
-#define XLWIP_CONFIG_N_RX_DESC 512 // build_app.tcl: bsp config n_rx_descriptors 512
+#define XLWIP_CONFIG_N_RX_DESC 64  // default LwIP value is taken to exclude pbuf allocation error (build_app.tcl: bsp config n_rx_descriptors 512)
 #define XLWIP_CONFIG_N_TX_DESC 512 // build_app.tcl: bsp config n_tx_descriptors 512
 #define XLWIP_CONFIG_N_RX_COALESCE 1 // build_app.tcl: n_rx_coalesce = 1 
 #define XLWIP_CONFIG_N_TX_COALESCE 1 // build_app.tcl: n_tx_coalesce = 1 

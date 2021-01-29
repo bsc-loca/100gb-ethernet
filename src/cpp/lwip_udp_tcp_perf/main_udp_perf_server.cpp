@@ -48,7 +48,9 @@ extern volatile int dhcp_timoutcntr;
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 
-#define DEFAULT_IP_ADDRESS	"192.168.1.10"
+#include "udp_perf_client.h"
+// #define DEFAULT_IP_ADDRESS	"192.168.1.10"
+#define DEFAULT_IP_ADDRESS	UDP_SERVER_IP_ADDRESS
 #define DEFAULT_IP_MASK		"255.255.255.0"
 #define DEFAULT_GW_ADDRESS	"192.168.1.1"
 
@@ -112,7 +114,7 @@ int udp_perf_server()
 
 	/* the mac address of the board. this should be unique per board */
 	unsigned char mac_ethernet_address[] = {
-		0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
+		0x00, 0x0a, 0x35, 0x03, 0x02, 0x01 };
 
 	netif = &udp_server_netif;
 #if defined (__arm__) && !defined (ARMR5)
