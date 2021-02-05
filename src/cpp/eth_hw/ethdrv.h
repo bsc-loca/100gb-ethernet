@@ -312,6 +312,23 @@ class EthSyst {
     RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
   };
 
+  // DMA Scatter-Gather memory Rx/Tx distribution
+  #ifndef XPAR_SG_MEM_CPU_S_AXI_BASEADDR
+    // dummy SG memory definitions for simple DMA design
+    #define XPAR_SG_MEM_CPU_S_AXI_BASEADDR 0
+    #define XPAR_SG_MEM_CPU_S_AXI_HIGHADDR 0
+  #endif
+  enum {
+    TX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR,
+    TX_SG_MEM_SIZE = (XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 - TX_SG_MEM_ADDR)/2,
+    RX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR   + TX_SG_MEM_SIZE,
+    RX_SG_MEM_SIZE =  XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 - RX_SG_MEM_ADDR
+  };
+  uint32_t txBdCount = 0;
+  uint32_t rxBdCount = 0;
+
+  void     dmaBDSetup(bool);
+  uint32_t dmaBDCheck(bool);
   void alignedWrite(void*, unsigned);
   void alignedRead (void*, unsigned);
   uint16_t getReceiveDataLength(uint16_t);
@@ -320,11 +337,14 @@ class EthSyst {
   XAxiDma axiDma; // AXI DMA instance definitions
   uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
   uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
+  uint32_t* sgMem = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
 
   void ethCoreInit(bool);
   void ethTxRxEnable();
   void ethTxRxDisable();
   void axiDmaInit();
+  void dmaBDTransfer(size_t, size_t, size_t, size_t, bool);
+  void dmaBDPoll(size_t, bool);
   void switch_CPU_DMAxEth_LB(bool, bool);
   void ethSystInit();
 

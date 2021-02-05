@@ -238,21 +238,24 @@ void EthSyst::axiDmaInit() {
     printf("\nERROR: XAxiDma selftest(reset) failed with status %d\n", status);
     exit(1);
   }
-  // Confirming XAxiDma is not in Scatter-Gather mode
-  if(XAxiDma_HasSg(&axiDma)) {
-    printf("\nERROR: XAxiDma configured as Scatter-Gather mode \n");
-    exit(1);
+  // Setups for Simple and Scatter-Gather modes
+  if(!XAxiDma_HasSg(&axiDma)) {
+    printf("XAxiDma is configured in Simple mode \n");
+    // Disable interrupts, we use polling mode
+    XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
+    XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
+  } else {
+    printf("XAxiDma is configured in Scatter-Gather mode \n");
+	dmaBDSetup(false); // setup of Tx BD ring
+    dmaBDSetup(true ); // setup of Rx BD ring
   }
-  // Disable interrupts, we use polling mode
-  XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
-  XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
 
   printf("XAxiDma is initialized and reset: \n");
+  printf("HasSg                    = %d  \n", axiDma.HasSg);
   printf("Initialized              = %d  \n", axiDma.Initialized);
   printf("RegBase                  = %d  \n", axiDma.RegBase);
   printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
   printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
-  printf("HasSg                    = %d  \n", axiDma.HasSg);
   printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
   printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
   printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
@@ -273,6 +276,175 @@ void EthSyst::axiDmaInit() {
 
   printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
   printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
+}
+
+
+//*************************************************************************
+// Setup of TX/RX channel of the DMA engine in SG mode to be ready for packets transfer
+void EthSyst::dmaBDSetup(bool RxnTx)
+{
+	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
+	                                    XAxiDma_GetTxRing(&axiDma);
+
+	// Disable all TX/RX interrupts before BD space setup
+	XAxiDma_BdRingIntDisable(BdRingPtr, XAXIDMA_IRQ_ALL_MASK);
+
+	// Set delay and coalesce
+	int const Coalesce = 1;
+	int const Delay    = 0;
+	XAxiDma_BdRingSetCoalesce(BdRingPtr, Coalesce, Delay);
+
+	// Setup BD space
+	size_t const sgMemAddr = RxnTx ? RX_SG_MEM_ADDR : TX_SG_MEM_ADDR;
+	size_t const sgMemSize = RxnTx ? RX_SG_MEM_SIZE : TX_SG_MEM_SIZE;
+	uint32_t BdCount = XAxiDma_BdRingCntCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT, sgMemSize);
+	int Status = XAxiDma_BdRingCreate(BdRingPtr, sgMemAddr, sgMemAddr, XAXIDMA_BD_MINIMUM_ALIGNMENT, BdCount);
+	if (Status != XST_SUCCESS) {
+      printf("\nERROR: RxnTx=%d, Creation of BD ring with %ld BDs at addr %x failed with status %d\r\n",
+	          RxnTx, BdCount, sgMemAddr, Status);
+      exit(1);
+	}
+    printf("RxnTx=%d, DMA BD memory size %x at addr %x, BD ring with %ld BDs created \n", RxnTx, sgMemSize, sgMemAddr, BdCount);
+	if (RxnTx) rxBdCount = BdCount;
+	else       txBdCount = BdCount;
+
+	// We create an all-zero BD as the template.
+	XAxiDma_Bd BdTemplate;
+	XAxiDma_BdClear(&BdTemplate);
+	Status = XAxiDma_BdRingClone(BdRingPtr, &BdTemplate);
+	if (Status != XST_SUCCESS) {
+      printf("\nERROR: RxnTx=%d, Clone of BD ring failed with status %d\r\n", RxnTx, Status);
+      exit(1);
+	}
+
+	// Start DMA channel
+	Status = XAxiDma_BdRingStart(BdRingPtr);
+	if (Status != XST_SUCCESS) {
+		printf("\nERROR: RxnTx=%d, Start of BD ring failed with status %d\r\n", RxnTx, Status);
+        exit(1);
+	}
+}
+
+
+//*************************************************************************
+// This non-blocking function transfers packets through the DMA engine in SG mode
+void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_t packets, bool RxnTx)
+{
+	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
+	                                    XAxiDma_GetTxRing(&axiDma);
+
+	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+    if (packets > 1) printf("RxnTx=%d, DMA in SG mode: %ld free BDs of %ld are available to transfer %d packets \n",
+	                         RxnTx, freeBdCount, RxnTx ? rxBdCount:txBdCount , packets);
+	if (packets > freeBdCount) {
+      printf("\nERROR: RxnTx=%d, Insufficient %ld free BDs to transfer %d packets \r\n", RxnTx, freeBdCount, packets);
+      exit(1);
+	}
+
+	// Allocate BDs
+	XAxiDma_Bd* BdPtr;
+	int Status = XAxiDma_BdRingAlloc(BdRingPtr, packets, &BdPtr);
+	if (Status != XST_SUCCESS) {
+      printf("\nERROR: RxnTx=%d, Allocation of BD ring with %d BDs failed with status %d\r\n", RxnTx, packets, Status);
+      exit(1);
+	}
+	freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+    if (packets > 1) printf("RxnTx=%d, DMA in SG mode: %ld free BDs are available after BDs allocation \n", RxnTx, freeBdCount);
+
+
+	XAxiDma_Bd* CurBdPtr = BdPtr;
+	for (size_t packet = 0; packet < packets; packet++) {
+	  // Set up the BD using the information of the packet to transmit
+	  Status = XAxiDma_BdSetBufAddr(CurBdPtr, bufAddr);
+	  if (Status != XST_SUCCESS) {
+	    printf("\nERROR: RxnTx=%d, Set of transfer buffer at addr %x on BD %x failed for packet %d with status %d\r\n",
+		         RxnTx, bufAddr, size_t(CurBdPtr), packet, Status);
+        exit(1);
+	  }
+
+	  Status = XAxiDma_BdSetLength(CurBdPtr, packLen, BdRingPtr->MaxTransferLen);
+	  if (Status != XST_SUCCESS) {
+	    printf("\nERROR: RxnTx=%d, Set of transfer length %d on BD %x failed for packet %d  with status %d\r\n",
+		         RxnTx, packLen, size_t(CurBdPtr), packet, Status);
+        exit(1);
+	  }
+
+      if (!RxnTx && XPAR_AXIDMA_0_SG_INCLUDE_STSCNTRL_STRM == 1) {
+        int Status = XAxiDma_BdSetAppWord(CurBdPtr, XAXIDMA_LAST_APPWORD, packLen);
+        // If Set app length failed, it is not fatal
+        if (Status != XST_SUCCESS) {
+          printf("RxnTx=%d, Tx control stream: set app word failed for packet %d with status %d\r\n", RxnTx, packet, Status);
+        }
+      }
+
+	  // For each packet, setting both SOF and EOF for TX BDs,
+	  // RX BDs do not need to set anything for the control, the hw will set the SOF/EOF bits per stream status
+	  XAxiDma_BdSetCtrl(CurBdPtr, RxnTx ? 0 : XAXIDMA_BD_CTRL_TXEOF_MASK |
+                                              XAXIDMA_BD_CTRL_TXSOF_MASK);
+	  XAxiDma_BdSetId  (CurBdPtr, bufAddr);
+
+      bufAddr += bufLen;
+      CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
+	}
+
+	// Give the BD to DMA to kick off the transfer
+	Status = XAxiDma_BdRingToHw(BdRingPtr, packets, BdPtr);
+	if (Status != XST_SUCCESS) {
+		printf("\nERROR: RxnTx=%d, Submit of BD ring with %d BDs to hw failed with status %d\r\n", RxnTx, packets, Status);
+        exit(1);
+	}
+}
+
+
+//*************************************************************************
+// Blocking polling process for finishing the transfer of packets through the DMA engine in SG mode
+void EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
+{
+	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
+	                                    XAxiDma_GetTxRing(&axiDma);
+
+	// Wait until the BD transfers are done
+	XAxiDma_Bd *BdPtr;
+	uint32_t ProcessedBdCount = 0;
+	while (ProcessedBdCount < packets) {
+      // printf("RxnTx=%d, Waiting untill %d BD transfers finish: %ld \n", RxnTx, packets, ProcessedBdCount);
+      // sleep(1); // in seconds, user wait process
+      ProcessedBdCount += XAxiDma_BdRingFromHw(BdRingPtr, XAXIDMA_ALL_BDS, &BdPtr);
+	}
+
+	// Free all processed BDs for future transfers
+	int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
+	if (status != XST_SUCCESS) {
+	  printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
+      exit(1);
+	}
+	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+    if (packets > 1) printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs are available after their release \n",
+	                         RxnTx, ProcessedBdCount, freeBdCount);
+}
+
+
+//*************************************************************************
+// Non-blocking check of finished transfers of packets through the DMA engine in SG mode
+uint32_t EthSyst::dmaBDCheck(bool RxnTx)
+{
+	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
+	                                    XAxiDma_GetTxRing(&axiDma);
+
+	// Wait until the BD transfers are done
+	XAxiDma_Bd *BdPtr;
+	uint32_t ProcessedBdCount = XAxiDma_BdRingFromHw(BdRingPtr, XAXIDMA_ALL_BDS, &BdPtr);
+
+	// Free all processed BDs for future transfers
+	int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
+	if (status != XST_SUCCESS) {
+	  printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
+      exit(1);
+	}
+	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+    if (ProcessedBdCount > 1) printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are done, %ld free BDs are available after their release \n",
+	                                  RxnTx, ProcessedBdCount, freeBdCount);
+    return ProcessedBdCount;
 }
 
 
@@ -327,16 +499,24 @@ void EthSyst::ethSystInit() {
 //***************** Flush the Receive buffers. All data will be lost. *****************
 int EthSyst::flushReceive() {
   // Checking if the engine is already in accept process
-  while ((XAxiDma_ReadReg(axiDma.RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
-	     !XAxiDma_Busy   (&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
-    int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
-    if (XST_SUCCESS != status) {
-      printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
-             0, XEL_MAX_FRAME_SIZE, status);
-      return status;
+  if(XAxiDma_HasSg(&axiDma)) { // in SG mode
+	  uint32_t rxdBDs = 0;
+	  do {
+        dmaBDTransfer(size_t(rxMem), XEL_MAX_FRAME_SIZE, XEL_MAX_FRAME_SIZE, 1, true);
+        rxdBDs = dmaBDCheck(true);
+	    printf("Flushing %ld Rx transfers \n", rxdBDs);
+	  } while (rxdBDs != 0);
+  } else // in simple mode
+    while ((XAxiDma_ReadReg(axiDma.RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
+	       !XAxiDma_Busy   (&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
+      int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+      if (XST_SUCCESS != status) {
+        printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
+               size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
+        return status;
+      }
+	  printf("Flushing Rx data... \n");
     }
-	printf("Flushing Rx data... \n");
-  }
 
   return XST_SUCCESS;
 }
@@ -530,13 +710,20 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 ******************************************************************************/
 int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 {
-
     // Checking if the engine is doing transfer
-    while (!(XAxiDma_ReadReg(axiDma.TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
-	         XAxiDma_Busy   (&axiDma, XAXIDMA_DMA_TO_DEVICE)) {
-      printf("Waiting untill previous Tx transfer finishes \n");
-      // sleep(1); // in seconds, user wait process
-    }
+    if(XAxiDma_HasSg(&axiDma)) { // in SG mode
+      XAxiDma_BdRing* BdRingPtr = XAxiDma_GetTxRing(&axiDma);
+	  while (size_t(XAxiDma_BdRingGetFreeCnt(BdRingPtr)) < txBdCount) {
+        uint32_t txdBDs = dmaBDCheck(false);
+        if (txdBDs > 1) printf("DMA SG mode: Waiting untill previous Tx transfer finishes: %ld \n", txdBDs);
+        // sleep(1); // in seconds, user wait process
+	  }
+	} else // in simple mode
+      while (!(XAxiDma_ReadReg(axiDma.TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
+	           XAxiDma_Busy   (&axiDma, XAXIDMA_DMA_TO_DEVICE)) {
+        printf("DMA simple mode: Waiting untill previous Tx transfer finishes \n");
+        // sleep(1); // in seconds, user wait process
+      }
 
 	alignedWrite(FramePtr, ByteCount);
 
@@ -544,13 +731,17 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 	 * The frame is in the buffer, now send it.
 	 */
     ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XEL_MAX_TX_FRAME_SIZE));
-    int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)0, ByteCount, XAXIDMA_DMA_TO_DEVICE);
-    if (XST_SUCCESS != status) {
-       printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
-	          0, ByteCount, status);
+    if(XAxiDma_HasSg(&axiDma)) { // in SG mode
+      dmaBDTransfer(size_t(txMem), ByteCount, ByteCount, 1, false);
+	  return XST_SUCCESS;
+    } else { // in simple mode
+      int status = XAxiDma_SimpleTransfer(&axiDma, size_t(txMem), ByteCount, XAXIDMA_DMA_TO_DEVICE);
+      if (XST_SUCCESS != status) {
+         printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
+                size_t(txMem), ByteCount, status);
+      }
+	  return status;
 	}
-
-	return status;
 }
 
 
@@ -747,9 +938,11 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	uint16_t LengthType;
 	uint16_t Length;
 
-	if (XAxiDma_Busy(&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
-	  return 0;
-    }
+    if(XAxiDma_HasSg(&axiDma)) { // in SG mode
+      if (dmaBDCheck(true) == 0) return 0;
+	} else // in simple mode
+	  if (XAxiDma_Busy(&axiDma, XAXIDMA_DEVICE_TO_DMA)) return 0;
+
     // printf("Some Rx frame is received \n");
 
 	/*
@@ -797,10 +990,14 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	/*
 	 * Acknowledge the frame.
 	 */
-	int status = XAxiDma_SimpleTransfer(&axiDma, (UINTPTR)0, XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
-    if (XST_SUCCESS != status) {
-      printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
-		      0, XEL_MAX_FRAME_SIZE, status);
+    if(XAxiDma_HasSg(&axiDma)) // in SG mode
+      dmaBDTransfer(size_t(rxMem), XEL_MAX_FRAME_SIZE, XEL_MAX_FRAME_SIZE, 1, true);
+	else { // in simple mode
+	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+      if (XST_SUCCESS != status) {
+        printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
+		       size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
+	  }
 	}
 
 	return Length;
