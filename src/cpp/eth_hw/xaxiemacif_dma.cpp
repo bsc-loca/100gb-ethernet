@@ -61,6 +61,8 @@
 #include "xlwipconfig.h"
 #include "xparameters.h"
 
+#include "ethdrv.h"
+
 #ifdef CONFIG_XTRACE
 #include "xtrace.h"
 #endif
@@ -81,10 +83,10 @@
 
 #endif
 
-#define XLWIP_CONFIG_N_RX_DESC 64  // default LwIP value is taken to exclude pbuf allocation error (build_app.tcl: bsp config n_rx_descriptors 512)
-#define XLWIP_CONFIG_N_TX_DESC 512 // build_app.tcl: bsp config n_tx_descriptors 512
-#define XLWIP_CONFIG_N_RX_COALESCE 1 // build_app.tcl: n_rx_coalesce = 1 
-#define XLWIP_CONFIG_N_TX_COALESCE 1 // build_app.tcl: n_tx_coalesce = 1 
+#define XLWIP_CONFIG_N_RX_DESC 64 // build_app.tcl: bsp config n_rx_descriptors
+#define XLWIP_CONFIG_N_TX_DESC 64 // build_app.tcl: bsp config n_tx_descriptors
+#define XLWIP_CONFIG_N_RX_COALESCE 1 // build_app.tcl: n_rx_coalesce
+#define XLWIP_CONFIG_N_TX_COALESCE 1 // build_app.tcl: n_tx_coalesce
 
 
 /* Byte alignment of BDs */
@@ -241,11 +243,19 @@ static inline u32_t csum_sub(u32_t csum, u16_t v)
 // 	}
 // }
 
-static inline void *alloc_bdspace(int n_desc)
+static inline void *alloc_bdspace(int n_desc, bool RxnTx)
 {
-	int space = XAxiDma_BdRingMemCalc(BD_ALIGNMENT, n_desc);
-	int padding = BD_ALIGNMENT*2;
-	void *unaligned_mem = mem_malloc(space + padding*4);
+	size_t space = XAxiDma_BdRingMemCalc(BD_ALIGNMENT, n_desc);
+	size_t padding = BD_ALIGNMENT*2;
+	size_t const sgMemAddr = RxnTx ? EthSyst::RX_SG_MEM_ADDR : EthSyst::TX_SG_MEM_ADDR;
+	size_t const sgMemSize = RxnTx ? EthSyst::RX_SG_MEM_SIZE : EthSyst::TX_SG_MEM_SIZE;
+	if (sgMemSize < space + padding*4) {
+      printf("\nERROR: RxnTx=%d, Available %x BD memory is less than required %x for %d BDs at addr %x\r\n",
+	          RxnTx, sgMemSize, space+padding*4, n_desc, sgMemAddr);
+      exit(1);
+	}
+	// void *unaligned_mem = mem_malloc(space + padding*4);
+	void *unaligned_mem = (void *)sgMemAddr;
 	void *aligned_mem =
 	(void *)(((UINTPTR)(unaligned_mem + BD_ALIGNMENT)) & ~(BD_ALIGNMENT - 1));
 
@@ -663,8 +673,8 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 #endif
 
 #if !defined (__aarch64__) && !defined (ARMR5)
-	xaxiemacif->rx_bdspace = alloc_bdspace(XLWIP_CONFIG_N_RX_DESC);
-	xaxiemacif->tx_bdspace = alloc_bdspace(XLWIP_CONFIG_N_TX_DESC);
+	xaxiemacif->rx_bdspace = alloc_bdspace(XLWIP_CONFIG_N_RX_DESC, true);
+	xaxiemacif->tx_bdspace = alloc_bdspace(XLWIP_CONFIG_N_TX_DESC, false);
 #endif
 
 	/* For A53 case Mark the BD Region as uncaheable */
@@ -674,10 +684,8 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 #endif
 
 
-	LWIP_DEBUGF(NETIF_DEBUG, ("rx_bdspace: 0x%08x\r\n",
-												xaxiemacif->rx_bdspace));
-	LWIP_DEBUGF(NETIF_DEBUG, ("tx_bdspace: 0x%08x\r\n",
-												xaxiemacif->tx_bdspace));
+	LWIP_DEBUGF(NETIF_DEBUG, ("rx_bdspace: 0x%08x\r\n",	xaxiemacif->rx_bdspace));
+	LWIP_DEBUGF(NETIF_DEBUG, ("tx_bdspace: 0x%08x\r\n",	xaxiemacif->tx_bdspace));
 
 	if (!xaxiemacif->rx_bdspace || !xaxiemacif->tx_bdspace) {
 		xil_printf("%s@%d: Error: Unable to allocate memory for RX buffer descriptors",
@@ -763,6 +771,9 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 #endif
 			LWIP_DEBUGF(NETIF_DEBUG, ("unable to alloc pbuf in recv_handler\r\n"));
 			return ERR_IF;
+		}
+		else {
+          // printf("pbuf %d is allocated at addr %x payload at addr %x \n", i, size_t(p), size_t(p->payload));
 		}
 		/* Setup the BD. The BD template used in the call to
 		 * XAxiEthernet_SgSetSpace() set the "last" field of all RxBDs.

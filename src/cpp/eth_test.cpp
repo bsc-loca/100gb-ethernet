@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = rand();
         for (size_t addr = 0; addr < sgMemWords; ++addr) ethSyst.sgMem[addr] = rand();
         srand(1);
+        printf("Checking TX memory at addr 0X%x with size %d \n", size_t(ethSyst.txMem), txMemSize);
         for (size_t addr = 0; addr < txMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.txMem[addr] != expectVal) {
@@ -270,6 +271,7 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
+        printf("Checking RX memory at addr 0X%x with size %d \n", size_t(ethSyst.rxMem), rxMemSize);
         for (size_t addr = 0; addr < rxMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.rxMem[addr] != expectVal) {
@@ -277,6 +279,7 @@ int main(int argc, char *argv[])
             exit(1);
           }
         }
+        printf("Checking BD memory at addr 0X%x with size %d \n", size_t(ethSyst.sgMem), sgMemSize);
         for (size_t addr = 0; addr < sgMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.sgMem[addr] != expectVal) {

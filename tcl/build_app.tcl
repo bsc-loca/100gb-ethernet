@@ -28,28 +28,40 @@ domain report
 
 #config the BSP
 bsp setlib -name lwip211
-# additional lwip configurations taken from activated UDP/TCP Perf examples in Vitis GUI
-# for all examples
-#   (DHCP enabling causes lack of dhcp_fine_tmr() and dhcp_coarse_tmr() functions so far)
+#additional lwip configurations taken from activated UDP/TCP Perf examples in Vitis GUI
+#for all examples
+#  (DHCP enabling causes lack of dhcp_fine_tmr() and dhcp_coarse_tmr() functions so far)
 # bsp config lwip_dhcp true
 # bsp config dhcp_does_arp_check true
 bsp config mem_size 524288
 bsp config memp_n_pbuf 1024
-#   suggested pbuf_pool_size value causes dramatic overflow of available uBlaze memory
-# bsp config pbuf_pool_size 16384
-# for TCP client/server only
+#  suggested pbuf_pool_size value 16384 causes dramatic overflow of available uBlaze memory
+#  below pbuf_pool_size value satisfies increased n_rx_descriptors in UDP server case and fits to DMA Rx Mem
+bsp config pbuf_pool_size 512
+#for TCP client/server only
 bsp config memp_n_tcp_seg 1024
-# for TCP client/server only
+#for TCP client/server only
 bsp config tcp_snd_buf 65535
-# for TCP client/server only
+#for TCP client/server only
 bsp config tcp_wnd 65535
-# for TCP client/server and UDP server only
+#for TCP client/server and UDP server only
 # bsp config n_rx_descriptors 512
-# for TCP client/server and UDP client only
-bsp config n_tx_descriptors 512
+#for TCP client/server and UDP client only
+# bsp config n_tx_descriptors 512
 
-# -DPBUF_DEBUG=LWIP_DBG_ON
-bsp config -append extra_compiler_flags {-DDEBUG -DLWIP_DEBUG -DNETIF_DEBUG=LWIP_DBG_ON -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET -I../../../../../../../../../src/cpp/eth_hw}
+#enabling lwip debug messages
+# bsp config icmp_debug  true # causes compile error in icmp.c:253: undefined reference to `lwip_strerr'
+bsp config igmp_debug  true
+# bsp config ip_debug    true
+bsp config lwip_debug  true
+bsp config netif_debug true
+# bsp config pbuf_debug  true
+bsp config sys_debug   true
+bsp config tcp_debug   true
+# bsp config udp_debug   true
+
+bsp config -append extra_compiler_flags {-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
+                                         -Werror=div-by-zero -imacros  ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h}
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc

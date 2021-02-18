@@ -269,6 +269,8 @@ void EthSyst::axiDmaInit() {
   printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
   printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
   printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
+  printf("TxBdRing pointer         = %x  \n", size_t(XAxiDma_GetTxRing(&axiDma)));
+  printf("RxBdRing pointer         = %x  \n", size_t(XAxiDma_GetRxRing(&axiDma)));
   printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
   printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
   printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
