@@ -83,8 +83,8 @@
 
 #endif
 
-#define XLWIP_CONFIG_N_RX_DESC 64 // build_app.tcl: bsp config n_rx_descriptors
-#define XLWIP_CONFIG_N_TX_DESC 64 // build_app.tcl: bsp config n_tx_descriptors
+#define XLWIP_CONFIG_N_RX_DESC 64  // build_app.tcl: bsp config n_rx_descriptors
+#define XLWIP_CONFIG_N_TX_DESC 512 // build_app.tcl: bsp config n_tx_descriptors
 #define XLWIP_CONFIG_N_RX_COALESCE 1 // build_app.tcl: n_rx_coalesce
 #define XLWIP_CONFIG_N_TX_COALESCE 1 // build_app.tcl: n_tx_coalesce
 

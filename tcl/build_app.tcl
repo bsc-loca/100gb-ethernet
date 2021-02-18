@@ -47,7 +47,7 @@ bsp config tcp_wnd 65535
 #for TCP client/server and UDP server only
 # bsp config n_rx_descriptors 512
 #for TCP client/server and UDP client only
-# bsp config n_tx_descriptors 512
+bsp config n_tx_descriptors 512
 
 #enabling lwip debug messages
 # bsp config icmp_debug  true # causes compile error in icmp.c:253: undefined reference to `lwip_strerr'
