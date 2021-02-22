@@ -207,6 +207,112 @@ void EthSyst::ethTxRxDisable() {
 }
 
 
+//***************** Initialization of Interrupt Controller *****************
+void EthSyst::intrCtrlInit() {
+  printf("------- Initializing Interrupt Controller -------\n");
+  // Controlling IntC via Xilinx driver.
+  // Initialize the interrupt controller driver so that it is ready to use
+  int status = XIntc_Initialize(&intrCtrl, XPAR_INTC_0_DEVICE_ID);
+  if (XST_SUCCESS != status) {
+    printf("\nERROR: interrupt controller initialization failed with status %d\n", status);
+    exit(1);
+  }
+  // Perform a self-test to ensure that the hardware was built correctly
+  status = XIntc_SelfTest(&intrCtrl);
+  if (XST_SUCCESS != status) {
+    printf("\nERROR: interrupt controller selftest failed with status %d\n", status);
+    exit(1);
+  }
+}
+
+
+//***************** Connection of specific Interrupt Id *****************
+void EthSyst::intrCtrlConnect(uint8_t intrId, void(*deviceHandler)(void), bool fastIntr) {
+  printf("Connecting fast=%d interrupt %d to the Device Handler \n", fastIntr, intrId);
+  // Connect a device driver handler that will be called when an interrupt for the device occurs,
+  // the device driver handler performs the specific interrupt processing for the device.
+  int status;
+  if (fastIntr)
+       status = XIntc_ConnectFastHandler(&intrCtrl, intrId, (XFastInterruptHandler)deviceHandler);
+  else status = XIntc_Connect           (&intrCtrl, intrId, (    XInterruptHandler)deviceHandler, (void*)0);
+  if (XST_SUCCESS != status) {
+    printf("\nERROR: fast=%d interrupt %d connection with device handler failed with status %d\n", fastIntr, intrId, status);
+    exit(1);
+  }
+  XIntc_Enable(&intrCtrl, intrId); // Enable the interrupt for the device
+}
+// low-level version
+void EthSyst::intrCtrlConnect_l(uint8_t intrId, void(*deviceHandler)(void), bool fastIntr) {
+  printf("Registering fast=%d interrupt %d with the Device Handler \n", fastIntr, intrId);
+  if (fastIntr)
+       XIntc_RegisterFastHandler(XPAR_INTC_0_BASEADDR, intrId, (XFastInterruptHandler)deviceHandler);
+  else XIntc_RegisterHandler    (XPAR_INTC_0_BASEADDR, intrId, (    XInterruptHandler)deviceHandler, (void*)0);
+  XIntc_EnableIntr(XPAR_INTC_0_BASEADDR,
+        XIntc_In32(XPAR_INTC_0_BASEADDR + XIN_IER_OFFSET) | (1<<intrId)); // Enable specific interrupt(s) in the interrupt controller
+}
+
+
+//***************** Disconnection of specific Interrupt Id *****************
+void EthSyst::intrCtrlDisconnect(uint8_t intrId) {
+  printf("Disconnecting interrupt %d from the Device Handler \n", intrId);
+  XIntc_Disable   (&intrCtrl, intrId);
+  XIntc_Disconnect(&intrCtrl, intrId);
+}
+// low-level version
+void EthSyst::intrCtrlDisconnect_l(uint8_t intrId) {
+  printf("Disabling interrupt %d \n", intrId);
+  XIntc_DisableIntr(XPAR_INTC_0_BASEADDR,
+        ~XIntc_In32(XPAR_INTC_0_BASEADDR + XIN_IER_OFFSET) | (1<<intrId));
+}
+
+
+//***************** Starting the Interrupt Controller *****************
+void EthSyst::intrCtrlStart(bool realNsimMode) {
+  printf("Start of Interrupt Controller in real/sim mode=%d \n", realNsimMode);
+  // Start the Interrupt Controller such that interrupts are enabled for all devices that cause interrupts,
+  // specify simulation mode so that an interrupt can be caused by software or a real hardware interrupt.
+  int status = XIntc_Start(&intrCtrl, realNsimMode ? XIN_REAL_MODE : XIN_SIMULATION_MODE);
+  if (XST_SUCCESS != status) {
+    printf("\nERROR: Start of Interrupt Controller in real/simulation mode: %d failed with status %d\n", realNsimMode, status);
+    exit(1);
+  }
+
+  Xil_ExceptionInit(); // Initialize the exception table.
+  // Register the interrupt controller handler with the exception table.
+  Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_InterruptHandler, &intrCtrl);
+  Xil_ExceptionEnable(); // Enable exceptions.
+}
+//low-level version
+void EthSyst::intrCtrlStart_l(bool realNsimMode) {
+  printf("Enabling Interrupt Controller in real/sim mode=%d \n", realNsimMode);
+  // Set the master enable bit.
+  if (realNsimMode) XIntc_MasterEnable(XPAR_INTC_0_BASEADDR);
+  // Here we do not enable hardware interrupts yet since we want to simulate an interrupt from software.
+  else XIntc_Out32(XPAR_INTC_0_BASEADDR + XIN_MER_OFFSET, XIN_INT_MASTER_ENABLE_MASK);
+
+  Xil_ExceptionInit(); // Initialize the exception table.
+  // Register the interrupt controller handler with the exception table.
+  Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_DeviceInterruptHandler, XPAR_INTC_0_DEVICE_ID);
+  Xil_ExceptionEnable(); // Enable exceptions.
+}
+
+
+//***************** Stop of the Interrupt Controller *****************
+void EthSyst::intrCtrlStop() {
+  printf("Stop of Interrupt Controller \n");
+  Xil_ExceptionDisable();
+  Xil_ExceptionRemoveHandler(XIL_EXCEPTION_ID_INT);
+  XIntc_Stop(&intrCtrl);
+}
+//low-level version
+void EthSyst::intrCtrlStop_l() {
+  printf("Disabling Interrupt Controller \n");
+  Xil_ExceptionDisable();
+  Xil_ExceptionRemoveHandler(XIL_EXCEPTION_ID_INT);
+  XIntc_MasterDisable(XPAR_INTC_0_BASEADDR);
+}
+
+
 //***************** Initialization of DMA engine *****************
 void EthSyst::axiDmaInit() {
   printf("------- Initializing DMA -------\n");
@@ -488,6 +594,7 @@ void EthSyst::switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
 
 //***************** Initialization of Full Ethernet System *****************
 void EthSyst::ethSystInit() {
+  intrCtrlInit();
   ethCoreInit(false); // non-loopback mode
   axiDmaInit();
   switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB

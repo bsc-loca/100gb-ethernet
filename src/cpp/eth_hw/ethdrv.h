@@ -192,6 +192,7 @@
 
 /***************************** Include Files *********************************/
 // #include "xparameters.h"
+#include "xintc.h"
 #include "xaxidma.h"
 #include "../../../../project/ethernet_test_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
 #include "xgpio.h"
@@ -322,6 +323,7 @@ class EthSyst {
   uint16_t getReceiveDataLength(uint16_t);
   
   public:
+  XIntc intrCtrl; // Instance of the Interrupt Controller
   XAxiDma axiDma; // AXI DMA instance definitions
   // DMA Scatter-Gather memory Rx/Tx distribution
   #ifndef XPAR_SG_MEM_CPU_S_AXI_BASEADDR
@@ -342,10 +344,22 @@ class EthSyst {
   void ethCoreInit(bool);
   void ethTxRxEnable();
   void ethTxRxDisable();
+
   void axiDmaInit();
   void dmaBDTransfer(size_t, size_t, size_t, size_t, bool);
   void dmaBDPoll(size_t, bool);
   void switch_CPU_DMAxEth_LB(bool, bool);
+
+  void intrCtrlInit();
+  void intrCtrlConnect     (uint8_t, void(*)(void), bool);
+  void intrCtrlConnect_l   (uint8_t, void(*)(void), bool);
+  void intrCtrlDisconnect  (uint8_t);
+  void intrCtrlDisconnect_l(uint8_t);
+  void intrCtrlStart  (bool);
+  void intrCtrlStart_l(bool);
+  void intrCtrlStop  ();
+  void intrCtrlStop_l();
+
   void ethSystInit();
 
   int flushReceive();

@@ -174,6 +174,32 @@ void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
     }
 }
 
+// Test interrupt handlers
+void dmaTxTestFastHandler(void) __attribute__ ((fast_interrupt));
+void dmaRxTestFastHandler(void) __attribute__ ((fast_interrupt));
+
+bool txIntrProcessed;
+void dmaTxTestHandler() {
+  printf("Tx Handler has started: %d\n", txIntrProcessed);
+  // Indicate the interrupt has been processed using a shared variable.
+	txIntrProcessed = true;
+}
+void dmaTxTestFastHandler() {
+  printf("Fast ");
+  dmaTxTestHandler();
+}
+
+bool rxIntrProcessed;
+void dmaRxTestHandler()
+{
+  printf("Rx Handler has started: %d\n", rxIntrProcessed);
+  // Indicate the interrupt has been processed using a shared variable.
+	rxIntrProcessed = true;
+}
+void dmaRxTestFastHandler() {
+  printf("Fast ");
+  dmaRxTestHandler();
+}
 
 int main(int argc, char *argv[])
 {
@@ -479,6 +505,112 @@ int main(int argc, char *argv[])
 
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
         printf("------- DMA Near-end loopback test PASSED -------\n\n");
+
+
+        printf("------- Running Interrupt Controller test -------\n");
+        ethSyst.intrCtrlInit();
+
+        //--- low-level access case ---
+        ethSyst.intrCtrlConnect_l(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestHandler, false);
+        ethSyst.intrCtrlConnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestHandler, false);
+        ethSyst.intrCtrlStart_l(false); // start Interrupt Controller in simulation mode
+        // Simulate the Interrupts.
+        txIntrProcessed = false;
+        rxIntrProcessed = false;
+        // Simulation is done by writing a 1 to the interrupt status bit for the device interrupt.
+	      XIntc_Out32(XPAR_INTC_0_BASEADDR + XIN_ISR_OFFSET, XPAR_ETH_DMA_MM2S_INTROUT_MASK);
+	      XIntc_Out32(XPAR_INTC_0_BASEADDR + XIN_ISR_OFFSET, XPAR_ETH_DMA_S2MM_INTROUT_MASK);
+        // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
+        do {
+         // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
+         printf("Waiting for Tx/Rx DMA handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+         // sleep(1); // in seconds
+	      } while (!txIntrProcessed || !rxIntrProcessed);
+        ethSyst.intrCtrlStop_l();
+        ethSyst.intrCtrlDisconnect_l(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
+        ethSyst.intrCtrlDisconnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+
+        //--- high-level access case ---
+        printf("\n");
+        ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestHandler, false);
+        ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestHandler, false);
+        ethSyst.intrCtrlStart(false); // start Interrupt Controller in simulation mode
+        // Simulate the Interrupts.
+        txIntrProcessed = false;
+        rxIntrProcessed = false;
+	      int status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
+        if (XST_SUCCESS != status) {
+          printf("\nERROR: Simulation of DMA TX Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, status);
+          exit(1);
+        }
+	      status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+        if (XST_SUCCESS != status) {
+          printf("\nERROR: Simulation of DMA RX Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, status);
+          exit(1);
+        }
+        // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
+        do {
+         // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
+         printf("Waiting for Tx/Rx DMA handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+         // sleep(1); // in seconds
+	      } while (!txIntrProcessed || !rxIntrProcessed);
+        ethSyst.intrCtrlStop();
+        ethSyst.intrCtrlDisconnect(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
+        ethSyst.intrCtrlDisconnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+
+
+        if (XPAR_INTC_0_HAS_FAST) {
+          printf("\nChecking fast interrupt mode... \n");
+          //--- low-level access case ---
+          ethSyst.intrCtrlConnect_l(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestFastHandler, true);
+          ethSyst.intrCtrlConnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestFastHandler, true);
+          ethSyst.intrCtrlStart_l(false); // start Interrupt Controller in simulation mode
+          // Simulate the Interrupts.
+          txIntrProcessed = false;
+          rxIntrProcessed = false;
+          // Simulation is done by writing a 1 to the interrupt status bit for the device interrupt.
+	        XIntc_Out32(XPAR_INTC_0_BASEADDR + XIN_ISR_OFFSET, XPAR_ETH_DMA_MM2S_INTROUT_MASK);
+	        XIntc_Out32(XPAR_INTC_0_BASEADDR + XIN_ISR_OFFSET, XPAR_ETH_DMA_S2MM_INTROUT_MASK);
+          // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
+          do {
+           // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
+           printf("Waiting for Tx/Rx DMA fast handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+           // sleep(1); // in seconds
+	        } while (!txIntrProcessed || !rxIntrProcessed);
+          ethSyst.intrCtrlStop_l();
+          ethSyst.intrCtrlDisconnect_l(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
+          ethSyst.intrCtrlDisconnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+
+          //--- high-level access case ---
+          printf("\n");
+          ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestFastHandler, true);
+          ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestFastHandler, true);
+          ethSyst.intrCtrlStart(false); // start Interrupt Controller in simulation mode
+          // Simulate the Interrupts.
+          txIntrProcessed = false;
+          rxIntrProcessed = false;
+	        status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
+          if (XST_SUCCESS != status) {
+            printf("\nERROR: Simulation of DMA TX fast Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, status);
+            exit(1);
+          }
+	        status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+          if (XST_SUCCESS != status) {
+            printf("\nERROR: Simulation of DMA RX fast Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, status);
+            exit(1);
+          }
+          // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
+          do {
+           // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
+           printf("Waiting for Tx/Rx DMA fast handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+           // sleep(1); // in seconds
+	        } while (!txIntrProcessed || !rxIntrProcessed);
+          ethSyst.intrCtrlStop();
+          ethSyst.intrCtrlDisconnect(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
+          ethSyst.intrCtrlDisconnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+        }
+
+        printf("------- Interrupt Controller test PASSED -------\n\n");
       }
       break;
 
