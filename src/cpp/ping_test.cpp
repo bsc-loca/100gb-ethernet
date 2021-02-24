@@ -210,7 +210,8 @@ void PingReqstTest::SendEchoReqFrame()
 	/*
 	 * Transmit the Frame.
 	 */
-	printf("Sending ICMP ping request Pack: %d, Seq: %d, Pack size: %d \n", NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ICMP_PACKET_SIZE);
+	xil_printf("Sending ICMP ping request Pack: %d, Seq: %d, Pack size: %d \n",
+	            NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ICMP_PACKET_SIZE);
 	ethSystPtr->frameSend(TxFrame, ICMP_PACKET_SIZE);
 }
 
@@ -309,7 +310,8 @@ void PingReqstTest::SendArpReqFrame()
 	/*
 	 * Transmit the Frame.
 	 */
-	printf("Sending ARP ping request Pack: %d, Seq: %d, Pack size: %d \n", NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
+	xil_printf("Sending ARP ping request Pack: %d, Seq: %d, Pack size: %d \n",
+	            NUM_OF_PING_REQ_PKTS-NumOfPingReqPkts, SeqNum, ARP_REQ_PKT_SIZE);
 	ethSystPtr->frameSend(TxFrame, ARP_REQ_PKT_SIZE);
 }
 
@@ -449,7 +451,7 @@ int PingReqstTest::ProcessRcvFrame()
 				}
 			}
 			if (DataWrong != 1) {
-				printf("PING PASSED: Packet: %d, Seq: %d, Echo Packet received\r\n",  NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts, SeqNum);
+				xil_printf("PING PASSED: Packet: %d, Seq: %d, Echo Packet received\r\n",  NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts, SeqNum);
 				return XST_SUCCESS;
 			}
 		}
@@ -548,7 +550,7 @@ int PingReqstTest::pingReqst()
 		 * request timed out.
 		 */
 		if (EchoReplyStatus == XST_FAILURE)
-          printf("PING FAILED: Packet: %d, Seq: %d, Request timed out\r\n", NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts, SeqNum);
+          xil_printf("PING FAILED: Packet: %d, Seq: %d, Request timed out\r\n", NUM_OF_PING_REQ_PKTS - NumOfPingReqPkts, SeqNum);
 	}
 	return XST_SUCCESS;
 }
@@ -776,7 +778,7 @@ void PingReplyTest::ProcessRcvFrame()
 					/*
 					 * Transmit the Reply Packet.
 					 */
-	                printf("Sending ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
+	                xil_printf("Sending ARP ping reply %ld with packet size %d \n", NumOfPingReplies, ARP_PACKET_SIZE);
 					ethSystPtr->frameSend(TxFrame, ARP_PACKET_SIZE);
 				}
 			}
@@ -932,7 +934,7 @@ void PingReplyTest::ProcessRcvFrame()
 					/*
 					 * Transmit the frame.
 					 */
-	                printf("Sending ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
+	                xil_printf("Sending ICMP ping reply %ld with packet size %d \n", NumOfPingReplies, ICMP_PACKET_SIZE);
 					ethSystPtr->frameSend(TxFrame, ICMP_PACKET_SIZE);
 
 					/*

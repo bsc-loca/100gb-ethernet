@@ -250,8 +250,8 @@ static inline void *alloc_bdspace(int n_desc, bool RxnTx)
 	size_t const sgMemAddr = RxnTx ? EthSyst::RX_SG_MEM_ADDR : EthSyst::TX_SG_MEM_ADDR;
 	size_t const sgMemSize = RxnTx ? EthSyst::RX_SG_MEM_SIZE : EthSyst::TX_SG_MEM_SIZE;
 	if (sgMemSize < space + padding*4) {
-      printf("\nERROR: RxnTx=%d, Available %x BD memory is less than required %x for %d BDs at addr %x\r\n",
-	          RxnTx, sgMemSize, space+padding*4, n_desc, sgMemAddr);
+      xil_printf("\nERROR: RxnTx=%d, Available %x BD memory is less than required %x for %d BDs at addr %x\r\n",
+	             RxnTx, sgMemSize, space+padding*4, n_desc, sgMemAddr);
       exit(1);
 	}
 	// void *unaligned_mem = mem_malloc(space + padding*4);
@@ -334,7 +334,7 @@ static void setup_rx_bds(XAxiDma_BdRing *rxring)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
-			printf("unable to alloc pbuf in recv_handler\r\n");
+			xil_printf("unable to alloc pbuf in recv_handler\r\n");
 			return;
 		}
 		status = XAxiDma_BdRingAlloc(rxring, 1, &rxbd);
@@ -622,6 +622,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	}
 #endif
 	/* enq to h/w */
+	xil_printf("DMA to send %d buffers from BD %x \n", n_pbufs, size_t(txbdset));
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 
@@ -698,18 +699,18 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 	dmaconfig = XAxiDma_LookupConfigBaseAddr(XPAR_ETH_DMA_BASEADDR);
     // dmaconfig = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
     if (!dmaconfig || dmaconfig->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
-      printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
+      xil_printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
       return ERR_IF;
     }
 	status = XAxiDma_CfgInitialize(&xaxiemacif->axidma, dmaconfig);
     if (XST_SUCCESS != status) {
-      printf("\nERROR: XAxiDma initialization failed with status %ld\n", status);
+      xil_printf("\nERROR: XAxiDma initialization failed with status %ld\n", status);
       return ERR_IF;
     }
     // XAxiDma reset with checking if reset is done 
     status = XAxiDma_Selftest(&xaxiemacif->axidma);
     if (XST_SUCCESS != status) {
-      printf("\nERROR: XAxiDma selftest(reset) failed with status %ld\n", status);
+      xil_printf("\nERROR: XAxiDma selftest(reset) failed with status %ld\n", status);
       return ERR_IF;
     }
 
@@ -773,7 +774,7 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 			return ERR_IF;
 		}
 		else {
-          // printf("pbuf %d is allocated at addr %x payload at addr %x \n", i, size_t(p), size_t(p->payload));
+          // xil_printf("pbuf %d is allocated at addr %x payload at addr %x \n", i, size_t(p), size_t(p->payload));
 		}
 		/* Setup the BD. The BD template used in the call to
 		 * XAxiEthernet_SgSetSpace() set the "last" field of all RxBDs.
@@ -878,13 +879,13 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 	// 		xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
 	// 		(XFastInterruptHandler)axidma_recvfast_handler);
 
-    printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
+    xil_printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
 	        XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
 	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
 			XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_sendfast_handler);
 
-    printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
+    xil_printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
 	        XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
 	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
 			XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
@@ -907,7 +908,7 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 #endif
 	/* Enable EMAC interrupts in the interrupt controller */
 	do {
-        printf("Starting Interrupt Controller at addr 0x%x(%x) \n", xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
+        xil_printf("Starting Interrupt Controller at addr 0x%x(%x) \n", xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
 		/* read current interrupt enable mask */
 		unsigned int cur_mask = XIntc_In32(xtopologyp->intc_baseaddr +
 							XIN_IER_OFFSET);
@@ -1018,7 +1019,7 @@ static void axidma_sendfast_handler(void)
 // static void xaxiemac_errorfast_handler(void)
 // {
 // 	// xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
-// 	printf("MEEP: xaxiemac_errorfast_handler() is not defined so far. \n");
+// 	xil_printf("MEEP: xaxiemac_errorfast_handler() is not defined so far. \n");
 // 	exit(1);
 // }
 #endif

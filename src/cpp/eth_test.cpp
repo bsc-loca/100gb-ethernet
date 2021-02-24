@@ -28,8 +28,8 @@ int tcp_perf_server();
 
 
 void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool txCheck) {
-    printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
-            chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
+    xil_printf("CPU: Transmitting %d whole packets with length %d words (+%d words) to channel with depth %d words \n",
+                chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
     bool fslNrdy = true;
@@ -41,8 +41,8 @@ void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool t
       fsl_isinvalid(fslNrdy);
       fsl_iserror  (fslErr);
       if (!fslNrdy) {
-        printf("\nERROR: Before starting filling Tx channel Rx channel is not empty: FSL0 = %0lX, Empty = %d, Err = %d \n",
-                 getData, fslNrdy, fslErr);
+        xil_printf("\nERROR: Before starting filling Tx channel Rx channel is not empty: FSL0 = %0lX, Empty = %d, Err = %d \n",
+                    getData, fslNrdy, fslErr);
         exit(1);
       }
     }
@@ -89,9 +89,9 @@ void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool t
       }
       fsl_isinvalid(fslNrdy);
       fsl_iserror  (fslErr);
-      // printf("Writing word %d to FSL%d = %0lX, Full = %d, Err = %d \n", word, chan, putData, fslNrdy, fslErr);
+      // xil_printf("Writing word %d to FSL%d = %0lX, Full = %d, Err = %d \n", word, chan, putData, fslNrdy, fslErr);
       if (fslNrdy || fslErr) {
-        printf("\nERROR: Failed write of word %d to FSL%d = %0lX, Full = %d, Err = %d \n", word, chan, putData, fslNrdy, fslErr);
+        xil_printf("\nERROR: Failed write of word %d to FSL%d = %0lX, Full = %d, Err = %d \n", word, chan, putData, fslNrdy, fslErr);
         exit(1);
       }
     }
@@ -100,15 +100,15 @@ void transmitToChan(uint8_t packetWords, uint8_t chanDepth, bool rxCheck, bool t
       putfslx(putData, 0, FSL_NONBLOCKING);
       fsl_isinvalid(fslNrdy);
       if (!fslNrdy) {
-        printf("\nERROR: After filling Tx channel it is still not full\n");
+        xil_printf("\nERROR: After filling Tx channel it is still not full\n");
         exit(1);
       }
     }
 }
 
 void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
-    printf("CPU: Receiving %d whole packets with length %d words (+%d words) from channel with depth %d words \n",
-            chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
+    xil_printf("CPU: Receiving %d whole packets with length %d words (+%d words) from channel with depth %d words \n",
+                chanDepth/packetWords, packetWords, chanDepth%packetWords, chanDepth);
     uint32_t putData = 0;
     uint32_t getData = 0;
     bool fslNrdy = true;
@@ -156,10 +156,10 @@ void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
       }
       fsl_isinvalid(fslNrdy);
       fsl_iserror  (fslErr);
-      // printf("Reading word %d from FSL%d = %0lX, Empty = %d, Err = %d \n", word, chan, getData, fslNrdy, fslErr);
+      // xil_printf("Reading word %d from FSL%d = %0lX, Empty = %d, Err = %d \n", word, chan, getData, fslNrdy, fslErr);
       if (fslNrdy || fslErr || getData!=putData) {
-        printf("\nERROR: Failed read of word %d from FSL%d = %0lX (expected %0lX), Empty = %d, Err = %d \n",
-               word, chan, getData, putData, fslNrdy, fslErr);
+        xil_printf("\nERROR: Failed read of word %d from FSL%d = %0lX (expected %0lX), Empty = %d, Err = %d \n",
+                    word, chan, getData, putData, fslNrdy, fslErr);
         exit(1);
       }
     }
@@ -168,8 +168,8 @@ void receiveFrChan(uint8_t packetWords, uint8_t chanDepth) {
     fsl_isinvalid(fslNrdy);
     fsl_iserror  (fslErr);
     if (!fslNrdy) {
-      printf("\nERROR: After reading out Rx channel it is still not empty: FSL0 = %0lX, Empty = %d, Err = %d \n",
-               getData, fslNrdy, fslErr);
+      xil_printf("\nERROR: After reading out Rx channel it is still not empty: FSL0 = %0lX, Empty = %d, Err = %d \n",
+                  getData, fslNrdy, fslErr);
       exit(1);
     }
 }
@@ -180,24 +180,24 @@ void dmaRxTestFastHandler(void) __attribute__ ((fast_interrupt));
 
 bool txIntrProcessed;
 void dmaTxTestHandler() {
-  printf("Tx Handler has started: %d\n", txIntrProcessed);
+  xil_printf("Tx Handler has started: %d\n", txIntrProcessed);
   // Indicate the interrupt has been processed using a shared variable.
 	txIntrProcessed = true;
 }
 void dmaTxTestFastHandler() {
-  printf("Fast ");
+  xil_printf("Fast ");
   dmaTxTestHandler();
 }
 
 bool rxIntrProcessed;
 void dmaRxTestHandler()
 {
-  printf("Rx Handler has started: %d\n", rxIntrProcessed);
+  xil_printf("Rx Handler has started: %d\n", rxIntrProcessed);
   // Indicate the interrupt has been processed using a shared variable.
 	rxIntrProcessed = true;
 }
 void dmaRxTestFastHandler() {
-  printf("Fast ");
+  xil_printf("Fast ");
   dmaRxTestHandler();
 }
 
@@ -241,31 +241,31 @@ int main(int argc, char *argv[])
 
   while (true) {
 
-    printf("\n");
-    printf("------ Ethernet Test App ------\n");
-    printf("Please enter test mode:\n");
-    printf("  Single board self-diag/loopback tests: l\n");
-    printf("  Two boards diag communication tests:   c\n");
-    printf("  Two boards IP-based tests:             i\n");
-    printf("  Finish:                                f\n");
+    xil_printf("\n");
+    xil_printf("------ Ethernet Test App ------\n");
+    xil_printf("Please enter test mode:\n");
+    xil_printf("  Single board self-diag/loopback tests: l\n");
+    xil_printf("  Two boards diag communication tests:   c\n");
+    xil_printf("  Two boards IP-based tests:             i\n");
+    xil_printf("  Finish:                                f\n");
     char choice;
     scanf("%s", &choice);
-    printf("You have entered: %c\n\n", choice);
+    xil_printf("You have entered: %c\n\n", choice);
 
 
     switch (choice) {
       case 'l': {
-        printf("------- Running CPU Short Loopback test -------\n");
+        xil_printf("------- Running CPU Short Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
         transmitToChan(CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH, true, true);
         receiveFrChan (CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH);
-        printf("------- CPU Short Loopback test PASSED -------\n\n");
+        xil_printf("------- CPU Short Loopback test PASSED -------\n\n");
 
         ethSyst.ethCoreInit(true);
 
-        printf("\n------- Running CPU Near-end Loopback test -------\n");
+        xil_printf("\n------- Running CPU Near-end Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
         sleep(1); // in seconds
@@ -275,11 +275,11 @@ int main(int argc, char *argv[])
     
         receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
-        printf("------- CPU Near-end Loopback test PASSED -------\n\n");
+        xil_printf("------- CPU Near-end Loopback test PASSED -------\n\n");
 
 
-        printf("------- Running DMA Tx/Rx/SG memory test -------\n");
-        printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
+        xil_printf("------- Running DMA Tx/Rx/SG memory test -------\n");
+        xil_printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
         // first clearing previously stored values
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = 0;
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
@@ -289,35 +289,35 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = rand();
         for (size_t addr = 0; addr < sgMemWords; ++addr) ethSyst.sgMem[addr] = rand();
         srand(1);
-        printf("Checking TX memory at addr 0X%x with size %d \n", size_t(ethSyst.txMem), txMemSize);
+        xil_printf("Checking TX memory at addr 0X%x with size %d \n", size_t(ethSyst.txMem), txMemSize);
         for (size_t addr = 0; addr < txMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.txMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, ethSyst.txMem[addr], expectVal);
+            xil_printf("\nERROR: Incorrect readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, ethSyst.txMem[addr], expectVal);
             exit(1);
           }
         }
-        printf("Checking RX memory at addr 0X%x with size %d \n", size_t(ethSyst.rxMem), rxMemSize);
+        xil_printf("Checking RX memory at addr 0X%x with size %d \n", size_t(ethSyst.rxMem), rxMemSize);
         for (size_t addr = 0; addr < rxMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], expectVal);
+            xil_printf("\nERROR: Incorrect readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], expectVal);
             exit(1);
           }
         }
-        printf("Checking BD memory at addr 0X%x with size %d \n", size_t(ethSyst.sgMem), sgMemSize);
+        xil_printf("Checking BD memory at addr 0X%x with size %d \n", size_t(ethSyst.sgMem), sgMemSize);
         for (size_t addr = 0; addr < sgMemWords; ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.sgMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect readback of word at addr %0X from SG Mem: %0lX, expected: %0lX \n", addr, ethSyst.sgMem[addr], expectVal);
+            xil_printf("\nERROR: Incorrect readback of word at addr %0X from SG Mem: %0lX, expected: %0lX \n", addr, ethSyst.sgMem[addr], expectVal);
             exit(1);
           }
         }
-        printf("------- DMA Tx/Rx/SG memory test PASSED -------\n\n");
+        xil_printf("------- DMA Tx/Rx/SG memory test PASSED -------\n\n");
 
         ethSyst.axiDmaInit();
 
-        printf("\n------- Running DMA-CPU Short Loopback test -------\n");
+        xil_printf("\n------- Running DMA-CPU Short Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  true);  // Tx switch: DMA->LB, CPU->Eth
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA
         sleep(1); // in seconds
@@ -326,8 +326,8 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
 
         size_t packets = DMA_TX_LOOPBACK_DEPTH/CPU_PACKET_WORDS;
-        printf("DMA: Transmitting %d whole packets with length %d bytes to channel with depth %d words\n",
-                packets, CPU_PACKET_LEN, DMA_TX_LOOPBACK_DEPTH);
+        xil_printf("DMA: Transmitting %d whole packets with length %d bytes to channel with depth %d words\n",
+                    packets, CPU_PACKET_LEN, DMA_TX_LOOPBACK_DEPTH);
         size_t dmaMemPtr = size_t(ethSyst.txMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, false);
@@ -336,21 +336,21 @@ int main(int argc, char *argv[])
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
 		      while (XAxiDma_Busy(&(ethSyst.axiDma), XAXIDMA_DMA_TO_DEVICE)) {
-            printf("Waiting untill Tx transfer %d finishes \n", packet);
+            xil_printf("Waiting untill Tx transfer %d finishes \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
           dmaMemPtr += CPU_PACKET_LEN;
         }
 
         receiveFrChan(CPU_PACKET_WORDS, packets * CPU_PACKET_WORDS);
-        printf("------- DMA-CPU Short Loopback test PASSED -------\n\n");
+        xil_printf("------- DMA-CPU Short Loopback test PASSED -------\n\n");
 
 
-        printf("------- Running CPU-DMA Short Loopback test -------\n");
+        xil_printf("------- Running CPU-DMA Short Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         ethSyst.switch_CPU_DMAxEth_LB(false, true);  // Rx switch: LB->DMA, Eth->CPU
         sleep(1); // in seconds
@@ -360,7 +360,7 @@ int main(int argc, char *argv[])
         packets = DMA_RX_LOOPBACK_DEPTH/CPU_PACKET_WORDS;
         transmitToChan(CPU_PACKET_WORDS, packets * CPU_PACKET_WORDS, true, CPU_PACKET_WORDS==1);
 
-        printf("DMA: Receiving %d whole packets with length %d bytes from channel with depth %d words \n",
+        xil_printf("DMA: Receiving %d whole packets with length %d bytes from channel with depth %d words \n",
                 packets, CPU_PACKET_LEN, DMA_RX_LOOPBACK_DEPTH);
         dmaMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
@@ -370,11 +370,11 @@ int main(int argc, char *argv[])
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
 		      while (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) {
-            printf("Waiting untill Rx transfer %d finishes \n", packet);
+            xil_printf("Waiting untill Rx transfer %d finishes \n", packet);
             // sleep(1); // in seconds, user wait process
     		  }
           dmaMemPtr += CPU_PACKET_LEN;
@@ -384,14 +384,14 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < (packets * CPU_PACKET_LEN)/sizeof(uint32_t); ++addr) {
           uint32_t expectVal = rand(); 
           if (ethSyst.rxMem[addr] != expectVal) {
-            printf("\nERROR: Incorrect data recieved by DMA at addr %0X: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], expectVal);
+            xil_printf("\nERROR: Incorrect data recieved by DMA at addr %0X: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], expectVal);
             exit(1);
           }
         }
-        printf("------- CPU-DMA Short Loopback test PASSED -------\n\n");
+        xil_printf("------- CPU-DMA Short Loopback test PASSED -------\n\n");
 
 
-        printf("------- Running DMA Short Loopback test -------\n");
+        xil_printf("------- Running DMA Short Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  true); // Tx switch: DMA->LB, CPU->Eth
         ethSyst.switch_CPU_DMAxEth_LB(false, true); // Rx switch: LB->DMA, Eth->CPU
         sleep(1); // in seconds
@@ -401,8 +401,8 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
 
         packets = txrxMemSize/DMA_PACKET_LEN;
-        printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
-                packets, DMA_PACKET_LEN, txrxMemSize);
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
+                    packets, DMA_PACKET_LEN, txrxMemSize);
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
         size_t dmaRxMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
@@ -414,17 +414,17 @@ int main(int argc, char *argv[])
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
 		      status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, DMA_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
          	if (XST_SUCCESS != status) {
-            printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
             exit(1);
 	        }
 		      while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
 			           (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
-            // printf("Waiting untill last Tx/Rx transfer finishes \n");
+            // xil_printf("Waiting untill last Tx/Rx transfer finishes \n");
             // sleep(1); // in seconds, user wait process
           }
           dmaTxMemPtr += DMA_PACKET_LEN;
@@ -433,14 +433,14 @@ int main(int argc, char *argv[])
 
         for (size_t addr = 0; addr < (packets * DMA_PACKET_LEN)/sizeof(uint32_t); ++addr) {
           if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
-            printf("\nERROR: Incorrect data transferred by DMA at addr %d: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
+            xil_printf("\nERROR: Incorrect data transferred by DMA at addr %d: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
             exit(1);
           }
         }
-        printf("------- DMA Short Loopback test PASSED -------\n\n");
+        xil_printf("------- DMA Short Loopback test PASSED -------\n\n");
 
 
-        printf("------- Running DMA Near-end loopback test -------\n");
+        xil_printf("------- Running DMA Near-end loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
         sleep(1); // in seconds
@@ -452,8 +452,8 @@ int main(int argc, char *argv[])
         ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
         packets = txrxMemSize/ETH_MEMPACK_SIZE;
-        printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
-                packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
+                    packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         dmaTxMemPtr = size_t(ethSyst.txMem);
         dmaRxMemPtr = size_t(ethSyst.rxMem);
         for (size_t packet = 0; packet < packets; packet++) {
@@ -468,17 +468,17 @@ int main(int argc, char *argv[])
           else {
 		        int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	  if (XST_SUCCESS != status) {
-              printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+              xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
               exit(1);
 	          }
 		        status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, packTxLen, XAXIDMA_DMA_TO_DEVICE);
          	  if (XST_SUCCESS != status) {
-              printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+              xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
               exit(1);
 	          }
 		        while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
 			             (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
-              // printf("Waiting untill Tx/Rx transfer finishes \n");
+              // xil_printf("Waiting untill Tx/Rx transfer finishes \n");
               // sleep(1); // in seconds, user wait process
     	  	  }
           }
@@ -491,23 +491,23 @@ int main(int argc, char *argv[])
           size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
           if (word < (ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR))/sizeof(uint32_t)) {
             if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
-              printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
-                      word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
+              xil_printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
+                          word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
               exit(1);
             }
           }
           else if (ethSyst.rxMem[addr] != 0) {
-              printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
-                      word, packet, addr, ethSyst.rxMem[addr]);
+              xil_printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
+                         word, packet, addr, ethSyst.rxMem[addr]);
               exit(1);
           }
         }
 
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
-        printf("------- DMA Near-end loopback test PASSED -------\n\n");
+        xil_printf("------- DMA Near-end loopback test PASSED -------\n\n");
 
 
-        printf("------- Running Interrupt Controller test -------\n");
+        xil_printf("------- Running Interrupt Controller test -------\n");
         ethSyst.intrCtrlInit();
 
         //--- low-level access case ---
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
         // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
         do {
          // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
-         printf("Waiting for Tx/Rx DMA handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+         xil_printf("Waiting for Tx/Rx DMA handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
          // sleep(1); // in seconds
 	      } while (!txIntrProcessed || !rxIntrProcessed);
         ethSyst.intrCtrlStop_l();
@@ -531,7 +531,7 @@ int main(int argc, char *argv[])
         ethSyst.intrCtrlDisconnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
 
         //--- high-level access case ---
-        printf("\n");
+        xil_printf("\n");
         ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestHandler, false);
         ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestHandler, false);
         ethSyst.intrCtrlStart(false); // start Interrupt Controller in simulation mode
@@ -540,18 +540,18 @@ int main(int argc, char *argv[])
         rxIntrProcessed = false;
 	      int status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
         if (XST_SUCCESS != status) {
-          printf("\nERROR: Simulation of DMA TX Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, status);
+          xil_printf("\nERROR: Simulation of DMA TX Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, status);
           exit(1);
         }
 	      status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
         if (XST_SUCCESS != status) {
-          printf("\nERROR: Simulation of DMA RX Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, status);
+          xil_printf("\nERROR: Simulation of DMA RX Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, status);
           exit(1);
         }
         // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
         do {
          // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
-         printf("Waiting for Tx/Rx DMA handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+         xil_printf("Waiting for Tx/Rx DMA handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
          // sleep(1); // in seconds
 	      } while (!txIntrProcessed || !rxIntrProcessed);
         ethSyst.intrCtrlStop();
@@ -560,7 +560,7 @@ int main(int argc, char *argv[])
 
 
         if (XPAR_INTC_0_HAS_FAST) {
-          printf("\nChecking fast interrupt mode... \n");
+          xil_printf("\nChecking fast interrupt mode... \n");
           //--- low-level access case ---
           ethSyst.intrCtrlConnect_l(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestFastHandler, true);
           ethSyst.intrCtrlConnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestFastHandler, true);
@@ -574,7 +574,7 @@ int main(int argc, char *argv[])
           // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
           do {
            // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
-           printf("Waiting for Tx/Rx DMA fast handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+           xil_printf("Waiting for Tx/Rx DMA fast handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
            // sleep(1); // in seconds
 	        } while (!txIntrProcessed || !rxIntrProcessed);
           ethSyst.intrCtrlStop_l();
@@ -582,7 +582,7 @@ int main(int argc, char *argv[])
           ethSyst.intrCtrlDisconnect_l(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
 
           //--- high-level access case ---
-          printf("\n");
+          xil_printf("\n");
           ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, dmaTxTestFastHandler, true);
           ethSyst.intrCtrlConnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, dmaRxTestFastHandler, true);
           ethSyst.intrCtrlStart(false); // start Interrupt Controller in simulation mode
@@ -591,18 +591,18 @@ int main(int argc, char *argv[])
           rxIntrProcessed = false;
 	        status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID);
           if (XST_SUCCESS != status) {
-            printf("\nERROR: Simulation of DMA TX fast Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, status);
+            xil_printf("\nERROR: Simulation of DMA TX fast Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, status);
             exit(1);
           }
 	        status = XIntc_SimulateIntr(&(ethSyst.intrCtrl), XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
           if (XST_SUCCESS != status) {
-            printf("\nERROR: Simulation of DMA RX fast Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, status);
+            xil_printf("\nERROR: Simulation of DMA RX fast Interrupt %d failed with status %d\n", XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, status);
             exit(1);
           }
           // Wait for the interrupts to be processed, if the interrupt does not occur this loop will wait forever.
           do {
            // If the interrupt occurred which is indicated by the global variable which is set in the device driver handler, stop waiting.
-           printf("Waiting for Tx/Rx DMA fast handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
+           xil_printf("Waiting for Tx/Rx DMA fast handlers are executed: %d/%d \n", txIntrProcessed, rxIntrProcessed);
            // sleep(1); // in seconds
 	        } while (!txIntrProcessed || !rxIntrProcessed);
           ethSyst.intrCtrlStop();
@@ -610,22 +610,22 @@ int main(int argc, char *argv[])
           ethSyst.intrCtrlDisconnect(XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
         }
 
-        printf("------- Interrupt Controller test PASSED -------\n\n");
+        xil_printf("------- Interrupt Controller test PASSED -------\n\n");
       }
       break;
 
 
       case 'c': {
-        printf("------- Running 2-boards communication test -------\n");
-        printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
+        xil_printf("------- Running 2-boards communication test -------\n");
+        xil_printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
         char confirm;
         scanf("%s", &confirm);
-        printf("%c\n", confirm);
+        xil_printf("%c\n", confirm);
         if (confirm != 'y') break;
 
         ethSyst.ethCoreInit(false);
 
-        printf("------- CPU 2-boards communication test -------\n");
+        xil_printf("------- CPU 2-boards communication test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, true); // Rx switch: Eth->CPU, LB->DMA
         sleep(1); // in seconds
@@ -636,11 +636,11 @@ int main(int argc, char *argv[])
         sleep(1); // in seconds, delay not to use blocking read in receive process
         receiveFrChan (CPU_PACKET_WORDS, TRANSMIT_FIFO_DEPTH);
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
-        printf("------- CPU 2-boards communication test PASSED -------\n\n");
+        xil_printf("------- CPU 2-boards communication test PASSED -------\n\n");
 
         ethSyst.axiDmaInit();
 
-        printf("------- DMA 2-boards communication test -------\n");
+        xil_printf("------- DMA 2-boards communication test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
         sleep(1); // in seconds
@@ -652,7 +652,7 @@ int main(int argc, char *argv[])
         ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
         size_t packets = txrxMemSize/ETH_MEMPACK_SIZE;
-        printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
                 packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
         size_t dmaRxMemPtr = size_t(ethSyst.rxMem);
@@ -669,18 +669,18 @@ int main(int argc, char *argv[])
           else {
 		        int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
          	  if (XST_SUCCESS != status) {
-              printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+              xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
               exit(1);
 	          }
             if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
 		        status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, packTxLen, XAXIDMA_DMA_TO_DEVICE);
          	  if (XST_SUCCESS != status) {
-              printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+              xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
               exit(1);
 	          }
 		        while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
 			             (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
-              // printf("Waiting untill Tx/Rx transfer finishes \n");
+              // xil_printf("Waiting untill Tx/Rx transfer finishes \n");
               // sleep(1); // in seconds, user wait process
             }
           }
@@ -693,121 +693,121 @@ int main(int argc, char *argv[])
           size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
           if (word < (ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR))/sizeof(uint32_t)) {
             if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
-              printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
-                      word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
+              xil_printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
+                          word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
               exit(1);
             }
           }
           else if (ethSyst.rxMem[addr] != 0) {
-              printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
-                      word, packet, addr, ethSyst.rxMem[addr]);
+              xil_printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
+                          word, packet, addr, ethSyst.rxMem[addr]);
               exit(1);
           }
         }
 
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
-        printf("------- DMA 2-boards communication test PASSED -------\n\n");
+        xil_printf("------- DMA 2-boards communication test PASSED -------\n\n");
       }
       break;
 
 
       case 'i': {
-        printf("------- Running 2-boards IP-based tests -------\n");
-        printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
+        xil_printf("------- Running 2-boards IP-based tests -------\n");
+        xil_printf("Please make sure that the same mode is running on the other side and confirm with 'y'...\n");
         char confirm;
         scanf("%s", &confirm);
-        printf("%c\n", confirm);
+        xil_printf("%c\n", confirm);
         if (confirm != 'y') break;
 
         ethSyst.ethSystInit();
 
         while (true) {
-          printf("Please choose particular IP-based test:\n");
-          printf("  Ping reply test:      p\n");
-          printf("  Ping request test:    q\n");
-          printf("  LwIP UDP Perf Server: u\n");
-          printf("  LwIP UDP Perf Client: d\n");
-          printf("  LwIP TCP Perf Server: t\n");
-          printf("  LwIP TCP Perf Client: c\n");
-          printf("  Exit to main menu:    e\n");
+          xil_printf("Please choose particular IP-based test:\n");
+          xil_printf("  Ping reply test:      p\n");
+          xil_printf("  Ping request test:    q\n");
+          xil_printf("  LwIP UDP Perf Server: u\n");
+          xil_printf("  LwIP UDP Perf Client: d\n");
+          xil_printf("  LwIP TCP Perf Server: t\n");
+          xil_printf("  LwIP TCP Perf Client: c\n");
+          xil_printf("  Exit to main menu:    e\n");
           char choice;
           scanf("%s", &choice);
-          printf("You have entered: %c\n\n", choice);
+          xil_printf("You have entered: %c\n\n", choice);
 
           switch (choice) {
             case 'p': {
-              printf("------- Ping Reply test -------\n");
+              xil_printf("------- Ping Reply test -------\n");
               PingReplyTest pingReplyTest(&ethSyst);
               int status = pingReplyTest.pingReply();
               if (status != XST_SUCCESS) {
-                printf("\nERROR: Ping Reply test failed with status %d\n", status);
+                xil_printf("\nERROR: Ping Reply test failed with status %d\n", status);
                 exit(1);
               }
-              printf("------- Ping Reply test finished -------\n\n");
+              xil_printf("------- Ping Reply test finished -------\n\n");
             }
             break;
 
             case 'q': {
-              printf("------- Ping Request test -------\n");
+              xil_printf("------- Ping Request test -------\n");
               PingReqstTest pingReqstTest(&ethSyst);
             	int status = pingReqstTest.pingReqst();
 	            if (status != XST_SUCCESS) {
-		            printf("\nERROR: Ping Request test failed with status %d\n", status);
+		            xil_printf("\nERROR: Ping Request test failed with status %d\n", status);
                 exit(1);
 	            }
-              printf("------- Ping Request test finished -------\n\n");
+              xil_printf("------- Ping Request test finished -------\n\n");
             }
             break;
 
             case 'u': {
-              printf("------- LwIP UDP Perf Server -------\n");
+              xil_printf("------- LwIP UDP Perf Server -------\n");
             	int status = udp_perf_server();
 	            if (status != XST_SUCCESS) {
-		            printf("\nERROR: LwIP UDP Perf Server failed with status %d\n", status);
+		            xil_printf("\nERROR: LwIP UDP Perf Server failed with status %d\n", status);
                 exit(1);
 	            }
-              printf("------- LwIP UDP Perf Server finished -------\n\n");
+              xil_printf("------- LwIP UDP Perf Server finished -------\n\n");
             }
             break;
 
             case 'd': {
-              printf("------- LwIP UDP Perf Client -------\n");
+              xil_printf("------- LwIP UDP Perf Client -------\n");
             	int status = udp_perf_client();
 	            if (status != XST_SUCCESS) {
-		            printf("\nERROR: LwIP UDP Perf Client failed with status %d\n", status);
+		            xil_printf("\nERROR: LwIP UDP Perf Client failed with status %d\n", status);
                 exit(1);
 	            }
-              printf("------- LwIP UDP Perf Client finished -------\n\n");
+              xil_printf("------- LwIP UDP Perf Client finished -------\n\n");
             }
             break;
 
             case 't': {
-              printf("------- LwIP TCP Perf Server -------\n");
+              xil_printf("------- LwIP TCP Perf Server -------\n");
             	int status = tcp_perf_server();
 	            if (status != XST_SUCCESS) {
-		            printf("\nERROR: LwIP TCP Perf Server failed with status %d\n", status);
+		            xil_printf("\nERROR: LwIP TCP Perf Server failed with status %d\n", status);
                 exit(1);
 	            }
-              printf("------- LwIP TCP Perf Server finished -------\n\n");
+              xil_printf("------- LwIP TCP Perf Server finished -------\n\n");
             }
             break;
 
             case 'c': {
-              printf("------- LwIP TCP Perf Client -------\n");
+              xil_printf("------- LwIP TCP Perf Client -------\n");
             	int status = tcp_perf_client();
 	            if (status != XST_SUCCESS) {
-		            printf("\nERROR: LwIP TCP Perf Client failed with status %d\n", status);
+		            xil_printf("\nERROR: LwIP TCP Perf Client failed with status %d\n", status);
                 exit(1);
 	            }
-              printf("------- LwIP TCP Perf Client finished -------\n\n");
+              xil_printf("------- LwIP TCP Perf Client finished -------\n\n");
             }
             break;
 
             case 'e':
-              printf("------- Exiting to main menu -------\n");
+              xil_printf("------- Exiting to main menu -------\n");
               break;
 
-            default: printf("Please choose right option\n");
+            default: xil_printf("Please choose right option\n");
           }
           if (choice == 'e') break;
         }
@@ -817,10 +817,10 @@ int main(int argc, char *argv[])
       break;
 
       case 'f':
-        printf("------- Exiting the app -------\n");
+        xil_printf("------- Exiting the app -------\n");
         return(0);
 
-      default: printf("Please choose right option\n");
+      default: xil_printf("Please choose right option\n");
     }
   }
 }

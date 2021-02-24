@@ -41,18 +41,18 @@
 
 //This code discovers above sizes being inserted to :
 //- memp_init() function of memp.c:
-//   printf("UDP_PCB        size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct udp_pcb))),         MEMP_NUM_UDP_PCB);
-//   printf("TCP_PCB        size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct tcp_pcb))),         MEMP_NUM_TCP_PCB);
-//   printf("TCP_PCB_LISTEN size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct tcp_pcb_listen))),  MEMP_NUM_TCP_PCB_LISTEN);
-//   printf("TCP_SEG        size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct tcp_seg))),         MEMP_NUM_TCP_SEG);
-//   printf("REASSDATA      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct ip_reassdata))),    MEMP_NUM_REASSDATA);
-//   printf("FRAG_PBUF      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct pbuf_custom_ref))), MEMP_NUM_FRAG_PBUF);
-//   printf("ARP_QUEUE      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct etharp_q_entry))),  MEMP_NUM_ARP_QUEUE);
-//   printf("PBUF           size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct pbuf))),            MEMP_NUM_PBUF);
-//   printf("PBUF_POOL      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) +
+//   xil_printf("UDP_PCB        size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct udp_pcb))),         MEMP_NUM_UDP_PCB);
+//   xil_printf("TCP_PCB        size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct tcp_pcb))),         MEMP_NUM_TCP_PCB);
+//   xil_printf("TCP_PCB_LISTEN size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct tcp_pcb_listen))),  MEMP_NUM_TCP_PCB_LISTEN);
+//   xil_printf("TCP_SEG        size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct tcp_seg))),         MEMP_NUM_TCP_SEG);
+//   xil_printf("REASSDATA      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct ip_reassdata))),    MEMP_NUM_REASSDATA);
+//   xil_printf("FRAG_PBUF      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct pbuf_custom_ref))), MEMP_NUM_FRAG_PBUF);
+//   xil_printf("ARP_QUEUE      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct etharp_q_entry))),  MEMP_NUM_ARP_QUEUE);
+//   xil_printf("PBUF           size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(sizeof(struct pbuf))),            MEMP_NUM_PBUF);
+//   xil_printf("PBUF_POOL      size %d x %d \n", (MEMP_SIZE + MEMP_ALIGN_SIZE(LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) +
 //                                                                         LWIP_MEM_ALIGN_SIZE(PBUF_POOL_BUFSIZE) )), PBUF_POOL_SIZE);
 //- mem_init() function of mem.c:
-//   printf("ram_heap       size %d + %d \n", (LWIP_MEM_ALIGN_SIZE(MEM_SIZE) +
+//   xil_printf("ram_heap       size %d + %d \n", (LWIP_MEM_ALIGN_SIZE(MEM_SIZE) +
 //                                             LWIP_MEM_ALIGN_SIZE(sizeof(struct mem))));
 
 // Actual allocation function, sizes and memory fit violations are detected at compile time by zero division

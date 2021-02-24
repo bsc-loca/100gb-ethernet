@@ -56,7 +56,7 @@ using namespace EthDefs;
 
 //***************** Initialization of 100Gb Ethernet Core *****************
 void EthSyst::ethCoreInit(bool gtLoopback) {
-  printf("------- Initializing Ethernet Core -------\n");
+  xil_printf("------- Initializing Ethernet Core -------\n");
   // GT control via pins 
   uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
   enum { GT_CTRL = XGPIO_DATA_OFFSET / sizeof(uint32_t) };
@@ -68,160 +68,160 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
                                  RESET_REG_USR_TX_RESET_DEFAULT
   };
 
-  printf("Soft reset of Ethernet core:\n");
-  printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  xil_printf("Soft reset of Ethernet core:\n");
+  xil_printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
   ethCore[GT_RESET_REG] = GT_RESET_REG_GT_RESET_ALL_MASK;
   ethCore[RESET_REG]    = ETH_FULL_RST_ASSERT;
-  printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  xil_printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
   if (ethCore[RESET_REG] != ETH_FULL_RST_ASSERT) {
-    printf("\nERROR: Incorrect Ethernet core RESET_REG readback, expected: %0X \n", ETH_FULL_RST_ASSERT);
+    xil_printf("\nERROR: Incorrect Ethernet core RESET_REG readback, expected: %0X \n", ETH_FULL_RST_ASSERT);
     exit(1);
   }
   sleep(1); // in seconds
   ethCore[RESET_REG] = ETH_FULL_RST_DEASSERT;
-  printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n\n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
+  xil_printf("GT_RESET_REG: %0lX, RESET_REG: %0lX \n\n", ethCore[GT_RESET_REG], ethCore[RESET_REG]);
   if (ethCore[RESET_REG] != ETH_FULL_RST_DEASSERT) {
-    printf("\nERROR: Incorrect Ethernet core RESET_REG readback, expected: %0X \n", ETH_FULL_RST_DEASSERT);
+    xil_printf("\nERROR: Incorrect Ethernet core RESET_REG readback, expected: %0X \n", ETH_FULL_RST_DEASSERT);
     exit(1);
   }
   sleep(1); // in seconds
   
   // Reading status via pins
-  printf("GT_POWER_PINS: %0lX \n",       gtCtrl  [GT_CTRL]);
-  printf("STAT_TX_STATUS_PINS: %0lX \n", rxtxCtrl[TX_CTRL]);
-  printf("STAT_RX_STATUS_PINS: %0lX \n", rxtxCtrl[RX_CTRL]);
+  xil_printf("GT_POWER_PINS: %0lX \n",       gtCtrl  [GT_CTRL]);
+  xil_printf("STAT_TX_STATUS_PINS: %0lX \n", rxtxCtrl[TX_CTRL]);
+  xil_printf("STAT_RX_STATUS_PINS: %0lX \n", rxtxCtrl[RX_CTRL]);
   // Reading status and other regs via AXI
-  printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
-  printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
-  printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
-  printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
-  printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
-  printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
-  printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
-  printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
-  printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
-  printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
-  printf("\n");
+  xil_printf("GT_RESET_REG:          %0lX \n", ethCore[GT_RESET_REG]);
+  xil_printf("RESET_REG:             %0lX \n", ethCore[RESET_REG]);
+  xil_printf("CORE_VERSION_REG:      %0lX \n", ethCore[CORE_VERSION_REG]);
+  xil_printf("CORE_MODE_REG:         %0lX \n", ethCore[CORE_MODE_REG]);
+  xil_printf("SWITCH_CORE_MODE_REG:  %0lX \n", ethCore[SWITCH_CORE_MODE_REG]);
+  xil_printf("CONFIGURATION_TX_REG1: %0lX \n", ethCore[CONFIGURATION_TX_REG1]);
+  xil_printf("CONFIGURATION_RX_REG1: %0lX \n", ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
+  xil_printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
+  xil_printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
+  xil_printf("\n");
   
   if (gtLoopback) {
-    printf("Enabling Near-End PMA Loopback\n");
+    xil_printf("Enabling Near-End PMA Loopback\n");
     // gtCtrl[GT_CTRL] = 0x2222; // via GPIO: https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
-    printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    xil_printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
-    printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    xil_printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     if (ethCore[GT_LOOPBACK_REG] != GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK) {
-      printf("\nERROR: Incorrect Ethernet core GT_LOOPBACK_REG readback, expected: %0X \n", GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK);
+      xil_printf("\nERROR: Incorrect Ethernet core GT_LOOPBACK_REG readback, expected: %0X \n", GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK);
       exit(1);
     }
   } else {
-    printf("Enabling GT normal operation with no loopback\n");
+    xil_printf("Enabling GT normal operation with no loopback\n");
     // gtCtrl[GT_CTRL] = 0; // via GPIO
-    printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    xil_printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT;
-    printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
+    xil_printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     if (ethCore[GT_LOOPBACK_REG] != GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT) {
-      printf("\nERROR: Incorrect Ethernet core GT_LOOPBACK_REG readback, expected: %0X \n", GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT);
+      xil_printf("\nERROR: Incorrect Ethernet core GT_LOOPBACK_REG readback, expected: %0X \n", GT_LOOPBACK_REG_CTL_GT_LOOPBACK_DEFAULT);
       exit(1);
     }
   }
-  printf("\n");
+  xil_printf("\n");
   
-  printf("Ethernet core bring-up.\n");
+  xil_printf("Ethernet core bring-up.\n");
   // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
   // via GPIO
   // rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
   // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
   // via AXI
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
-                                                  ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
+                                                      ethCore[CONFIGURATION_RX_REG1]);
   ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
   ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
-                                                  ethCore[CONFIGURATION_RX_REG1]);
-  printf("\n");
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
+                                                      ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("\n");
                                                  
-  printf("Waiting for RX is aligned and RFI is got from TX side...\n");
+  xil_printf("Waiting for RX is aligned and RFI is got from TX side...\n");
   while(!(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
         !(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-    printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
-                                                   ethCore[STAT_RX_STATUS_REG]);
+    xil_printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
+                                                       ethCore[STAT_RX_STATUS_REG]);
     sleep(1); // in seconds, user wait process
   }
-  printf("RX is aligned and RFI is got from TX side:\n");
-  printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-  printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
-                                                 ethCore[STAT_RX_STATUS_REG]);
-  printf("\n");
+  xil_printf("RX is aligned and RFI is got from TX side:\n");
+  xil_printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+  xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
+                                                     ethCore[STAT_RX_STATUS_REG]);
+  xil_printf("\n");
 
-  printf("Disabling TX_SEND_RFI:\n");
+  xil_printf("Disabling TX_SEND_RFI:\n");
   if (!gtLoopback) sleep(1); // in seconds, timeout to make sure opposite side also got RFI
   // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_DEFAULT; // via GPIO
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
-                                                  ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
+                                                      ethCore[CONFIGURATION_RX_REG1]);
   ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_DEFAULT;
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
-                                                  ethCore[CONFIGURATION_RX_REG1]);
-  printf("\n");
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX\n", ethCore[CONFIGURATION_TX_REG1],
+                                                      ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("\n");
 
-  printf("Waiting for RFI is stopped...\n");
+  xil_printf("Waiting for RFI is stopped...\n");
   while(!(ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_ALIGNED_MASK) ||
          (ethCore[STAT_RX_STATUS_REG] & STAT_RX_STATUS_REG_STAT_RX_REMOTE_FAULT_MASK)) {
-    printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-    printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
-                                                   ethCore[STAT_RX_STATUS_REG]);
+    xil_printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+    xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
+                                                       ethCore[STAT_RX_STATUS_REG]);
     sleep(1); // in seconds, user wait process
   }
-  printf("RFI is stopped:\n");
-  printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
-  printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
-                                                 ethCore[STAT_RX_STATUS_REG]);
+  xil_printf("RFI is stopped:\n");
+  xil_printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
+  xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
+                                                     ethCore[STAT_RX_STATUS_REG]);
 }
 
 
 //***************** Enabling Ethernet core Tx/Rx *****************
 void EthSyst::ethTxRxEnable() {
-  printf("Enabling Ethernet TX/RX:\n");
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
-                                                   ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("Enabling Ethernet TX/RX:\n");
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                       ethCore[CONFIGURATION_RX_REG1]);
   // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK; // via GPIO
   // rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK; // via GPIO
   ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_MASK;
   ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
-                                                   ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                       ethCore[CONFIGURATION_RX_REG1]);
 }
 
 
 //***************** Disabling Ethernet core Tx/Rx *****************
 void EthSyst::ethTxRxDisable() {
-  printf("Disabling Ethernet TX/RX:\n");
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
-                                                   ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("Disabling Ethernet TX/RX:\n");
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                       ethCore[CONFIGURATION_RX_REG1]);
   // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT; // via GPIO
   // rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT; // via GPIO
   ethCore[CONFIGURATION_TX_REG1] = CONFIGURATION_TX_REG1_CTL_TX_ENABLE_DEFAULT;
   ethCore[CONFIGURATION_RX_REG1] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_DEFAULT;
-  printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
-                                                   ethCore[CONFIGURATION_RX_REG1]);
+  xil_printf("CONFIGURATION_TX/RX_REG1: %0lX/%0lX \n", ethCore[CONFIGURATION_TX_REG1],
+                                                       ethCore[CONFIGURATION_RX_REG1]);
 }
 
 
 //***************** Initialization of Interrupt Controller *****************
 void EthSyst::intrCtrlInit() {
-  printf("------- Initializing Interrupt Controller -------\n");
+  xil_printf("------- Initializing Interrupt Controller -------\n");
   // Direct control of IntC: https://www.xilinx.com/support/documentation/ip_documentation/axi_intc/v4_1/pg099-axi-intc.pdf
   // Controlling IntC via Xilinx driver.
   // Initialize the interrupt controller driver so that it is ready to use
   int status = XIntc_Initialize(&intrCtrl, XPAR_INTC_0_DEVICE_ID);
   if (XST_SUCCESS != status) {
-    printf("\nERROR: interrupt controller initialization failed with status %d\n", status);
+    xil_printf("\nERROR: interrupt controller initialization failed with status %d\n", status);
     exit(1);
   }
   // Perform a self-test to ensure that the hardware was built correctly
   status = XIntc_SelfTest(&intrCtrl);
   if (XST_SUCCESS != status) {
-    printf("\nERROR: interrupt controller selftest failed with status %d\n", status);
+    xil_printf("\nERROR: interrupt controller selftest failed with status %d\n", status);
     exit(1);
   }
 }
@@ -229,7 +229,7 @@ void EthSyst::intrCtrlInit() {
 
 //***************** Connection of specific Interrupt Id *****************
 void EthSyst::intrCtrlConnect(uint8_t intrId, void(*deviceHandler)(void), bool fastIntr) {
-  printf("Connecting fast=%d interrupt %d to the Device Handler \n", fastIntr, intrId);
+  xil_printf("Connecting fast=%d interrupt %d to the Device Handler \n", fastIntr, intrId);
   // Connect a device driver handler that will be called when an interrupt for the device occurs,
   // the device driver handler performs the specific interrupt processing for the device.
   int status;
@@ -237,14 +237,14 @@ void EthSyst::intrCtrlConnect(uint8_t intrId, void(*deviceHandler)(void), bool f
        status = XIntc_ConnectFastHandler(&intrCtrl, intrId, (XFastInterruptHandler)deviceHandler);
   else status = XIntc_Connect           (&intrCtrl, intrId, (    XInterruptHandler)deviceHandler, (void*)0);
   if (XST_SUCCESS != status) {
-    printf("\nERROR: fast=%d interrupt %d connection with device handler failed with status %d\n", fastIntr, intrId, status);
+    xil_printf("\nERROR: fast=%d interrupt %d connection with device handler failed with status %d\n", fastIntr, intrId, status);
     exit(1);
   }
   XIntc_Enable(&intrCtrl, intrId); // Enable the interrupt for the device
 }
 // low-level version
 void EthSyst::intrCtrlConnect_l(uint8_t intrId, void(*deviceHandler)(void), bool fastIntr) {
-  printf("Registering fast=%d interrupt %d with the Device Handler \n", fastIntr, intrId);
+  xil_printf("Registering fast=%d interrupt %d with the Device Handler \n", fastIntr, intrId);
   if (fastIntr)
        XIntc_RegisterFastHandler(XPAR_INTC_0_BASEADDR, intrId, (XFastInterruptHandler)deviceHandler);
   else XIntc_RegisterHandler    (XPAR_INTC_0_BASEADDR, intrId, (    XInterruptHandler)deviceHandler, (void*)0);
@@ -255,13 +255,13 @@ void EthSyst::intrCtrlConnect_l(uint8_t intrId, void(*deviceHandler)(void), bool
 
 //***************** Disconnection of specific Interrupt Id *****************
 void EthSyst::intrCtrlDisconnect(uint8_t intrId) {
-  printf("Disconnecting interrupt %d from the Device Handler \n", intrId);
+  xil_printf("Disconnecting interrupt %d from the Device Handler \n", intrId);
   XIntc_Disable   (&intrCtrl, intrId);
   XIntc_Disconnect(&intrCtrl, intrId);
 }
 // low-level version
 void EthSyst::intrCtrlDisconnect_l(uint8_t intrId) {
-  printf("Disabling interrupt %d \n", intrId);
+  xil_printf("Disabling interrupt %d \n", intrId);
   XIntc_DisableIntr(XPAR_INTC_0_BASEADDR,
         ~XIntc_In32(XPAR_INTC_0_BASEADDR + XIN_IER_OFFSET) | (1<<intrId));
 }
@@ -269,12 +269,12 @@ void EthSyst::intrCtrlDisconnect_l(uint8_t intrId) {
 
 //***************** Starting the Interrupt Controller *****************
 void EthSyst::intrCtrlStart(bool realNsimMode) {
-  printf("Start of Interrupt Controller in real/sim mode=%d \n", realNsimMode);
+  xil_printf("Start of Interrupt Controller in real/sim mode=%d \n", realNsimMode);
   // Start the Interrupt Controller such that interrupts are enabled for all devices that cause interrupts,
   // specify simulation mode so that an interrupt can be caused by software or a real hardware interrupt.
   int status = XIntc_Start(&intrCtrl, realNsimMode ? XIN_REAL_MODE : XIN_SIMULATION_MODE);
   if (XST_SUCCESS != status) {
-    printf("\nERROR: Start of Interrupt Controller in real/simulation mode: %d failed with status %d\n", realNsimMode, status);
+    xil_printf("\nERROR: Start of Interrupt Controller in real/simulation mode: %d failed with status %d\n", realNsimMode, status);
     exit(1);
   }
 
@@ -285,7 +285,7 @@ void EthSyst::intrCtrlStart(bool realNsimMode) {
 }
 //low-level version
 void EthSyst::intrCtrlStart_l(bool realNsimMode) {
-  printf("Enabling Interrupt Controller in real/sim mode=%d \n", realNsimMode);
+  xil_printf("Enabling Interrupt Controller in real/sim mode=%d \n", realNsimMode);
   // Set the master enable bit.
   if (realNsimMode) XIntc_MasterEnable(XPAR_INTC_0_BASEADDR);
   // Here we do not enable hardware interrupts yet since we want to simulate an interrupt from software.
@@ -300,14 +300,14 @@ void EthSyst::intrCtrlStart_l(bool realNsimMode) {
 
 //***************** Stop of the Interrupt Controller *****************
 void EthSyst::intrCtrlStop() {
-  printf("Stop of Interrupt Controller \n");
+  xil_printf("Stop of Interrupt Controller \n");
   Xil_ExceptionDisable();
   Xil_ExceptionRemoveHandler(XIL_EXCEPTION_ID_INT);
   XIntc_Stop(&intrCtrl);
 }
 //low-level version
 void EthSyst::intrCtrlStop_l() {
-  printf("Disabling Interrupt Controller \n");
+  xil_printf("Disabling Interrupt Controller \n");
   Xil_ExceptionDisable();
   Xil_ExceptionRemoveHandler(XIL_EXCEPTION_ID_INT);
   XIntc_MasterDisable(XPAR_INTC_0_BASEADDR);
@@ -316,7 +316,7 @@ void EthSyst::intrCtrlStop_l() {
 
 //***************** Initialization of DMA engine *****************
 void EthSyst::axiDmaInit() {
-  printf("------- Initializing DMA -------\n");
+  xil_printf("------- Initializing DMA -------\n");
   // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
   uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
   enum {
@@ -330,61 +330,61 @@ void EthSyst::axiDmaInit() {
   // Initialize the XAxiDma device.
   XAxiDma_Config *cfgPtr = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
   if (!cfgPtr || cfgPtr->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
-    printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
+    xil_printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
     exit(1);
   }
   // XAxiDma definitions initialization
   int status = XAxiDma_CfgInitialize(&axiDma, cfgPtr);
   if (XST_SUCCESS != status) {
-    printf("\nERROR: XAxiDma initialization failed with status %d\n", status);
+    xil_printf("\nERROR: XAxiDma initialization failed with status %d\n", status);
     exit(1);
   }
   // XAxiDma reset with checking if reset is done 
   status = XAxiDma_Selftest(&axiDma);
   if (XST_SUCCESS != status) {
-    printf("\nERROR: XAxiDma selftest(reset) failed with status %d\n", status);
+    xil_printf("\nERROR: XAxiDma selftest(reset) failed with status %d\n", status);
     exit(1);
   }
   // Setups for Simple and Scatter-Gather modes
   if(!XAxiDma_HasSg(&axiDma)) {
-    printf("XAxiDma is configured in Simple mode \n");
+    xil_printf("XAxiDma is configured in Simple mode \n");
     // Disable interrupts, we use polling mode
     XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
     XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
   } else {
-    printf("XAxiDma is configured in Scatter-Gather mode \n");
+    xil_printf("XAxiDma is configured in Scatter-Gather mode \n");
 	dmaBDSetup(false); // setup of Tx BD ring
     dmaBDSetup(true ); // setup of Rx BD ring
   }
 
-  printf("XAxiDma is initialized and reset: \n");
-  printf("HasSg                    = %d  \n", axiDma.HasSg);
-  printf("Initialized              = %d  \n", axiDma.Initialized);
-  printf("RegBase                  = %d  \n", axiDma.RegBase);
-  printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
-  printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
-  printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
-  printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
-  printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
-  printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
-  printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
-  printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
-  printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
-  printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
-  printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
-  printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
-  printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
-  printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
-  printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
-  printf("TxBdRing pointer         = %x  \n", size_t(XAxiDma_GetTxRing(&axiDma)));
-  printf("RxBdRing pointer         = %x  \n", size_t(XAxiDma_GetRxRing(&axiDma)));
-  printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
-  printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
-  printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
-  printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
+  xil_printf("XAxiDma is initialized and reset: \n");
+  xil_printf("HasSg                    = %d  \n", axiDma.HasSg);
+  xil_printf("Initialized              = %d  \n", axiDma.Initialized);
+  xil_printf("RegBase                  = %d  \n", axiDma.RegBase);
+  xil_printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
+  xil_printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
+  xil_printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
+  xil_printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
+  xil_printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
+  xil_printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
+  xil_printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
+  xil_printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
+  xil_printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
+  xil_printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
+  xil_printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
+  xil_printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
+  xil_printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
+  xil_printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
+  xil_printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
+  xil_printf("TxBdRing pointer         = %x  \n", size_t(XAxiDma_GetTxRing(&axiDma)));
+  xil_printf("RxBdRing pointer         = %x  \n", size_t(XAxiDma_GetRxRing(&axiDma)));
+  xil_printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
+  xil_printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
+  xil_printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
+  xil_printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
 
-  printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
-  printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
+  xil_printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
+  xil_printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
 }
 
 
@@ -409,11 +409,11 @@ void EthSyst::dmaBDSetup(bool RxnTx)
 	uint32_t BdCount = XAxiDma_BdRingCntCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT, sgMemSize);
 	int Status = XAxiDma_BdRingCreate(BdRingPtr, sgMemAddr, sgMemAddr, XAXIDMA_BD_MINIMUM_ALIGNMENT, BdCount);
 	if (Status != XST_SUCCESS) {
-      printf("\nERROR: RxnTx=%d, Creation of BD ring with %ld BDs at addr %x failed with status %d\r\n",
-	          RxnTx, BdCount, sgMemAddr, Status);
+      xil_printf("\nERROR: RxnTx=%d, Creation of BD ring with %ld BDs at addr %x failed with status %d\r\n",
+	               RxnTx, BdCount, sgMemAddr, Status);
       exit(1);
 	}
-    printf("RxnTx=%d, DMA BD memory size %x at addr %x, BD ring with %ld BDs created \n", RxnTx, sgMemSize, sgMemAddr, BdCount);
+    xil_printf("RxnTx=%d, DMA BD memory size %x at addr %x, BD ring with %ld BDs created \n", RxnTx, sgMemSize, sgMemAddr, BdCount);
 	if (RxnTx) rxBdCount = BdCount;
 	else       txBdCount = BdCount;
 
@@ -422,15 +422,15 @@ void EthSyst::dmaBDSetup(bool RxnTx)
 	XAxiDma_BdClear(&BdTemplate);
 	Status = XAxiDma_BdRingClone(BdRingPtr, &BdTemplate);
 	if (Status != XST_SUCCESS) {
-      printf("\nERROR: RxnTx=%d, Clone of BD ring failed with status %d\r\n", RxnTx, Status);
+      xil_printf("\nERROR: RxnTx=%d, Clone of BD ring failed with status %d\r\n", RxnTx, Status);
       exit(1);
 	}
 
 	// Start DMA channel
 	Status = XAxiDma_BdRingStart(BdRingPtr);
 	if (Status != XST_SUCCESS) {
-		printf("\nERROR: RxnTx=%d, Start of BD ring failed with status %d\r\n", RxnTx, Status);
-        exit(1);
+		xil_printf("\nERROR: RxnTx=%d, Start of BD ring failed with status %d\r\n", RxnTx, Status);
+    exit(1);
 	}
 }
 
@@ -443,10 +443,10 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 	                                    XAxiDma_GetTxRing(&axiDma);
 
 	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (packets > 1) printf("RxnTx=%d, DMA in SG mode: %ld free BDs of %ld are available to transfer %d packets \n",
-	                         RxnTx, freeBdCount, RxnTx ? rxBdCount:txBdCount , packets);
+    if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld free BDs of %ld are available to transfer %d packets \n",
+	                               RxnTx, freeBdCount, RxnTx ? rxBdCount:txBdCount , packets);
 	if (packets > freeBdCount) {
-      printf("\nERROR: RxnTx=%d, Insufficient %ld free BDs to transfer %d packets \r\n", RxnTx, freeBdCount, packets);
+      xil_printf("\nERROR: RxnTx=%d, Insufficient %ld free BDs to transfer %d packets \r\n", RxnTx, freeBdCount, packets);
       exit(1);
 	}
 
@@ -454,11 +454,11 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 	XAxiDma_Bd* BdPtr;
 	int Status = XAxiDma_BdRingAlloc(BdRingPtr, packets, &BdPtr);
 	if (Status != XST_SUCCESS) {
-      printf("\nERROR: RxnTx=%d, Allocation of BD ring with %d BDs failed with status %d\r\n", RxnTx, packets, Status);
+      xil_printf("\nERROR: RxnTx=%d, Allocation of BD ring with %d BDs failed with status %d\r\n", RxnTx, packets, Status);
       exit(1);
 	}
 	freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (packets > 1) printf("RxnTx=%d, DMA in SG mode: %ld free BDs are available after BDs allocation \n", RxnTx, freeBdCount);
+    if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld free BDs are available after BDs allocation \n", RxnTx, freeBdCount);
 
 
 	XAxiDma_Bd* CurBdPtr = BdPtr;
@@ -466,15 +466,15 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 	  // Set up the BD using the information of the packet to transmit
 	  Status = XAxiDma_BdSetBufAddr(CurBdPtr, bufAddr);
 	  if (Status != XST_SUCCESS) {
-	    printf("\nERROR: RxnTx=%d, Set of transfer buffer at addr %x on BD %x failed for packet %d with status %d\r\n",
-		         RxnTx, bufAddr, size_t(CurBdPtr), packet, Status);
+	    xil_printf("\nERROR: RxnTx=%d, Set of transfer buffer at addr %x on BD %x failed for packet %d with status %d\r\n",
+		              RxnTx, bufAddr, size_t(CurBdPtr), packet, Status);
         exit(1);
 	  }
 
 	  Status = XAxiDma_BdSetLength(CurBdPtr, packLen, BdRingPtr->MaxTransferLen);
 	  if (Status != XST_SUCCESS) {
-	    printf("\nERROR: RxnTx=%d, Set of transfer length %d on BD %x failed for packet %d  with status %d\r\n",
-		         RxnTx, packLen, size_t(CurBdPtr), packet, Status);
+	    xil_printf("\nERROR: RxnTx=%d, Set of transfer length %d on BD %x failed for packet %d  with status %d\r\n",
+		              RxnTx, packLen, size_t(CurBdPtr), packet, Status);
         exit(1);
 	  }
 
@@ -482,7 +482,7 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
         int Status = XAxiDma_BdSetAppWord(CurBdPtr, XAXIDMA_LAST_APPWORD, packLen);
         // If Set app length failed, it is not fatal
         if (Status != XST_SUCCESS) {
-          printf("RxnTx=%d, Tx control stream: set app word failed for packet %d with status %d\r\n", RxnTx, packet, Status);
+          xil_printf("RxnTx=%d, Tx control stream: set app word failed for packet %d with status %d\r\n", RxnTx, packet, Status);
         }
       }
 
@@ -496,11 +496,11 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
 	}
 
-	// Give the BD to DMA to kick off the transfer
-	Status = XAxiDma_BdRingToHw(BdRingPtr, packets, BdPtr);
-	if (Status != XST_SUCCESS) {
-		printf("\nERROR: RxnTx=%d, Submit of BD ring with %d BDs to hw failed with status %d\r\n", RxnTx, packets, Status);
-        exit(1);
+  // Give the BD to DMA to kick off the transfer
+  Status = XAxiDma_BdRingToHw(BdRingPtr, packets, BdPtr);
+  if (Status != XST_SUCCESS) {
+    xil_printf("\nERROR: RxnTx=%d, Submit of BD ring with %d BDs to hw failed with status %d\r\n", RxnTx, packets, Status);
+    exit(1);
 	}
 }
 
@@ -516,20 +516,20 @@ void EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
 	XAxiDma_Bd *BdPtr;
 	uint32_t ProcessedBdCount = 0;
 	while (ProcessedBdCount < packets) {
-      // printf("RxnTx=%d, Waiting untill %d BD transfers finish: %ld \n", RxnTx, packets, ProcessedBdCount);
+      // xil_printf("RxnTx=%d, Waiting untill %d BD transfers finish: %ld \n", RxnTx, packets, ProcessedBdCount);
       // sleep(1); // in seconds, user wait process
       ProcessedBdCount += XAxiDma_BdRingFromHw(BdRingPtr, XAXIDMA_ALL_BDS, &BdPtr);
 	}
 
 	// Free all processed BDs for future transfers
-	int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
-	if (status != XST_SUCCESS) {
-	  printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
-      exit(1);
+  int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
+  if (status != XST_SUCCESS) {
+    xil_printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
+    exit(1);
 	}
 	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (packets > 1) printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs are available after their release \n",
-	                         RxnTx, ProcessedBdCount, freeBdCount);
+    if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs are available after their release \n",
+	                               RxnTx, ProcessedBdCount, freeBdCount);
 }
 
 
@@ -546,13 +546,13 @@ uint32_t EthSyst::dmaBDCheck(bool RxnTx)
 
 	// Free all processed BDs for future transfers
 	int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
-	if (status != XST_SUCCESS) {
-	  printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
-      exit(1);
+  if (status != XST_SUCCESS) {
+    xil_printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
+    exit(1);
 	}
 	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (ProcessedBdCount > 1) printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are done, %ld free BDs are available after their release \n",
-	                                  RxnTx, ProcessedBdCount, freeBdCount);
+    if (ProcessedBdCount > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are done, %ld free BDs are available after their release \n",
+	                                        RxnTx, ProcessedBdCount, freeBdCount);
     return ProcessedBdCount;
 }
 
@@ -566,30 +566,30 @@ void EthSyst::switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
         MI_MUX = XAXIS_SCR_MI_MUX_START_OFFSET / sizeof(uint32_t)
        };
 
-  if (txNrx) printf("TX ");
-  else       printf("RX ");
-  printf("Stream Switch state:\n");
-  printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  if (txNrx) xil_printf("TX ");
+  else       xil_printf("RX ");
+  xil_printf("Stream Switch state:\n");
+  xil_printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
   if (cpu2eth_dma2lb) {
-    printf("Connecting CPU to Ethernet core, DMA to Short LB, ");
+    xil_printf("Connecting CPU to Ethernet core, DMA to Short LB, ");
     strSwitch[MI_MUX+0] = 1; // connect Out0(Tx:LB /Rx:CPU) to In1(Tx:DMA/Rx:Eth)
     strSwitch[MI_MUX+1] = 0; // connect Out1(Tx:Eth/Rx:DMA) to In0(Tx:CPU/Rx:LB)
   } else {
-    printf("Connecting DMA to Ethernet core, CPU to Short LB, ");
+    xil_printf("Connecting DMA to Ethernet core, CPU to Short LB, ");
     strSwitch[MI_MUX+0] = 0; // connect Out0(Tx:LB /Rx:CPU) to In0(Tx:CPU/Rx:LB)
     strSwitch[MI_MUX+1] = 1; // connect Out1(Tx:Eth/Rx:DMA) to In1(Tx:DMA/Rx:Eth)
   }
   if (strSwitch[MI_MUX+0] != uint32_t( cpu2eth_dma2lb) ||
       strSwitch[MI_MUX+1] != uint32_t(!cpu2eth_dma2lb)) {
-    printf("\nERROR: Incorrect Stream Switch control readback: Out0 = %0lX, Out1 = %0lX, expected: Out0 = %0X, Out1 = %0X \n",
-             strSwitch[MI_MUX], strSwitch[MI_MUX+1], cpu2eth_dma2lb, !cpu2eth_dma2lb);
+    xil_printf("\nERROR: Incorrect Stream Switch control readback: Out0 = %0lX, Out1 = %0lX, expected: Out0 = %0X, Out1 = %0X \n",
+                strSwitch[MI_MUX], strSwitch[MI_MUX+1], cpu2eth_dma2lb, !cpu2eth_dma2lb);
     exit(1);
   }
-  printf("Commiting the setting\n");
+  xil_printf("Commiting the setting\n");
   strSwitch[SW_CTR] = XAXIS_SCR_CTRL_REG_UPDATE_MASK;
-  printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
-  printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
-  printf("\n");
+  xil_printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  xil_printf("Control = %0lX, Out0 = %0lX, Out1 = %0lX \n", strSwitch[SW_CTR], strSwitch[MI_MUX], strSwitch[MI_MUX+1]);
+  xil_printf("\n");
 }
 
 
@@ -602,7 +602,7 @@ void EthSyst::ethSystInit() {
   switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
   ethTxRxEnable();
   sleep(1); // in seconds
-  printf("\n------- Physical connection is established -------\n");
+  xil_printf("\n------- Physical connection is established -------\n");
 }
 
 
@@ -614,18 +614,18 @@ int EthSyst::flushReceive() {
 	  do {
         dmaBDTransfer(size_t(rxMem), XEL_MAX_FRAME_SIZE, XEL_MAX_FRAME_SIZE, 1, true);
         rxdBDs = dmaBDCheck(true);
-	    printf("Flushing %ld Rx transfers \n", rxdBDs);
+	    xil_printf("Flushing %ld Rx transfers \n", rxdBDs);
 	  } while (rxdBDs != 0);
   } else // in simple mode
     while ((XAxiDma_ReadReg(axiDma.RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
 	       !XAxiDma_Busy   (&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
       int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
       if (XST_SUCCESS != status) {
-        printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
-               size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
+        xil_printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
+                   size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
         return status;
       }
-	  printf("Flushing Rx data... \n");
+	  xil_printf("Flushing Rx data... \n");
     }
 
   return XST_SUCCESS;
@@ -825,13 +825,13 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
       XAxiDma_BdRing* BdRingPtr = XAxiDma_GetTxRing(&axiDma);
 	  while (size_t(XAxiDma_BdRingGetFreeCnt(BdRingPtr)) < txBdCount) {
         uint32_t txdBDs = dmaBDCheck(false);
-        if (txdBDs > 1) printf("DMA SG mode: Waiting untill previous Tx transfer finishes: %ld \n", txdBDs);
+        if (txdBDs > 1) xil_printf("DMA SG mode: Waiting untill previous Tx transfer finishes: %ld \n", txdBDs);
         // sleep(1); // in seconds, user wait process
 	  }
 	} else // in simple mode
       while (!(XAxiDma_ReadReg(axiDma.TxBdRing.ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) &&
 	           XAxiDma_Busy   (&axiDma, XAXIDMA_DMA_TO_DEVICE)) {
-        printf("DMA simple mode: Waiting untill previous Tx transfer finishes \n");
+        xil_printf("DMA simple mode: Waiting untill previous Tx transfer finishes \n");
         // sleep(1); // in seconds, user wait process
       }
 
@@ -847,7 +847,7 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
     } else { // in simple mode
       int status = XAxiDma_SimpleTransfer(&axiDma, size_t(txMem), ByteCount, XAXIDMA_DMA_TO_DEVICE);
       if (XST_SUCCESS != status) {
-         printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
+         xil_printf("\nERROR: Ethernet XAxiDma Tx transfer from addr %0X with lenth %d failed with status %d\n",
                 size_t(txMem), ByteCount, status);
       }
 	  return status;
@@ -875,7 +875,7 @@ uint16_t EthSyst::getReceiveDataLength(uint16_t headerOffset) {
 #else
 	uint16_t length = rxMem[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT;
 #endif
-    printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", size_t(rxMem), length, headerOffset);
+    xil_printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", size_t(rxMem), length, headerOffset);
 
 	return length;
 }
@@ -1053,7 +1053,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	} else // in simple mode
 	  if (XAxiDma_Busy(&axiDma, XAXIDMA_DEVICE_TO_DMA)) return 0;
 
-    // printf("Some Rx frame is received \n");
+    // xil_printf("Some Rx frame is received \n");
 
 	/*
 	 * Get the length of the frame that arrived.
@@ -1105,7 +1105,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	else { // in simple mode
 	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
       if (XST_SUCCESS != status) {
-        printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
+        xil_printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
 		       size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
 	  }
 	}

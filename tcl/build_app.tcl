@@ -60,6 +60,7 @@ bsp config sys_debug   true
 bsp config tcp_debug   true
 # bsp config udp_debug   true
 
+# -DETHARP_DEBUG=LWIP_DBG_ON
 bsp config -append extra_compiler_flags {-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
                                          -Werror=div-by-zero -imacros  ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h}
 # bsp regenerate
@@ -173,7 +174,7 @@ importsources -name eth_test -path ./src/cpp/
 app config -name eth_test -set build-config release
 app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og -DLWIP_DEBUG -DNETIF_DEBUG=LWIP_DBG_ON}
 # by default:_STACK_SIZE=0x400, _HEAP_SIZE=0x800
-app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x10000}
+app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x80000}
 # app config -name eth_test -add libraries xil   # (-l for lib of drivers for components from the platform (XSA), linked automatically (-L,-l))
 # app config -name eth_test -add libraries lwip4 # (-l for lwIP lib, linked automatically (-L,-l))
 #report app configs
