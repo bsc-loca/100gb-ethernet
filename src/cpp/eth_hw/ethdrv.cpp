@@ -210,6 +210,7 @@ void EthSyst::ethTxRxDisable() {
 //***************** Initialization of Interrupt Controller *****************
 void EthSyst::intrCtrlInit() {
   printf("------- Initializing Interrupt Controller -------\n");
+  // Direct control of IntC: https://www.xilinx.com/support/documentation/ip_documentation/axi_intc/v4_1/pg099-axi-intc.pdf
   // Controlling IntC via Xilinx driver.
   // Initialize the interrupt controller driver so that it is ready to use
   int status = XIntc_Initialize(&intrCtrl, XPAR_INTC_0_DEVICE_ID);

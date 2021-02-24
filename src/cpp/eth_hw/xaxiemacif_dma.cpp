@@ -100,7 +100,7 @@
  */
 static void axidma_sendfast_handler(void) __attribute__ ((fast_interrupt));
 static void axidma_recvfast_handler(void) __attribute__ ((fast_interrupt));
-static void xaxiemac_errorfast_handler(void) __attribute__ ((fast_interrupt));
+// static void xaxiemac_errorfast_handler(void) __attribute__ ((fast_interrupt));
 
 /**************** Variable Declarations **************************************/
 /** Variables for Fast Interrupt handlers ***/
@@ -866,16 +866,28 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 	/* Register axiethernet interrupt with interrupt controller as Fast
 							Interrupts */
 
-	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.TemacIntr,
-			(XFastInterruptHandler)xaxiemac_errorfast_handler);
+	// XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+	// 		xaxiemacif->axi_ethernet.Config.TemacIntr,
+	// 		(XFastInterruptHandler)xaxiemac_errorfast_handler);
 
+	// XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+	// 		xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
+	// 		(XFastInterruptHandler)axidma_sendfast_handler);
+
+	// XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+	// 		xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
+	// 		(XFastInterruptHandler)axidma_recvfast_handler);
+
+    printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
+	        XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
 	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
+			XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_sendfast_handler);
 
+    printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
+	        XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
 	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
+			XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_recvfast_handler);
 #else
 	/* Register axiethernet interrupt with interrupt controller */
@@ -895,18 +907,28 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 #endif
 	/* Enable EMAC interrupts in the interrupt controller */
 	do {
+        printf("Starting Interrupt Controller at addr 0x%x(%x) \n", xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
 		/* read current interrupt enable mask */
 		unsigned int cur_mask = XIntc_In32(xtopologyp->intc_baseaddr +
 							XIN_IER_OFFSET);
 
 		/* form new mask enabling AXIDMA & axiethernet interrupts */
-		cur_mask = cur_mask
-			| (1 << xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr)
-			| (1 << xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr)
-			| (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
+		cur_mask = cur_mask |
+			// | (1 << xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr)
+			// | (1 << xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr)
+			// | (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
+			(1 << XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID) |
+			(1 << XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
 
 		/* set new mask */
 		XIntc_EnableIntr(xtopologyp->intc_baseaddr, cur_mask);
+
+        // Set the master enable bit.
+        XIntc_MasterEnable(xtopologyp->intc_baseaddr);
+        Xil_ExceptionInit(); // Initialize the exception table.
+        // Register the interrupt controller handler with the exception table.
+        Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_DeviceInterruptHandler, XPAR_INTC_0_DEVICE_ID);
+        Xil_ExceptionEnable(); // Enable exceptions.
 	} while (0);
 #else
 #ifdef OS_IS_XILKERNEL
@@ -993,10 +1015,10 @@ static void axidma_sendfast_handler(void)
 }
 
 /****************************** Fast Error Handler ***************************/
-static void xaxiemac_errorfast_handler(void)
-{
-	// xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
-	printf("MEEP: xaxiemac_errorfast_handler() is not defined so far. \n");
-	exit(1);
-}
+// static void xaxiemac_errorfast_handler(void)
+// {
+// 	// xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
+// 	printf("MEEP: xaxiemac_errorfast_handler() is not defined so far. \n");
+// 	exit(1);
+// }
 #endif

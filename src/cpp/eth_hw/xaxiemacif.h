@@ -90,7 +90,7 @@ typedef struct {
 #else
 	XAxiDma      axidma;
 #endif
-	XAxiEthernet axi_ethernet;
+	// XAxiEthernet axi_ethernet;
 
 	/* queue to store overflow packets */
 	pq_queue_t *recv_q;
