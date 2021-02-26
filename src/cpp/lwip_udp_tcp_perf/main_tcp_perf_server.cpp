@@ -26,7 +26,7 @@
  *
  */
 
-#include <stdio.h>
+// #include <stdio.h>
 #include "xparameters.h"
 #include "netif/xadapter.h"
 #include "platform.h"
@@ -220,7 +220,8 @@ int tcp_perf_server()
 			tcp_slowtmr();
 			TcpSlowTmrFlag = 0;
 		}
-		xemacif_input(netif);
+		int n_packets = xemacif_input(netif);
+		if (n_packets) xil_printf("TCP server: Packet(s) received: %d \n", n_packets);
 	}
 
 	/* never reached */

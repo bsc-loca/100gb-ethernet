@@ -1,5 +1,5 @@
 //***************************** Include Files *********************************
-#include <stdio.h>
+// #include <stdio.h>
 #include <unistd.h>
 
 #include "ping_test.h"

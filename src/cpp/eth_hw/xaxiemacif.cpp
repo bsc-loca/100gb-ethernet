@@ -28,7 +28,7 @@
  *
  */
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <string.h>
 
 #include <xparameters.h>
@@ -251,6 +251,9 @@ int xaxiemacif_input(struct netif *netif)
 		if (p == NULL)
 			return 0;
 
+        xil_printf("Packet is received at addr %x with payload at addr: %x; PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n",
+  	                p, p->payload, p->len, p->tot_len, p->ref, p->next);
+
 		/* points to packet payload, which starts with an Ethernet header */
 		ethhdr = (eth_hdr*)p->payload;
 
@@ -272,6 +275,7 @@ int xaxiemacif_input(struct netif *netif)
 			case ETHTYPE_PPPOE:
 #endif /* PPPOE_SUPPORT */
 				/* full packet send to tcpip_thread to process */
+				xil_printf("Received packet type: 0x%x \n", htons(ethhdr->type));
 				if (netif->input(p, netif) != ERR_OK) {
 					LWIP_DEBUGF(NETIF_DEBUG, ("xaxiemacif_input: IP input error\r\n"));
 					pbuf_free(p);
@@ -280,6 +284,7 @@ int xaxiemacif_input(struct netif *netif)
 				break;
 
 			default:
+				xil_printf("Received packet of type 0x%x is not recognized \n", htons(ethhdr->type));
 				pbuf_free(p);
 				p = NULL;
 				break;

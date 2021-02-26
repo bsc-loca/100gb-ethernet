@@ -303,8 +303,7 @@ class EthSyst {
     CONFIGURATION_RX_REG1 = CONFIGURATION_RX_REG1_OFFSET / sizeof(uint32_t),
     STAT_TX_STATUS_REG    = STAT_TX_STATUS_REG_OFFSET    / sizeof(uint32_t),
     STAT_RX_STATUS_REG    = STAT_RX_STATUS_REG_OFFSET    / sizeof(uint32_t),
-    GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t),
-    ETH_MIN_PACK_SIZE     = 64 // Limitation in 100Gb Ethernet IP (set in Vivado)
+    GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
   };
   // Ethernet core control via pins
   uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
@@ -332,6 +331,8 @@ class EthSyst {
     #define XPAR_SG_MEM_CPU_S_AXI_HIGHADDR 0
   #endif
   enum {
+    ETH_MIN_PACK_SIZE = 64, // Limitations in 100Gb Ethernet IP (set in Vivado)
+    ETH_MAX_PACK_SIZE = 9600,
     TX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR,
     TX_SG_MEM_SIZE = (XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 - TX_SG_MEM_ADDR)/2,
     RX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR   + TX_SG_MEM_SIZE,

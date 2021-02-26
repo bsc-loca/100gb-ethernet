@@ -46,7 +46,7 @@
 
 /***************************** Include Files *********************************/
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <unistd.h>
 #include <algorithm>
 
@@ -486,11 +486,11 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
         }
       }
 
-	  // For each packet, setting both SOF and EOF for TX BDs,
-	  // RX BDs do not need to set anything for the control, the hw will set the SOF/EOF bits per stream status
-	  XAxiDma_BdSetCtrl(CurBdPtr, RxnTx ? 0 : XAXIDMA_BD_CTRL_TXEOF_MASK |
+      // For each packet, setting both SOF and EOF for TX BDs,
+      // RX BDs do not need to set anything for the control, the hw will set the SOF/EOF bits per stream status
+      XAxiDma_BdSetCtrl(CurBdPtr, RxnTx ? 0 : XAXIDMA_BD_CTRL_TXEOF_MASK |
                                               XAXIDMA_BD_CTRL_TXSOF_MASK);
-	  XAxiDma_BdSetId  (CurBdPtr, bufAddr);
+      XAxiDma_BdSetId  (CurBdPtr, bufAddr);
 
       bufAddr += bufLen;
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
@@ -1068,16 +1068,15 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 
 		if (LengthType == XEL_ETHER_PROTO_TYPE_IP) {
 
-	        Length = getReceiveDataLength(XEL_HEADER_IP_LENGTH_OFFSET);
-			Length += XEL_HEADER_SIZE + XEL_FCS_SIZE;
+      Length = getReceiveDataLength(XEL_HEADER_IP_LENGTH_OFFSET);
+      Length += XEL_HEADER_SIZE + XEL_FCS_SIZE;
 
-		} else if (LengthType == XEL_ETHER_PROTO_TYPE_ARP) {
+    } else if (LengthType == XEL_ETHER_PROTO_TYPE_ARP) {
 
 			/*
 			 * The packet is an ARP Packet.
 			 */
-			Length = XEL_ARP_PACKET_SIZE + XEL_HEADER_SIZE +
-					XEL_FCS_SIZE;
+			Length = XEL_ARP_PACKET_SIZE + XEL_HEADER_SIZE + XEL_FCS_SIZE;
 
 		} else {
 			/*

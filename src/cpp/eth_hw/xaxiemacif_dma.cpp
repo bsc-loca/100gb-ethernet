@@ -273,6 +273,8 @@ static void axidma_send_handler(void *arg)
 	xaxiemacif_s   *xaxiemacif;
 	XAxiDma_BdRing *txringptr;
 
+    xil_printf("Send handler started \n");
+
 #ifdef OS_IS_FREERTOS
 	xInsideISR++;
 #endif
@@ -390,6 +392,8 @@ static void axidma_recv_handler(void *arg)
 	xaxiemacif_s *xaxiemacif;
 	XAxiDma_BdRing *rxring;
 
+    xil_printf("Recv handler started \n");
+
 #ifdef OS_IS_FREERTOS
 	xInsideISR++;
 #endif
@@ -442,6 +446,11 @@ static void axidma_recv_handler(void *arg)
 			p = (struct pbuf *)(UINTPTR)XAxiDma_BdGetId(rxbd);
 			/* Adjust the buffer size to the actual number of bytes received.*/
 			rx_bytes = extract_packet_len(rxbd);
+
+            xil_printf("Recv handler: BD %d of %d at addr %x with length %d was used to receive Packet at addr %x with payload at addr %x; \n",
+			            i, bd_processed, rxbd, rx_bytes, p, p->payload);
+            xil_printf("Recv handler:     PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", p->len, p->tot_len, p->ref, p->next);
+
 			pbuf_realloc(p, rx_bytes);
 
 #ifdef USE_JUMBO_FRAMES
@@ -552,8 +561,10 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		 */
 		XAxiDma_BdSetBufAddr(txbd, (UINTPTR)q->payload);
 		if (q->len > max_frame_size) {
-			XAxiDma_BdSetLength(txbd, max_frame_size,
-											txring->MaxTransferLen);
+			XAxiDma_BdSetLength(txbd, max_frame_size, txring->MaxTransferLen);
+		}
+		else if (q->len < EthSyst::ETH_MIN_PACK_SIZE) {
+			XAxiDma_BdSetLength(txbd, EthSyst::ETH_MIN_PACK_SIZE, txring->MaxTransferLen);
 		}
 		else {
 			XAxiDma_BdSetLength(txbd, q->len, txring->MaxTransferLen);
@@ -563,6 +574,10 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		XCACHE_FLUSH_DCACHE_RANGE(q->payload, q->len);
 
 		pbuf_ref(q);
+
+        xil_printf("BD at addr %x is used to send Packet at addr %x with payload at addr %x; \n", txbd, q, q->payload);
+        xil_printf("    PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", q->len, q->tot_len, q->ref, q->next);
+
 
 		last_txbd = txbd;
 		txbd = (XAxiDma_Bd *)XAxiDma_BdRingNext(txring, txbd);
@@ -622,7 +637,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	}
 #endif
 	/* enq to h/w */
-	xil_printf("DMA to send %d buffers from BD %x \n", n_pbufs, size_t(txbdset));
+	xil_printf("DMA is to send %d buffers for BDs at addr %x \n", n_pbufs, size_t(txbdset));
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 

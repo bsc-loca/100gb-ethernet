@@ -26,7 +26,7 @@
  *
  */
 
-#include <stdio.h>
+// #include <stdio.h>
 #include "xparameters.h"
 #include "netif/xadapter.h"
 #include "platform.h"
@@ -196,7 +196,8 @@ int udp_perf_server()
 			tcp_slowtmr();
 			TcpSlowTmrFlag = 0;
 		}
-		xemacif_input(netif);
+		int n_packets = xemacif_input(netif);
+		if (n_packets) xil_printf("UDP server: Packet(s) received: %d \n", n_packets);
 	}
 
 	/* never reached */
