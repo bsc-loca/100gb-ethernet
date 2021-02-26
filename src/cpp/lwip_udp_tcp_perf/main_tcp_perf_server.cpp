@@ -148,8 +148,8 @@ int tcp_perf_server()
 
 	init_platform();
 
-	xil_printf("\r\n\r\n");
-	xil_printf("-----lwIP RAW Mode TCP Server Application-----\r\n");
+	// xil_printf("\r\n\r\n");
+	xil_printf("-----lwIP RAW Mode TCP Server Application-----\r\n\n");
 
 	/* initialize lwIP */
 	lwip_init();

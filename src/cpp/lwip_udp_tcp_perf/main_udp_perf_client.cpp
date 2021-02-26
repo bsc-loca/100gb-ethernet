@@ -133,8 +133,8 @@ int udp_perf_client()
 
 	init_platform();
 
-	xil_printf("\r\n\r\n");
-	xil_printf("-----lwIP RAW Mode UDP Client Application-----\r\n");
+	// xil_printf("\r\n\r\n");
+	xil_printf("-----lwIP RAW Mode UDP Client Application-----\r\n\n");
 
 	/* initialize lwIP */
 	lwip_init();
