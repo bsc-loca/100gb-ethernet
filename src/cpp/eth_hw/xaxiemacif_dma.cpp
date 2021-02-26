@@ -449,7 +449,7 @@ static void axidma_recv_handler(void *arg)
 
             xil_printf("Recv handler: BD %d of %d at addr %x with length %d was used to receive Packet at addr %x with payload at addr %x; \n",
 			            i, bd_processed, rxbd, rx_bytes, p, p->payload);
-            xil_printf("Recv handler:     PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", p->len, p->tot_len, p->ref, p->next);
+            xil_printf("Recv handler:    PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", p->len, p->tot_len, p->ref, p->next);
 
 			pbuf_realloc(p, rx_bytes);
 
@@ -576,7 +576,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		pbuf_ref(q);
 
         xil_printf("BD at addr %x is used to send Packet at addr %x with payload at addr %x; \n", txbd, q, q->payload);
-        xil_printf("    PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", q->len, q->tot_len, q->ref, q->next);
+        xil_printf("   PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", q->len, q->tot_len, q->ref, q->next);
 
 
 		last_txbd = txbd;
