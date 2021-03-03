@@ -251,7 +251,7 @@ int xaxiemacif_input(struct netif *netif)
 		if (p == NULL)
 			return 0;
 
-        xil_printf("Rx Packet at addr %x with payload at addr %x is taken from queue; PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n",
+        xil_printf("Rx Packet at addr %x is taken from queue; PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
   	                p, p->payload, p->len, p->tot_len, p->ref, p->next);
 
 		/* points to packet payload, which starts with an Ethernet header */

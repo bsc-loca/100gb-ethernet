@@ -348,7 +348,7 @@ class EthSyst {
 
   void axiDmaInit();
   void dmaBDTransfer(size_t, size_t, size_t, size_t, bool);
-  void dmaBDPoll(size_t, bool);
+  void dmaBDPoll(size_t, size_t, bool);
   void switch_CPU_DMAxEth_LB(bool, bool);
 
   void intrCtrlInit();

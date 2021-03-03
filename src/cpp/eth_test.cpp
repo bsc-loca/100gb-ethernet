@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
         size_t dmaMemPtr = size_t(ethSyst.txMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, false);
-          ethSyst.dmaBDPoll                                               (packets, false);
+          ethSyst.dmaBDPoll                               (CPU_PACKET_LEN, packets, false);
         }
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
         dmaMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, true);
-          ethSyst.dmaBDPoll                                               (packets, true);
+          ethSyst.dmaBDPoll                               (CPU_PACKET_LEN, packets, true);
         }
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -408,8 +408,8 @@ int main(int argc, char *argv[])
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaRxMemPtr, DMA_PACKET_LEN, DMA_PACKET_LEN, packets, true ); // Rx
           ethSyst.dmaBDTransfer(dmaTxMemPtr, DMA_PACKET_LEN, DMA_PACKET_LEN, packets, false); // Tx
-          ethSyst.dmaBDPoll                                                 (packets, false); // Tx
-          ethSyst.dmaBDPoll                                                 (packets, true ); // Rx
+          ethSyst.dmaBDPoll                                 (DMA_PACKET_LEN, packets, false); // Tx
+          ethSyst.dmaBDPoll                                 (DMA_PACKET_LEN, packets, true ); // Rx
         }
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -462,8 +462,8 @@ int main(int argc, char *argv[])
           if (XAxiDma_HasSg(&ethSyst.axiDma)) {
             ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, 1, true ); // Rx
             ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, packTxLen,      1, false); // Tx
-            ethSyst.dmaBDPoll                                                   (1, false); // Tx
-            ethSyst.dmaBDPoll                                                   (1, true ); // Rx
+            ethSyst.dmaBDPoll                                   (packTxLen,      1, false); // Tx
+            ethSyst.dmaBDPoll                                   (packTxLen,      1, true ); // Rx
           }
           else {
 		        int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -663,8 +663,8 @@ int main(int argc, char *argv[])
             ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, 1, true ); // Rx
             if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
             ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, packTxLen,      1, false); // Tx
-            ethSyst.dmaBDPoll                                                   (1, false); // Tx
-            ethSyst.dmaBDPoll                                                   (1, true ); // Rx
+            ethSyst.dmaBDPoll                                   (packTxLen,      1, false); // Tx
+            ethSyst.dmaBDPoll                                   (packTxLen,      1, true ); // Rx
           }
           else {
 		        int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);

@@ -28,6 +28,7 @@
  *
  */
 
+#include <unistd.h>
 #include "lwipopts.h"
 
 #if !NO_SYS
@@ -449,9 +450,9 @@ static void axidma_recv_handler(void *arg)
 			uint32_t rx_max_len = XAxiDma_BdGetLength      (rxbd, rxring->MaxTransferLen);
 			uint32_t rx_act_len = XAxiDma_BdGetActualLength(rxbd, rxring->MaxTransferLen);
 
-            xil_printf("Recv handler: BD %d of %d at addr %x was used to receive Packet with length %d(max:%d,real:%d) at addr %x with payload at addr %x; \n",
-			            i, bd_processed, rxbd, rx_bytes, rx_max_len, rx_act_len, p, p->payload);
-            xil_printf("Recv handler: Rx PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", p->len, p->tot_len, p->ref, p->next);
+            xil_printf("Recv handler: BD %d of %d at addr %x was used to receive Packet with length %d(max:%d,real:%d) at addr %x; \n",
+			            i, bd_processed, rxbd, rx_bytes, rx_max_len, rx_act_len, p);
+            xil_printf("Recv handler: Rx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", p->payload, p->len, p->tot_len, p->ref, p->next);
 
 			pbuf_realloc(p, rx_bytes);
 
@@ -577,8 +578,8 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 
 		pbuf_ref(q);
 
-        xil_printf("BD at addr %x is used to send Packet at addr %x with payload at addr %x; \n", txbd, q, q->payload);
-        xil_printf("Tx PBUF: len=%d, tot_len=%d, ref=%d, next=%x \n", q->len, q->tot_len, q->ref, q->next);
+        xil_printf("BD at addr %x is used to send Packet at addr %x; \n", txbd, q);
+        xil_printf("Tx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", q->payload, q->len, q->tot_len, q->ref, q->next);
 
 
 		last_txbd = txbd;
@@ -640,6 +641,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 #endif
 	/* enq to h/w */
 	xil_printf("DMA is to send %d buffers for BDs at addr %x \n", n_pbufs, size_t(txbdset));
+    // sleep(1); // in seconds
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 
@@ -791,7 +793,7 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 			return ERR_IF;
 		}
 		else {
-          if (i<4) xil_printf("Rx PBUF %d of %d is allocated at addr %x with payload at addr %x: len=%d, tot_len=%d, ref=%d, next=%x \n",
+          if (i<8) xil_printf("Rx PBUF %d of %d is allocated at addr %x: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
 		                      i, XLWIP_CONFIG_N_RX_DESC, p, p->payload, p->len, p->tot_len, p->ref, p->next);
 		}
 		/* Setup the BD. The BD template used in the call to

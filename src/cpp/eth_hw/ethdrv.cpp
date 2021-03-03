@@ -507,7 +507,7 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 
 //*************************************************************************
 // Blocking polling process for finishing the transfer of packets through the DMA engine in SG mode
-void EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
+void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -520,6 +520,19 @@ void EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
       // sleep(1); // in seconds, user wait process
       ProcessedBdCount += XAxiDma_BdRingFromHw(BdRingPtr, XAXIDMA_ALL_BDS, &BdPtr);
 	}
+
+  // check actual transferred packet length vs expected (if it is the same for all packets)
+  if (packCheckLen) {
+    XAxiDma_Bd* CurBdPtr = BdPtr;
+    for (size_t packet = 0; packet < ProcessedBdCount; packet++) {
+      size_t packActLen = XAxiDma_BdGetActualLength(CurBdPtr, BdRingPtr->MaxTransferLen);
+      if (packActLen != packCheckLen) {
+        xil_printf("\nERROR: RxnTx=%d, Transferred length %d differes from expected %d \r\n", RxnTx, packActLen, packCheckLen);
+        exit(1);
+      }
+      CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
+    }
+  }
 
 	// Free all processed BDs for future transfers
   int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
