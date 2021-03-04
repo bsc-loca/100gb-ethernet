@@ -33,18 +33,22 @@ bsp setlib -name lwip211
 #  (DHCP enabling causes lack of dhcp_fine_tmr() and dhcp_coarse_tmr() functions so far)
 # bsp config lwip_dhcp true
 # bsp config dhcp_does_arp_check true
-bsp config mem_size 524288
-bsp config memp_n_pbuf 1024
-#  suggested pbuf_pool_size value 16384 causes dramatic overflow of available uBlaze memory
-#  below pbuf_pool_size value satisfies increased n_rx_descriptors in UDP server case and fits to DMA Rx Mem
-bsp config pbuf_pool_size 512
+# bsp config mem_size 524288
+# bsp config memp_n_pbuf 1024
+#  below pbuf_pool_size value causes dramatic overflow of available uBlaze memory
+# bsp config pbuf_pool_size 16384
 #for TCP client/server only
-bsp config memp_n_tcp_seg 1024
+# bsp config memp_n_tcp_seg 1024
+#  below memp_n_tcp_seg value allows to fit to DMA Tx Mem
+bsp config memp_n_tcp_seg 64
 #for TCP client/server only
-bsp config tcp_snd_buf 65535
+# bsp config tcp_snd_buf 65535
+#  below tcp_snd_buf value allows to satisfy changed memp_n_tcp_seg
+bsp config tcp_snd_buf 4096
 #for TCP client/server only
 bsp config tcp_wnd 65535
 #for TCP client/server and UDP server only
+#   n_rx_descriptors value is limited by available pbuf_pool_size
 # bsp config n_rx_descriptors 512
 #for TCP client/server and UDP client only
 bsp config n_tx_descriptors 512
@@ -62,7 +66,7 @@ bsp config tcp_debug   true
 
 # -DETHARP_DEBUG=LWIP_DBG_ON
 bsp config -append extra_compiler_flags {-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
-                                         -Werror=div-by-zero -imacros  ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h}
+                                         -Werror=div-by-zero -imacros ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h}
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc
