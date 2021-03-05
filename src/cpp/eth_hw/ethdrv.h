@@ -198,12 +198,6 @@
 #include "xgpio.h"
 #include "xaxis_switch.h"
 
-#ifdef __ARMEL__
-#ifndef __LITTLE_ENDIAN__
-#define __LITTLE_ENDIAN__
-#endif
-#endif
-
 
 /************************** Ethernet protocol Definitions *****************************/
 namespace EthDefs {
@@ -214,7 +208,6 @@ namespace EthDefs {
 
     XEL_HEADER_OFFSET           = 12, // Offset to length field
     XEL_HEADER_IP_LENGTH_OFFSET = 16, // IP Length Offset
-    XEL_HEADER_SHIFT            = 16, // Right shift value to align length
 
     XEL_MAX_FRAME_SIZE    = (XEL_HEADER_SIZE+XEL_MTU_SIZE+XEL_FCS_SIZE), // Max length of Rx frame used if length/type fieldcontains the type(> 1500)
     XEL_MAX_TX_FRAME_SIZE = (XEL_HEADER_SIZE+XEL_MTU_SIZE), // Max length of Tx frame

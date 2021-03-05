@@ -251,8 +251,9 @@ int xaxiemacif_input(struct netif *netif)
 		if (p == NULL)
 			return 0;
 
-        xil_printf("Rx Packet at addr %x is taken from queue; PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
-  	                p, p->payload, p->len, p->tot_len, p->ref, p->next);
+        if (p->len <= 128) // messaging for small packets (ARP/ICMP like)
+          xil_printf("Rx Packet at addr %x is taken from queue; PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
+                      p, p->payload, p->len, p->tot_len, p->ref, p->next);
 
 		/* points to packet payload, which starts with an Ethernet header */
 		ethhdr = (eth_hdr*)p->payload;
@@ -275,7 +276,8 @@ int xaxiemacif_input(struct netif *netif)
 			case ETHTYPE_PPPOE:
 #endif /* PPPOE_SUPPORT */
 				/* full packet send to tcpip_thread to process */
-				xil_printf("Rx packet type: 0x%x \n", htons(ethhdr->type));
+                if (p->len <= 128) // messaging for small packets (ARP/ICMP like)
+                  xil_printf("Rx packet type: 0x%x \n", htons(ethhdr->type));
 				if (netif->input(p, netif) != ERR_OK) {
 					LWIP_DEBUGF(NETIF_DEBUG, ("xaxiemacif_input: IP input error\r\n"));
 					pbuf_free(p);

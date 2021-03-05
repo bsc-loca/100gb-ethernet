@@ -154,8 +154,8 @@ static void udp_packet_send(u8_t finished)
 
 	for (i = 0; i < NUM_OF_PARALLEL_CLIENTS; i++) {
 
-		// packet = pbuf_alloc(PBUF_TRANSPORT, UDP_SEND_BUFSIZE, PBUF_POOL);
-		packet = pbuf_alloc(PBUF_TRANSPORT, UDP_SEND_BUFSIZE, PBUF_RAM);
+		// packet = pbuf_alloc(PBUF_TRANSPORT, UDP_SEND_BUFSIZE, PBUF_POOL); // PBUF_POOL allocation is assigned to Rx DMA memory
+		packet = pbuf_alloc(PBUF_TRANSPORT, UDP_SEND_BUFSIZE, PBUF_RAM); // PBUF_RAM allocation is assigned to Tx DMA memory
 		if (!packet) {
 			xil_printf("error allocating pbuf to send\r\n");
 			return;

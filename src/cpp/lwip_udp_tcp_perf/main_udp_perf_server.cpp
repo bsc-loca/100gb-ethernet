@@ -197,7 +197,7 @@ int udp_perf_server()
 			TcpSlowTmrFlag = 0;
 		}
 		int n_packets = xemacif_input(netif);
-		if (n_packets) xil_printf("UDP server: Packet(s) received: %d \n", n_packets);
+		// if (n_packets) xil_printf("UDP server: Packet(s) received: %d \n", n_packets);
 	}
 
 	/* never reached */

@@ -274,7 +274,7 @@ static void axidma_send_handler(void *arg)
 	xaxiemacif_s   *xaxiemacif;
 	XAxiDma_BdRing *txringptr;
 
-    xil_printf("Send handler started \n");
+    // xil_printf("Send handler started \n");
 
 #ifdef OS_IS_FREERTOS
 	xInsideISR++;
@@ -393,7 +393,7 @@ static void axidma_recv_handler(void *arg)
 	xaxiemacif_s *xaxiemacif;
 	XAxiDma_BdRing *rxring;
 
-    xil_printf("Recv handler started \n");
+    // xil_printf("Recv handler started \n");
 
 #ifdef OS_IS_FREERTOS
 	xInsideISR++;
@@ -450,11 +450,14 @@ static void axidma_recv_handler(void *arg)
 			uint32_t rx_max_len = XAxiDma_BdGetLength      (rxbd, rxring->MaxTransferLen);
 			uint32_t rx_act_len = XAxiDma_BdGetActualLength(rxbd, rxring->MaxTransferLen);
 
-            xil_printf("Recv handler: BD %d of %d at addr %x was used to receive Packet with length %d(max:%d,real:%d) at addr %x; \n",
-			            i, bd_processed, rxbd, rx_bytes, rx_max_len, rx_act_len, p);
-            xil_printf("Recv handler: Rx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", p->payload, p->len, p->tot_len, p->ref, p->next);
+            if (rx_act_len <= 128) { // messaging for small packets (ARP/ICMP like)
+              xil_printf("Recv handler: BD %d of %d at addr %x was used to receive Packet with length %d(max:%d,real:%d) at addr %x; \n",
+                          i, bd_processed, rxbd, rx_bytes, rx_max_len, rx_act_len, p);
+              xil_printf("Recv handler: Rx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", p->payload, p->len, p->tot_len, p->ref, p->next);
+			}
 
-			pbuf_realloc(p, rx_bytes);
+			// pbuf_realloc(p, rx_bytes);
+			pbuf_realloc(p, rx_act_len);
 
 #ifdef USE_JUMBO_FRAMES
 #ifndef __aarch64__
@@ -578,8 +581,10 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 
 		pbuf_ref(q);
 
-        xil_printf("BD at addr %x is used to send Packet at addr %x; \n", txbd, q);
-        xil_printf("Tx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", q->payload, q->len, q->tot_len, q->ref, q->next);
+        if (q->len <= 128) { // messaging for small packets (ARP/ICMP like)
+          xil_printf("BD at addr %x is used to send Packet at addr %x; \n", txbd, q);
+          xil_printf("Tx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", q->payload, q->len, q->tot_len, q->ref, q->next);
+        }
 
 
 		last_txbd = txbd;
@@ -640,7 +645,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	}
 #endif
 	/* enq to h/w */
-	xil_printf("DMA is to send %d buffers for BDs at addr %x \n", n_pbufs, size_t(txbdset));
+    // xil_printf("DMA is to send %d buffers for BDs at addr %x \n", n_pbufs, size_t(txbdset));
     // sleep(1); // in seconds
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }

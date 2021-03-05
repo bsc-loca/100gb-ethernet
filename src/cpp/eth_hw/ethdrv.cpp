@@ -882,13 +882,11 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 ******************************************************************************/
 uint16_t EthSyst::getReceiveDataLength(uint16_t headerOffset) {
 
-#ifdef __LITTLE_ENDIAN__
 	uint16_t length = rxMem[headerOffset / sizeof(uint32_t)];
 	length = ((length & 0xFF00) >> 8) | ((length & 0x00FF) << 8);
-#else
-	uint16_t length = rxMem[headerOffset / sizeof(uint32_t)] >> XEL_HEADER_SHIFT;
-#endif
-    xil_printf("   Accepting packet at mem addr 0x%X, extracting length/type 0x%X at offset %d \n", size_t(rxMem), length, headerOffset);
+
+  xil_printf("   Accepting packet at mem addr 0x%X, extracting length/type %d(0x%X) at offset %d \n",
+              size_t(rxMem), length, length, headerOffset);
 
 	return length;
 }
@@ -1061,10 +1059,10 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	uint16_t LengthType;
 	uint16_t Length;
 
-    if(XAxiDma_HasSg(&axiDma)) { // in SG mode
+  if(XAxiDma_HasSg(&axiDma)) { // in SG mode
       if (dmaBDCheck(true) == 0) return 0;
-	} else // in simple mode
-	  if (XAxiDma_Busy(&axiDma, XAXIDMA_DEVICE_TO_DMA)) return 0;
+  } else // in simple mode
+    if (XAxiDma_Busy(&axiDma, XAXIDMA_DEVICE_TO_DMA)) return 0;
 
     // xil_printf("Some Rx frame is received \n");
 
@@ -1112,7 +1110,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	/*
 	 * Acknowledge the frame.
 	 */
-    if(XAxiDma_HasSg(&axiDma)) // in SG mode
+  if(XAxiDma_HasSg(&axiDma)) // in SG mode
       dmaBDTransfer(size_t(rxMem), XEL_MAX_FRAME_SIZE, XEL_MAX_FRAME_SIZE, 1, true);
 	else { // in simple mode
 	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
