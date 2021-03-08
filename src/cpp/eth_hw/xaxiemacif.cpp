@@ -280,9 +280,12 @@ int xaxiemacif_input(struct netif *netif)
                   xil_printf("Rx packet type: 0x%x \n", htons(ethhdr->type));
 				if (netif->input(p, netif) != ERR_OK) {
 					LWIP_DEBUGF(NETIF_DEBUG, ("xaxiemacif_input: IP input error\r\n"));
-					pbuf_free(p);
-					p = NULL;
+					// pbuf_free(p);
+					// p = NULL;
 				}
+				// bug fix: pbuffer should be freed in any case, otherwise receiving process leads to memory emptying
+                pbuf_free(p);
+                p = NULL;
 				break;
 
 			default:

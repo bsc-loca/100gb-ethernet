@@ -337,7 +337,7 @@ static void setup_rx_bds(XAxiDma_BdRing *rxring)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
-			xil_printf("unable to alloc pbuf in recv_handler\r\n");
+			xil_printf("setup_rx_bds: unable to alloc pbuf\r\n");
 			return;
 		}
 		status = XAxiDma_BdRingAlloc(rxring, 1, &rxbd);
@@ -553,6 +553,20 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	for (q = p, n_pbufs = 0; q != NULL; q = q->next)
 		n_pbufs++;
 
+    uint32_t freeBdCount;
+    // the delay to compensate higher packet processing time on receiving side (server)
+	//   leading to increasing receive time lag and finally memory emptying
+    enum {SEND_PAUSE = 200};
+    uint32_t sendPause = SEND_PAUSE;
+    do { // waiting for untill previous transfers finish
+      freeBdCount = XAxiDma_BdRingGetFreeCnt(txring);
+      if (freeBdCount < XLWIP_CONFIG_N_TX_DESC) // limiting messaging (checking if it ever happens)
+        if (sendPause == SEND_PAUSE)
+          xil_printf("DMA is to send %d buffers, %ld BDs of %d are free \n", n_pbufs, freeBdCount, XLWIP_CONFIG_N_TX_DESC);
+      // sleep(1); // in seconds, user wait process
+      if (sendPause) sendPause--;
+    } while (freeBdCount < XLWIP_CONFIG_N_TX_DESC || sendPause);
+
 	/* obtain as many BD's */
 	status = XAxiDma_BdRingAlloc(txring, n_pbufs, &txbdset);
 	if (status != XST_SUCCESS) {
@@ -645,8 +659,6 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	}
 #endif
 	/* enq to h/w */
-    // xil_printf("DMA is to send %d buffers for BDs at addr %x \n", n_pbufs, size_t(txbdset));
-    // sleep(1); // in seconds
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 
@@ -794,7 +806,7 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
-			LWIP_DEBUGF(NETIF_DEBUG, ("unable to alloc pbuf in recv_handler\r\n"));
+			xil_printf("init_axi_dma: unable to alloc pbuf\r\n");
 			return ERR_IF;
 		}
 		else {

@@ -48,10 +48,11 @@ bsp config tcp_snd_buf 4096
 #for TCP client/server only
 bsp config tcp_wnd 65535
 #for TCP client/server and UDP server only
-#   n_rx_descriptors value is limited by available pbuf_pool_size
+#  n_rx_descriptors value is not passed to the code and should be manually set as XLWIP_CONFIG_N_RX_DESC, limited by pbuf_pool_size
 # bsp config n_rx_descriptors 512
 #for TCP client/server and UDP client only
-bsp config n_tx_descriptors 512
+#  n_tx_descriptors value is not passed to the code and should be manually set as XLWIP_CONFIG_N_TX_DESC
+# bsp config n_tx_descriptors 512
 
 #enabling lwip debug messages
 # bsp config icmp_debug  true # causes compile error in icmp.c:253: undefined reference to `lwip_strerr'
