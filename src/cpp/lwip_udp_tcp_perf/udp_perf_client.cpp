@@ -48,7 +48,7 @@ void print_udp_client_app_header(void)
 			INTERIM_REPORT_INTERVAL);
 }
 
-static void print_udp_conn_stats(void)
+void print_udp_conn_stats(void)
 {
 	xil_printf("[%3d] local %s port %d connected with ",
 			client.client_id, inet_ntoa(udp_client_netif.ip_addr),
@@ -131,7 +131,7 @@ static void reset_stats(void)
 {
 	client.client_id++;
 	/* Print connection statistics */
-	print_udp_conn_stats();
+	// print_udp_conn_stats();
 	/* Save start time for final report */
 	client.start_time = get_time_ms();
 	client.total_bytes = 0;
@@ -211,7 +211,7 @@ static void udp_packet_send(u8_t finished)
 		usleep(2);
 #endif /* __aarch64__ */
         // the same story is for 100Gb Eth core working with MicroBlaze: getting memory underflow without this pause
-		usleep(25);
+		usleep(30);
 
 	}
 	packet_id++;

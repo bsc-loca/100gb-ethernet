@@ -56,6 +56,7 @@ void platform_enable_interrupts(void);
 void start_udp_client_app(void);
 bool trans_udp_client_data(void);
 void print_udp_client_app_header(void);
+void print_udp_conn_stats(void);
 
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
@@ -186,6 +187,7 @@ int udp_perf_client()
 	start_udp_client_app();
 	xil_printf("\r\n");
 
+	bool connWait   = true;
 	// while (1) {
 	do {
 		if (TcpFastTmrFlag) {
@@ -196,8 +198,14 @@ int udp_perf_client()
 			tcp_slowtmr();
 			TcpSlowTmrFlag = 0;
 		}
-		int n_packets = xemacif_input(netif);
-		if (n_packets) xil_printf("UDP client: Packet(s) received: %d \n", n_packets);
+		int in_packets = xemacif_input(netif);
+		if (in_packets) {
+		  xil_printf("UDP client: Packet(s) received: %d \n", in_packets);
+		  if (connWait) {
+            print_udp_conn_stats();
+            connWait = false;
+		  }
+		}
 		// trans_udp_client_data();
 	} while (trans_udp_client_data());
 
