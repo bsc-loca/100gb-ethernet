@@ -93,7 +93,7 @@ struct perf_stats {
 #define UDP_CONN_PORT 5001
 
 /* time in seconds to transmit packets */
-#define UDP_TIME_INTERVAL 300
+#define UDP_TIME_INTERVAL 30
 
 /* Server to connect with */
 #define UDP_SERVER_IP_ADDRESS "192.168.1.100"
@@ -105,6 +105,6 @@ struct perf_stats {
 #define MAX_SEND_RETRY 10
 
 /* Number of parallel UDP clients */
-#define NUM_OF_PARALLEL_CLIENTS 2
+#define NUM_OF_PARALLEL_CLIENTS 1
 
 #endif /* __UDP_PERF_CLIENT_H_ */

@@ -251,7 +251,7 @@ int xaxiemacif_input(struct netif *netif)
 		if (p == NULL)
 			return 0;
 
-        if (p->len <= 128) // messaging for small packets (ARP/ICMP like)
+        if (0)
           xil_printf("Rx Packet at addr %x is taken from queue; PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
                       p, p->payload, p->len, p->tot_len, p->ref, p->next);
 
@@ -276,16 +276,13 @@ int xaxiemacif_input(struct netif *netif)
 			case ETHTYPE_PPPOE:
 #endif /* PPPOE_SUPPORT */
 				/* full packet send to tcpip_thread to process */
-                if (p->len <= 128) // messaging for small packets (ARP/ICMP like)
+                if (0)
                   xil_printf("Rx packet type: 0x%x \n", htons(ethhdr->type));
 				if (netif->input(p, netif) != ERR_OK) {
 					LWIP_DEBUGF(NETIF_DEBUG, ("xaxiemacif_input: IP input error\r\n"));
-					// pbuf_free(p);
-					// p = NULL;
+					pbuf_free(p);
+					p = NULL;
 				}
-				// bug fix: pbuffer should be freed in any case, otherwise receiving process leads to memory emptying
-                pbuf_free(p);
-                p = NULL;
 				break;
 
 			default:

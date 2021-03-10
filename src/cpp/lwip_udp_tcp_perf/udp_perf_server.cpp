@@ -158,6 +158,7 @@ static void reset_stats(void)
 	server.i_report.last_report_time = 0;
 }
 
+extern bool udpServerActive;
 /** Receive data on a udp session */
 static void udp_recv_perf_traffic(void *arg, struct udp_pcb *tpcb,
 		struct pbuf *p, const ip_addr_t *addr, u16_t port)
@@ -180,7 +181,14 @@ static void udp_recv_perf_traffic(void *arg, struct udp_pcb *tpcb,
 #else
 	recv_id = ntohl(*((int *)(p->payload)));
 #endif
-	if (first && (recv_id == 0)) {
+
+    if (0)
+      xil_printf("udp_recv_perf_traffic(): first=%d, recv_id=%d, server.expected_datagram_id=%d \n",
+	             first, recv_id, server.expected_datagram_id);
+
+
+	// if (first && (recv_id == 0)) {
+	if (first) {
 		/* First packet should always start with recv id 0.
 		 * However, If Iperf client is running with parallel
 		 * thread, then this condition will also avoid
@@ -192,11 +200,13 @@ static void udp_recv_perf_traffic(void *arg, struct udp_pcb *tpcb,
 		/* Print connection statistics */
 		print_udp_conn_stats();
 		first = 0;
+		if (recv_id != 0) // continue receiving packets if first one was lost
+		  xil_printf("udp_recv_perf_traffic() ERROR: receiving first packet with non-zero ID: %d \n", recv_id);
 	} else if (first) {
 		/* Avoid rest of the packets if client
 		 * connection is already terminated.
 		 */
-		return;
+		// return;
 	}
 
 	if (recv_id < 0) {
@@ -208,6 +218,7 @@ static void udp_recv_perf_traffic(void *arg, struct udp_pcb *tpcb,
 		xil_printf("UDP test passed Successfully\n\r");
 		first = 1;
 		pbuf_free(p);
+		udpServerActive = false; // stopping UDP test
 		return;
 	}
 

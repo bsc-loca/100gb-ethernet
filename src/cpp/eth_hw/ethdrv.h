@@ -193,6 +193,7 @@
 /***************************** Include Files *********************************/
 // #include "xparameters.h"
 #include "xintc.h"
+#include "xtmrctr.h"
 #include "xaxidma.h"
 #include "../../../../project/ethernet_test_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
 #include "xgpio.h"
@@ -308,6 +309,8 @@ class EthSyst {
   uint32_t txBdCount = 0;
   uint32_t rxBdCount = 0;
 
+  XTmrCtr timerCnt; // The instance of the timer counter
+
   void     dmaBDSetup(bool);
   uint32_t dmaBDCheck(bool);
   void alignedWrite(void*, unsigned);
@@ -353,6 +356,8 @@ class EthSyst {
   void intrCtrlStart_l(bool);
   void intrCtrlStop  ();
   void intrCtrlStop_l();
+
+  void timerCntInit();
 
   void ethSystInit();
 

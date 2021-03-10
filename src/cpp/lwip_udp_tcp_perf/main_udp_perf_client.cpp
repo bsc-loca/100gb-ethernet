@@ -54,7 +54,7 @@ extern volatile int TcpSlowTmrFlag;
 
 void platform_enable_interrupts(void);
 void start_udp_client_app(void);
-void trans_udp_client_data(void);
+bool trans_udp_client_data(void);
 void print_udp_client_app_header(void);
 
 #if defined (__arm__) && !defined (ARMR5)
@@ -186,7 +186,8 @@ int udp_perf_client()
 	start_udp_client_app();
 	xil_printf("\r\n");
 
-	while (1) {
+	// while (1) {
+	do {
 		if (TcpFastTmrFlag) {
 			tcp_fasttmr();
 			TcpFastTmrFlag = 0;
@@ -197,8 +198,8 @@ int udp_perf_client()
 		}
 		int n_packets = xemacif_input(netif);
 		if (n_packets) xil_printf("UDP client: Packet(s) received: %d \n", n_packets);
-		trans_udp_client_data();
-	}
+		// trans_udp_client_data();
+	} while (trans_udp_client_data());
 
 	/* never reached */
 	cleanup_platform();

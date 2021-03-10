@@ -207,6 +207,29 @@ void EthSyst::ethTxRxDisable() {
 }
 
 
+//***************** Initialization of Timer *****************
+void EthSyst::timerCntInit() {
+  xil_printf("------- Initializing Timer -------\n");
+  // Controlling Timer via Xilinx driver.
+  // Initialize the Timer driver so that it is ready to use
+  int status = XTmrCtr_Initialize(&timerCnt, XPAR_TMRCTR_0_DEVICE_ID);
+  if (XST_SUCCESS != status) {
+    xil_printf("\nERROR: Timer initialization failed with status %d\n", status);
+    exit(1);
+  }
+  // Perform a self-test and reset for both timers to ensure that the hardware was built correctly
+  for (size_t cnt = 0; cnt < XTC_DEVICE_TIMER_COUNT; cnt++) {
+    status = XTmrCtr_SelfTest(&timerCnt, cnt);
+    if (XST_SUCCESS != status) {
+      xil_printf("\nERROR: Timer %d selftest failed with status %d\n", cnt, status);
+      exit(1);
+    }
+    XTmrCtr_Stop (&timerCnt, cnt);
+    XTmrCtr_Reset(&timerCnt, cnt);
+  }
+}
+
+
 //***************** Initialization of Interrupt Controller *****************
 void EthSyst::intrCtrlInit() {
   xil_printf("------- Initializing Interrupt Controller -------\n");
@@ -215,14 +238,29 @@ void EthSyst::intrCtrlInit() {
   // Initialize the interrupt controller driver so that it is ready to use
   int status = XIntc_Initialize(&intrCtrl, XPAR_INTC_0_DEVICE_ID);
   if (XST_SUCCESS != status) {
-    xil_printf("\nERROR: interrupt controller initialization failed with status %d\n", status);
+    xil_printf("\nERROR: Interrupt Controller initialization failed with status %d\n", status);
     exit(1);
   }
-  // Perform a self-test to ensure that the hardware was built correctly
-  status = XIntc_SelfTest(&intrCtrl);
-  if (XST_SUCCESS != status) {
-    xil_printf("\nERROR: interrupt controller selftest failed with status %d\n", status);
-    exit(1);
+
+  // Disabling all available interrupts
+  intrCtrlStop();
+  for (size_t intrId = 0; intrId < XPAR_INTC_MAX_NUM_INTR_INPUTS; intrId++) {
+    XIntc_Disable   (&intrCtrl, intrId);
+    XIntc_Disconnect(&intrCtrl, intrId);
+  }
+
+  // Perform a self-test (interrupt simulation) in case hardware interrupts have not once been enabled,
+  // if not, this is a write once bit such that simulation can't be done at this point
+  // because the ISR register is no longer writable by software
+  uint32_t merReg = XIntc_In32(XPAR_INTC_0_BASEADDR + XIN_MER_OFFSET);
+  if (XIN_INT_HARDWARE_ENABLE_MASK & merReg)
+    xil_printf("Skipping Interrupt Controller selftest because of once set HIE bit in MER: 0x%lX \n", merReg);
+  else {
+    status = XIntc_SelfTest(&intrCtrl);
+    if (XST_SUCCESS != status) {
+      xil_printf("\nERROR: Interrupt Controller selftest failed with status %d\n", status);
+      exit(1);
+    }
   }
 }
 
@@ -353,38 +391,39 @@ void EthSyst::axiDmaInit() {
     XAxiDma_IntrDisable(&axiDma, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
   } else {
     xil_printf("XAxiDma is configured in Scatter-Gather mode \n");
-	dmaBDSetup(false); // setup of Tx BD ring
+    dmaBDSetup(false); // setup of Tx BD ring
     dmaBDSetup(true ); // setup of Rx BD ring
   }
 
   xil_printf("XAxiDma is initialized and reset: \n");
-  xil_printf("HasSg                    = %d  \n", axiDma.HasSg);
-  xil_printf("Initialized              = %d  \n", axiDma.Initialized);
-  xil_printf("RegBase                  = %d  \n", axiDma.RegBase);
-  xil_printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
-  xil_printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
-  xil_printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
-  xil_printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
-  xil_printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
-  xil_printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
-  xil_printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
-  xil_printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
-  xil_printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
-  xil_printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
-  xil_printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
-  xil_printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
-  xil_printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
-  xil_printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
-  xil_printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
-  xil_printf("TxBdRing pointer         = %x  \n", size_t(XAxiDma_GetTxRing(&axiDma)));
-  xil_printf("RxBdRing pointer         = %x  \n", size_t(XAxiDma_GetRxRing(&axiDma)));
-  xil_printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
-  xil_printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
-  xil_printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
-  xil_printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
-
-  xil_printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
-  xil_printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
+  xil_printf("HasSg       = %d  \n", axiDma.HasSg);
+  xil_printf("Initialized = %d  \n", axiDma.Initialized);
+  if (0) {
+    xil_printf("RegBase                  = %d  \n", axiDma.RegBase);
+    xil_printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
+    xil_printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
+    xil_printf("TxNumChannels            = %d  \n", axiDma.TxNumChannels);
+    xil_printf("RxNumChannels            = %d  \n", axiDma.RxNumChannels);
+    xil_printf("MicroDmaMode             = %d  \n", axiDma.MicroDmaMode);
+    xil_printf("AddrWidth                = %d  \n", axiDma.AddrWidth);
+    xil_printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
+    xil_printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
+    xil_printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
+    xil_printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
+    xil_printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
+    xil_printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
+    xil_printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
+    xil_printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
+    xil_printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
+    xil_printf("TxBdRing pointer         = %x  \n", size_t(XAxiDma_GetTxRing(&axiDma)));
+    xil_printf("RxBdRing pointer         = %x  \n", size_t(XAxiDma_GetRxRing(&axiDma)));
+    xil_printf("Tx_control reg = %0lX \n", dmaCore[MM2S_DMACR]);
+    xil_printf("Tx_status  reg = %0lX \n", dmaCore[MM2S_DMASR]);
+    xil_printf("Rx_control reg = %0lX \n", dmaCore[S2MM_DMACR]);
+    xil_printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
+    xil_printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
+    xil_printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
+  }
 }
 
 
@@ -609,13 +648,12 @@ void EthSyst::switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
 //***************** Initialization of Full Ethernet System *****************
 void EthSyst::ethSystInit() {
   intrCtrlInit();
-  ethCoreInit(false); // non-loopback mode
+  timerCntInit();
   axiDmaInit();
   switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
   switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
   ethTxRxEnable();
   sleep(1); // in seconds
-  xil_printf("\n------- Physical connection is established -------\n");
 }
 
 

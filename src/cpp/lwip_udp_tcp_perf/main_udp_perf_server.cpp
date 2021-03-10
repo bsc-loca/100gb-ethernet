@@ -107,6 +107,7 @@ static void assign_default_ip(ip_addr_t *ip, ip_addr_t *mask, ip_addr_t *gw)
 		xil_printf("Invalid default gateway address: %d\r\n", err);
 }
 
+bool udpServerActive;
 // int main(void)
 int udp_perf_server()
 {
@@ -187,7 +188,9 @@ int udp_perf_server()
 	start_udp_server_app();
 	xil_printf("\r\n");
 
-	while (1) {
+	udpServerActive = true; // starting UDP test
+	// while (1) {
+	while (udpServerActive) {
 		if (TcpFastTmrFlag) {
 			tcp_fasttmr();
 			TcpFastTmrFlag = 0;
@@ -197,7 +200,7 @@ int udp_perf_server()
 			TcpSlowTmrFlag = 0;
 		}
 		int n_packets = xemacif_input(netif);
-		// if (n_packets) xil_printf("UDP server: Packet(s) received: %d \n", n_packets);
+		if (0) xil_printf("udp_perf_server(): Packet(s) received: %d \n", n_packets);
 	}
 
 	/* never reached */

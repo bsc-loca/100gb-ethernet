@@ -168,6 +168,9 @@ static void udp_packet_send(u8_t finished)
 		if (finished == FINISH)
 			packet_id = -1;
 
+        if (0)
+          xil_printf("udp_packet_send(): client=%d, packet_id=%d \n", i, packet_id);
+
 		payload[0] = htonl(packet_id);
 
 		while (retries) {
@@ -207,18 +210,22 @@ static void udp_packet_send(u8_t finished)
 #if defined (__aarch64__) && defined (XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA)
 		usleep(2);
 #endif /* __aarch64__ */
+        // the same story is for 100Gb Eth core working with MicroBlaze: getting memory underflow without this pause
+		usleep(25);
 
 	}
 	packet_id++;
 }
 
 /** Transmit data on a udp session */
-void trans_udp_client_data(void)
+bool trans_udp_client_data(void)
 {
 	int i = 0;
 	for (i = 0; i < NUM_OF_PARALLEL_CLIENTS; i++) {
-		if (pcb[i] == NULL)
-			return;
+		if (pcb[i] == NULL) {
+			xil_printf("trans_udp_client_data() ERROR: PCB %d doesn't exist \r\n", i);
+			return false;
+		}
 	}
 
 	if (END_TIME !=0 || REPORT_INTERVAL_TIME !=0) {
@@ -245,12 +252,13 @@ void trans_udp_client_data(void)
 				udp_packet_send(FINISH);
 				udp_conn_report(diff_ms, UDP_DONE_CLIENT);
 				xil_printf("UDP test passed Successfully\n\r");
-				return;
+				return false;
 			}
 		}
 	}
 
 	udp_packet_send(!FINISH);
+	return true;
 }
 
 void start_udp_client_app(void)

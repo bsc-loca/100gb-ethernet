@@ -450,11 +450,11 @@ static void axidma_recv_handler(void *arg)
 			uint32_t rx_max_len = XAxiDma_BdGetLength      (rxbd, rxring->MaxTransferLen);
 			uint32_t rx_act_len = XAxiDma_BdGetActualLength(rxbd, rxring->MaxTransferLen);
 
-            if (rx_act_len <= 128) { // messaging for small packets (ARP/ICMP like)
+            if (0) {
               xil_printf("Recv handler: BD %d of %d at addr %x was used to receive Packet with length %d(max:%d,real:%d) at addr %x; \n",
                           i, bd_processed, rxbd, rx_bytes, rx_max_len, rx_act_len, p);
               xil_printf("Recv handler: Rx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", p->payload, p->len, p->tot_len, p->ref, p->next);
-			}
+            }
 
 			// pbuf_realloc(p, rx_bytes);
 			pbuf_realloc(p, rx_act_len);
@@ -553,19 +553,12 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	for (q = p, n_pbufs = 0; q != NULL; q = q->next)
 		n_pbufs++;
 
-    uint32_t freeBdCount;
-    // the delay to compensate higher packet processing time on receiving side (server)
-	//   leading to increasing receive time lag and finally memory emptying
-    enum {SEND_PAUSE = 200};
-    uint32_t sendPause = SEND_PAUSE;
-    do { // waiting for untill previous transfers finish
-      freeBdCount = XAxiDma_BdRingGetFreeCnt(txring);
-      if (freeBdCount < XLWIP_CONFIG_N_TX_DESC) // limiting messaging (checking if it ever happens)
-        if (sendPause == SEND_PAUSE)
-          xil_printf("DMA is to send %d buffers, %ld BDs of %d are free \n", n_pbufs, freeBdCount, XLWIP_CONFIG_N_TX_DESC);
+    uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(txring);
+    while (freeBdCount < XLWIP_CONFIG_N_TX_DESC) { // fully optional wait for previous transfers finishing
+      // checking if this wait ever happens
+      xil_printf("DMA is to send %d buffers, %ld BDs of %d are free \n", n_pbufs, freeBdCount, XLWIP_CONFIG_N_TX_DESC);
       // sleep(1); // in seconds, user wait process
-      if (sendPause) sendPause--;
-    } while (freeBdCount < XLWIP_CONFIG_N_TX_DESC || sendPause);
+    }
 
 	/* obtain as many BD's */
 	status = XAxiDma_BdRingAlloc(txring, n_pbufs, &txbdset);
@@ -595,7 +588,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 
 		pbuf_ref(q);
 
-        if (q->len <= 128) { // messaging for small packets (ARP/ICMP like)
+        if (0) {
           xil_printf("BD at addr %x is used to send Packet at addr %x; \n", txbd, q);
           xil_printf("Tx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", q->payload, q->len, q->tot_len, q->ref, q->next);
         }
@@ -810,7 +803,7 @@ err_enum_t init_axi_dma(struct xemac_s *xemac)
 			return ERR_IF;
 		}
 		else {
-          if (i<8) xil_printf("Rx PBUF %d of %d is allocated at addr %x: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
+          if (i<4) xil_printf("Rx PBUF %d of %d is allocated at addr %x: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n",
 		                      i, XLWIP_CONFIG_N_RX_DESC, p, p->payload, p->len, p->tot_len, p->ref, p->next);
 		}
 		/* Setup the BD. The BD template used in the call to

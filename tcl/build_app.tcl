@@ -62,7 +62,7 @@ bsp config lwip_debug  true
 bsp config netif_debug true
 # bsp config pbuf_debug  true
 bsp config sys_debug   true
-bsp config tcp_debug   true
+# bsp config tcp_debug   true
 # bsp config udp_debug   true
 
 # -DETHARP_DEBUG=LWIP_DBG_ON

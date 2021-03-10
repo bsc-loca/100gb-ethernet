@@ -1,5 +1,6 @@
 
 #define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET
+#define LWIPERF_CHECK_RX_DATA (1)
 
 //----- Replacement of built-in LwIP memory allocation with one based on dedicated Tx/Rx DMA memories
 #include "xparameters.h"
