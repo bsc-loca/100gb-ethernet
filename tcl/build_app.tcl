@@ -34,17 +34,16 @@ bsp setlib -name lwip211
 # bsp config lwip_dhcp true
 # bsp config dhcp_does_arp_check true
 # bsp config mem_size 524288
+bsp config mem_size 63488
 # bsp config memp_n_pbuf 1024
 #  below pbuf_pool_size value causes dramatic overflow of available uBlaze memory
 # bsp config pbuf_pool_size 16384
 #for TCP client/server only
 # bsp config memp_n_tcp_seg 1024
-#  below memp_n_tcp_seg value allows to fit to DMA Tx Mem
-bsp config memp_n_tcp_seg 64
+#  below memp_n_tcp_seg value is a trade-off between fit to DMA Tx Mem and satisfy as much as possible tcp_snd_buf
+bsp config memp_n_tcp_seg 128
 #for TCP client/server only
 # bsp config tcp_snd_buf 65535
-#  below tcp_snd_buf value allows to satisfy changed memp_n_tcp_seg
-bsp config tcp_snd_buf 4096
 #for TCP client/server only
 bsp config tcp_wnd 65535
 #for TCP client/server and UDP server only
@@ -65,7 +64,6 @@ bsp config sys_debug   true
 # bsp config tcp_debug   true
 # bsp config udp_debug   true
 
-# -DETHARP_DEBUG=LWIP_DBG_ON
 bsp config -append extra_compiler_flags {-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
                                          -Werror=div-by-zero -imacros ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h}
 # bsp regenerate
@@ -197,6 +195,27 @@ app config -name eth_test -get undef-compiler-symbols
 
 #Build the app
 app clean all
+app build all
+
+#All listed above LwIP lib parameters are collected as defines in auto-generated header lwipopts.h,
+#but there are no means to set TCP_OVERSIZE=1 what is required by LWIP_NETIF_TX_SINGLE_PBUF=1
+#(set in lwip_extra_defs.h to exclude TCP packet cutting among few memory allocations for DMA+100GbEth cores proper functioning).
+#This leads the above build to error: "LWIP_NETIF_TX_SINGLE_PBUF needs TCP_OVERSIZE enabled to create single-pbuf TCP packets"
+#because of auto-generated during it lwipopts.h with TCP_OVERSIZE=0. The snippet below fixes this and runs build once again.
+put ""
+put "The build has finished with known error, fixing it in auto-generated lwipopts.h and running once again..."
+put ""
+app clean all
+set lwipopts_header "./xsct_ws/ethernet_test_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/include/lwipopts.h"
+set file_orig  [open ${lwipopts_header}       r]
+set file_fixed [open ${lwipopts_header}_fixed w]
+while {[gets $file_orig line] >= 0} {
+    set line [string map {"#define TCP_OVERSIZE 0" "#define TCP_OVERSIZE 1 //required by LWIP_NETIF_TX_SINGLE_PBUF=1" } $line]
+    puts $file_fixed $line
+}
+close $file_orig
+close $file_fixed
+file rename -force ${lwipopts_header}_fixed $lwipopts_header
 app build all
 
 exit

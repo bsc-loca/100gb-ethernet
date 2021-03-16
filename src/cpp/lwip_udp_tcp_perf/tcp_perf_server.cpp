@@ -162,6 +162,7 @@ static void tcp_server_err(void *arg, err_t err)
 }
 
 
+extern bool tcpServerActive;
 /** Receive data on a tcp session */
 static err_t tcp_recv_perf_traffic(void *arg, struct tcp_pcb *tpcb,
 		struct pbuf *p, err_t err)
@@ -172,6 +173,7 @@ static err_t tcp_recv_perf_traffic(void *arg, struct tcp_pcb *tpcb,
 		tcp_server_close(tpcb);
 		tcp_conn_report(diff_ms, TCP_DONE_SERVER);
 		xil_printf("TCP test passed Successfully\n\r");
+		tcpServerActive = false; // stopping TCP test
 		return ERR_OK;
 	}
 

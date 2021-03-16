@@ -1,12 +1,30 @@
 
-#define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET
-#define LWIPERF_CHECK_RX_DATA (1)
+//----- General definitions
+#define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET // defining presence of Ethernet core
+#define LWIPERF_CHECK_RX_DATA 1
+
+#define LWIP_NETIF_TX_SINGLE_PBUF 1 // TCP packet shouldn't be cut among few allocations for DMA+100GbEth cores proper functioning
+// #define TCP_OVERSIZE           1 // required by above define but cannot be propagated from here (so done in build_app.tcl) 
+
+//----- Additional debug messaging
+// #define ETHARP_DEBUG     LWIP_DBG_ON
+// #define TCP_INPUT_DEBUG  LWIP_DBG_ON
+// #define TCP_OUTPUT_DEBUG LWIP_DBG_ON
+// #define TCP_WND_DEBUG    LWIP_DBG_ON
+// #define TCP_CWND_DEBUG   LWIP_DBG_ON
+// #define TCP_QLEN_DEBUG   LWIP_DBG_ON
+// #define TCP_RTO_DEBUG    LWIP_DBG_ON
+// #define TCP_FR_DEBUG     LWIP_DBG_ON
+// #define TCP_RST_DEBUG    LWIP_DBG_ON
+// #define TCPIP_DEBUG      LWIP_DBG_ON
+// #define API_MSG_DEBUG    LWIP_DBG_ON
+// #define MEMP_DEBUG       LWIP_DBG_ON
+
 
 //----- Replacement of built-in LwIP memory allocation with one based on dedicated Tx/Rx DMA memories
 #include "xparameters.h"
-
-//We want DMA and Eth core compliant memory alignment like for ETH_MEMPACK_SIZE in eth_test.cpp,
-//so for packet size below 2KB it should be at least 2KB:
+//We want DMA+100GbEth cores compliant memory alignment like for ETH_MEMPACK_SIZE in eth_test.cpp,
+//so for packet size below 2KB the alignment should be at least 2KB:
 #define DMA_AXI_BURST (64*64) // the parameter set in Vivado AXI_DMA IP
 #define MEMPACK_ALIGN_SIZE (DMA_AXI_BURST/2)
 #define LWIP_MEM_ALIGN_SIZE(size) (((size) + MEMPACK_ALIGN_SIZE-1) / MEMPACK_ALIGN_SIZE * MEMPACK_ALIGN_SIZE)
@@ -18,7 +36,7 @@
                                               SIZE_memp_memory_PBUF_POOL_base)
 
 #define ADDR_ram_heap                        XPAR_TX_MEM_CPU_S_AXI_BASEADDR
-#define SIZE_ram_heap                        (131072+4096) // originally (mem_size + 128)
+#define SIZE_ram_heap                        (31*2048+4096)  // originally (mem_size + 128)
 #define ADDR_memp_memory_UDP_PCB_base        (ADDR_ram_heap + \
                                               SIZE_ram_heap)
 #define SIZE_memp_memory_UDP_PCB_base        (2048*4)      // originally (64 x memp_n_udp_pcb)
@@ -30,7 +48,7 @@
 #define SIZE_memp_memory_TCP_PCB_LISTEN_base (2048*8)      // originally (64 x memp_n_tcp_pcb_listen)
 #define ADDR_memp_memory_TCP_SEG_base        (ADDR_memp_memory_TCP_PCB_LISTEN_base + \
                                               SIZE_memp_memory_TCP_PCB_LISTEN_base)
-#define SIZE_memp_memory_TCP_SEG_base        (2048*64)     // originally (64 x memp_n_tcp_seg)
+#define SIZE_memp_memory_TCP_SEG_base        (2048*128)     // originally (64 x memp_n_tcp_seg)
 #define ADDR_memp_memory_REASSDATA_base      (ADDR_memp_memory_TCP_SEG_base + \
                                               SIZE_memp_memory_TCP_SEG_base)
 #define SIZE_memp_memory_REASSDATA_base      (2048*5)      // originally (64 x MEMP_NUM_REASSDATA)

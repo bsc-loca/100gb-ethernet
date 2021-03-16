@@ -274,7 +274,8 @@ static void axidma_send_handler(void *arg)
 	xaxiemacif_s   *xaxiemacif;
 	XAxiDma_BdRing *txringptr;
 
-    // xil_printf("Send handler started \n");
+    if (0)
+      xil_printf("Send handler started \n");
 
 #ifdef OS_IS_FREERTOS
 	xInsideISR++;
@@ -554,10 +555,11 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		n_pbufs++;
 
     uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(txring);
-    while (freeBdCount < XLWIP_CONFIG_N_TX_DESC) { // fully optional wait for previous transfers finishing
-      // checking if this wait ever happens
+    while (freeBdCount < XLWIP_CONFIG_N_TX_DESC) {
+      // checking if this wait ever happens (Tx DMA interrupt handler provides immediate descriptors release)
       xil_printf("DMA is to send %d buffers, %ld BDs of %d are free \n", n_pbufs, freeBdCount, XLWIP_CONFIG_N_TX_DESC);
       // sleep(1); // in seconds, user wait process
+      freeBdCount = XAxiDma_BdRingGetFreeCnt(txring);
     }
 
 	/* obtain as many BD's */
@@ -576,7 +578,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		if (q->len > max_frame_size) {
 			XAxiDma_BdSetLength(txbd, max_frame_size, txring->MaxTransferLen);
 		}
-		else if (q->len < EthSyst::ETH_MIN_PACK_SIZE) {
+		else if (q->tot_len < EthSyst::ETH_MIN_PACK_SIZE) {
 			XAxiDma_BdSetLength(txbd, EthSyst::ETH_MIN_PACK_SIZE, txring->MaxTransferLen);
 		}
 		else {
@@ -589,7 +591,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		pbuf_ref(q);
 
         if (0) {
-          xil_printf("BD at addr %x is used to send Packet at addr %x; \n", txbd, q);
+          xil_printf("BD at addr %x is used to send a Packet of %d at addr %x; \n", txbd, n_pbufs, q);
           xil_printf("Tx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", q->payload, q->len, q->tot_len, q->ref, q->next);
         }
 

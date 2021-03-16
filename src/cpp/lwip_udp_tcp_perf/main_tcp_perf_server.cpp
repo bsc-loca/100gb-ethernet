@@ -121,6 +121,7 @@ static void assign_default_ip(ip_addr_t *ip, ip_addr_t *mask, ip_addr_t *gw)
 }
 #endif /* LWIP_IPV6 */
 
+bool tcpServerActive;
 // int main(void)
 int tcp_perf_server()
 {
@@ -211,7 +212,9 @@ int tcp_perf_server()
 	start_tcp_server_app();
 	xil_printf("\r\n");
 
-	while (1) {
+	tcpServerActive = true; // starting TCP test
+	// while (1) {
+	while (tcpServerActive) {
 		if (TcpFastTmrFlag) {
 			tcp_fasttmr();
 			TcpFastTmrFlag = 0;
@@ -220,8 +223,8 @@ int tcp_perf_server()
 			tcp_slowtmr();
 			TcpSlowTmrFlag = 0;
 		}
-		int n_packets = xemacif_input(netif);
-		if (n_packets) xil_printf("TCP server: Packet(s) received: %d \n", n_packets);
+		int in_packets = xemacif_input(netif);
+		if (0) xil_printf("tcp_perf_server(): Packet(s) received: %d \n", in_packets);
 	}
 
 	/* never reached */

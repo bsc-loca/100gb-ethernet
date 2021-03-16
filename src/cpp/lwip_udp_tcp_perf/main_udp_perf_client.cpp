@@ -200,7 +200,7 @@ int udp_perf_client()
 		}
 		int in_packets = xemacif_input(netif);
 		if (in_packets) {
-		  xil_printf("UDP client: Packet(s) received: %d \n", in_packets);
+		  xil_printf("udp_perf_client(): Packet(s) received: %d \n", in_packets);
 		  if (connWait) {
             print_udp_conn_stats();
             connWait = false;

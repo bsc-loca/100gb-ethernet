@@ -162,6 +162,7 @@ static void tcp_client_err(void *arg, err_t err)
 	xil_printf("TCP connection aborted\n\r");
 }
 
+extern bool tcpClientActive;
 static err_t tcp_send_perf_traffic(void)
 {
 	err_t err;
@@ -222,6 +223,7 @@ static err_t tcp_send_perf_traffic(void)
 				xil_printf("TCP test passed Successfully\n\r");
 				tcp_client_close(c_pcb);
 				c_pcb = NULL;
+                tcpClientActive = false; // stopping TCP test
 				return ERR_OK;
 			}
 		}
@@ -308,6 +310,16 @@ void start_tcp_client_app(void)
 		return;
 	}
 	client.client_id = 0;
+
+    // Allocation in DMA Tx memory for default case LWIP_NETIF_TX_SINGLE_PBUF=0 when send_buf goes directly to DMA
+	// (TCP_SEND_BUFSIZE should be also decreased to (2*TCP_MSS)), but problems with packet cutting in memory arise for DMA+100GbEth hw
+    // char* send_buf; // should be global and placed outside functions
+    // send_buf = (char*)mem_malloc(TCP_SEND_BUFSIZE); // allocation in DMA Tx memory
+    // if (send_buf == NULL) {
+    //   xil_printf("\nERROR in start_tcp_client_app(): send_buf of size %d cannot be allocated \n", TCP_SEND_BUFSIZE);
+    //   exit(1);
+    // }
+    // void mem_free(void *mem); // this not to forget free above allocation when client finishes
 
 	/* initialize data buffer being sent with same as used in iperf */
 	for (i = 0; i < TCP_SEND_BUFSIZE; i++)

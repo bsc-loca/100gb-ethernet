@@ -92,7 +92,7 @@ struct perf_stats {
 #define TCP_CONN_PORT 5001
 
 /* time in seconds to transmit packets */
-#define TCP_TIME_INTERVAL 300
+#define TCP_TIME_INTERVAL 30
 
 #if LWIP_IPV6==1
 /* Server to connect with */
@@ -102,6 +102,7 @@ struct perf_stats {
 #define TCP_SERVER_IP_ADDRESS "192.168.1.100"
 #endif
 
-#define TCP_SEND_BUFSIZE (5*TCP_MSS)
+// #define TCP_SEND_BUFSIZE (5*TCP_MSS)
+#define TCP_SEND_BUFSIZE (2*TCP_MSS) // results in better transfer performance
 
 #endif /* __TCP_PERF_CLIENT_H_ */
