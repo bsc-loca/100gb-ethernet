@@ -476,7 +476,7 @@ void EthSyst::dmaBDSetup(bool RxnTx)
 
 //*************************************************************************
 // This non-blocking function transfers packets through the DMA engine in SG mode
-void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_t packets, bool RxnTx)
+void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_t packets, bool RxnTx, bool bunchKickoff)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -505,15 +505,15 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 	  // Set up the BD using the information of the packet to transmit
 	  Status = XAxiDma_BdSetBufAddr(CurBdPtr, bufAddr);
 	  if (Status != XST_SUCCESS) {
-	    xil_printf("\nERROR: RxnTx=%d, Set of transfer buffer at addr %x on BD %x failed for packet %d with status %d\r\n",
-		              RxnTx, bufAddr, size_t(CurBdPtr), packet, Status);
+	    xil_printf("\nERROR: RxnTx=%d, Set of transfer buffer at addr %x on BD %x failed for packet %d of %d with status %d\r\n",
+		              RxnTx, bufAddr, size_t(CurBdPtr), packet, packets, Status);
         exit(1);
 	  }
 
 	  Status = XAxiDma_BdSetLength(CurBdPtr, packLen, BdRingPtr->MaxTransferLen);
 	  if (Status != XST_SUCCESS) {
-	    xil_printf("\nERROR: RxnTx=%d, Set of transfer length %d on BD %x failed for packet %d  with status %d\r\n",
-		              RxnTx, packLen, size_t(CurBdPtr), packet, Status);
+	    xil_printf("\nERROR: RxnTx=%d, Set of transfer length %d on BD %x failed for packet %d of %d with status %d\r\n",
+		              RxnTx, packLen, size_t(CurBdPtr), packet, packets, Status);
         exit(1);
 	  }
 
@@ -521,7 +521,7 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
         int Status = XAxiDma_BdSetAppWord(CurBdPtr, XAXIDMA_LAST_APPWORD, packLen);
         // If Set app length failed, it is not fatal
         if (Status != XST_SUCCESS) {
-          xil_printf("RxnTx=%d, Tx control stream: set app word failed for packet %d with status %d\r\n", RxnTx, packet, Status);
+          xil_printf("RxnTx=%d, Tx control stream: set app word failed for packet %d of %d with status %d\r\n", RxnTx, packet, packets, Status);
         }
       }
 
@@ -531,16 +531,28 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
                                               XAXIDMA_BD_CTRL_TXSOF_MASK);
       XAxiDma_BdSetId  (CurBdPtr, bufAddr);
 
+      // Give the BD to DMA to kick off the transfer of each packet separately
+      if (!bunchKickoff) {
+        int Status = XAxiDma_BdRingToHw(BdRingPtr, 1, CurBdPtr);
+        if (Status != XST_SUCCESS) {
+          xil_printf("\nERROR: RxnTx=%d, Submit of BD %x to hw failed for packet %d of %d with status %d\r\n",
+                       RxnTx, size_t(CurBdPtr), packet, packets, Status);
+          exit(1);
+        }
+      }
+
       bufAddr += bufLen;
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
 	}
 
-  // Give the BD to DMA to kick off the transfer
-  Status = XAxiDma_BdRingToHw(BdRingPtr, packets, BdPtr);
-  if (Status != XST_SUCCESS) {
-    xil_printf("\nERROR: RxnTx=%d, Submit of BD ring with %d BDs to hw failed with status %d\r\n", RxnTx, packets, Status);
-    exit(1);
-	}
+  // Give the BD to DMA to kick off the transfer of whole bunch at once
+  if (bunchKickoff) {
+    int Status = XAxiDma_BdRingToHw(BdRingPtr, packets, BdPtr);
+    if (Status != XST_SUCCESS) {
+      xil_printf("\nERROR: RxnTx=%d, Submit of BD ring with %d BDs to hw failed with status %d\r\n", RxnTx, packets, Status);
+      exit(1);
+	  }
+  }
 }
 
 
@@ -566,7 +578,8 @@ void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
     for (size_t packet = 0; packet < ProcessedBdCount; packet++) {
       size_t packActLen = XAxiDma_BdGetActualLength(CurBdPtr, BdRingPtr->MaxTransferLen);
       if (packActLen != packCheckLen) {
-        xil_printf("\nERROR: RxnTx=%d, Transferred length %d differes from expected %d \r\n", RxnTx, packActLen, packCheckLen);
+        xil_printf("\nERROR: RxnTx=%d, Transferred length %d differes from expected %d in packet %d of transferred %ld \r\n",
+                   RxnTx, packActLen, packCheckLen, packet, ProcessedBdCount);
         exit(1);
       }
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);

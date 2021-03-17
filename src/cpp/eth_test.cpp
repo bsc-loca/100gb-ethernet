@@ -228,8 +228,8 @@ int main(int argc, char *argv[])
                            ETH_PACKET_LEN > DMA_AXI_BURST/4  ? DMA_AXI_BURST/2  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/8  ? DMA_AXI_BURST/4  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/16 ? DMA_AXI_BURST/8  :
-                           ETH_PACKET_LEN > DMA_AXI_BURST/32 ? DMA_AXI_BURST/16 : ETH_PACKET_LEN,
-        ETH_PACKET_DECR = 7*sizeof(uint32_t) // optional length decrement for some packets for test purposes
+                           ETH_PACKET_LEN > DMA_AXI_BURST/32 ? DMA_AXI_BURST/16 : ETH_PACKET_LEN
+        // ETH_PACKET_DECR = 7*sizeof(uint32_t) // optional length decrement for some packets for test purposes
   };
   enum { // hardware defined depths of channels
         SHORT_LOOPBACK_DEPTH  = 104,
@@ -456,31 +456,27 @@ int main(int argc, char *argv[])
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         dmaTxMemPtr = size_t(ethSyst.txMem);
         dmaRxMemPtr = size_t(ethSyst.rxMem);
-        for (size_t packet = 0; packet < packets; packet++) {
-          // decreasing length of some transmited packets for test purposes
-          size_t packTxLen = ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR);
-          if (XAxiDma_HasSg(&ethSyst.axiDma)) {
-            ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, 1, true ); // Rx
-            ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, packTxLen,      1, false); // Tx
-            ethSyst.dmaBDPoll                                   (packTxLen,      1, false); // Tx
-            ethSyst.dmaBDPoll                                   (packTxLen,      1, true ); // Rx
+        if (XAxiDma_HasSg(&ethSyst.axiDma)) {
+          ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, true ); // Rx
+          ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, false, false); // Tx, each packet kick-off
+          ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, packets, false); // Tx
+          ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, packets, true ); // Rx
+        }
+        else for (size_t packet = 0; packet < packets; packet++) {
+          int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+          if (XST_SUCCESS != status) {
+            xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            exit(1);
           }
-          else {
-		        int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
-         	  if (XST_SUCCESS != status) {
-              xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
-              exit(1);
-	          }
-		        status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, packTxLen, XAXIDMA_DMA_TO_DEVICE);
-         	  if (XST_SUCCESS != status) {
-              xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
-              exit(1);
-	          }
-		        while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
-			             (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
-              // xil_printf("Waiting untill Tx/Rx transfer finishes \n");
-              // sleep(1); // in seconds, user wait process
-    	  	  }
+          status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+          if (XST_SUCCESS != status) {
+            xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+          }
+          while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
+                 (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
+            // xil_printf("Waiting untill Tx/Rx transfer finishes \n");
+            // sleep(1); // in seconds, user wait process
           }
           dmaTxMemPtr += ETH_MEMPACK_SIZE;
           dmaRxMemPtr += ETH_MEMPACK_SIZE;
@@ -489,7 +485,7 @@ int main(int argc, char *argv[])
         for (size_t packet = 0; packet < packets; packet++)
         for (size_t word   = 0; word < ETH_MEMPACK_SIZE/sizeof(uint32_t); word++) {
           size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
-          if (word < (ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR))/sizeof(uint32_t)) {
+          if (word < ETH_PACKET_LEN/sizeof(uint32_t)) {
             if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
               xil_printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
                           word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
@@ -663,33 +659,31 @@ int main(int argc, char *argv[])
 
         size_t packets = txrxMemSize/ETH_MEMPACK_SIZE;
         xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
-                packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
+                    packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
         size_t dmaRxMemPtr = size_t(ethSyst.rxMem);
         for (size_t packet = 0; packet < packets; packet++) {
-          // decreasing length of some transmited packets for test purposes
-          size_t packTxLen = ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR);
           if (XAxiDma_HasSg(&ethSyst.axiDma)) {
             ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, 1, true ); // Rx
             if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
-            ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, packTxLen,      1, false); // Tx
-            ethSyst.dmaBDPoll                                   (packTxLen,      1, false); // Tx
-            ethSyst.dmaBDPoll                                   (packTxLen,      1, true ); // Rx
+            ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, 1, false); // Tx
+            ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, 1, false); // Tx
+            ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, 1, true ); // Rx
           }
           else {
-		        int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
-         	  if (XST_SUCCESS != status) {
+            int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+            if (XST_SUCCESS != status) {
               xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
               exit(1);
-	          }
+            }
             if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
-		        status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, packTxLen, XAXIDMA_DMA_TO_DEVICE);
-         	  if (XST_SUCCESS != status) {
+            status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+            if (XST_SUCCESS != status) {
               xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
               exit(1);
-	          }
-		        while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
-			             (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
+            }
+            while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
+                   (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
               // xil_printf("Waiting untill Tx/Rx transfer finishes \n");
               // sleep(1); // in seconds, user wait process
             }
@@ -701,7 +695,7 @@ int main(int argc, char *argv[])
         for (size_t packet = 0; packet < packets; packet++)
         for (size_t word   = 0; word < ETH_MEMPACK_SIZE/sizeof(uint32_t); word++) {
           size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
-          if (word < (ETH_PACKET_LEN - (packet%3 ? 0 : ETH_PACKET_DECR))/sizeof(uint32_t)) {
+          if (word < ETH_PACKET_LEN/sizeof(uint32_t)) {
             if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
               xil_printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
                           word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
