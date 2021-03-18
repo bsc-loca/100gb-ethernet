@@ -64,8 +64,8 @@ bsp config sys_debug   true
 # bsp config tcp_debug   true
 # bsp config udp_debug   true
 
-bsp config -append extra_compiler_flags {-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
-                                         -Werror=div-by-zero -imacros ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h}
+bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
+                                         -Werror=div-by-zero -imacros ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h"
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc
@@ -175,7 +175,10 @@ app report eth_test
 #config the app
 importsources -name eth_test -path ./src/cpp/ 
 app config -name eth_test -set build-config release
-app config -name eth_test -add compiler-misc {-std=c++17 -Wall -Og -DLWIP_DEBUG -DNETIF_DEBUG=LWIP_DBG_ON}
+set lwip_xil_path "./xsct_ws/ethernet_test_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/"
+app config -name eth_test -add compiler-misc "-std=c++17 -fpermissive -Wall -Og \
+                                              -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA -I../src/eth_hw \
+                                              -I../../../${lwip_xil_path}/netif"
 # by default:_STACK_SIZE=0x400, _HEAP_SIZE=0x800
 app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x80000}
 # app config -name eth_test -add libraries xil   # (-l for lib of drivers for components from the platform (XSA), linked automatically (-L,-l))
@@ -200,22 +203,25 @@ app build all
 #All listed above LwIP lib parameters are collected as defines in auto-generated header lwipopts.h,
 #but there are no means to set TCP_OVERSIZE=1 what is required by LWIP_NETIF_TX_SINGLE_PBUF=1
 #(set in lwip_extra_defs.h to exclude TCP packet cutting among few memory allocations for DMA+100GbEth cores proper functioning).
-#This leads the above build to error: "LWIP_NETIF_TX_SINGLE_PBUF needs TCP_OVERSIZE enabled to create single-pbuf TCP packets"
+#This leads the first build to error: "LWIP_NETIF_TX_SINGLE_PBUF needs TCP_OVERSIZE enabled to create single-pbuf TCP packets"
 #because of auto-generated during it lwipopts.h with TCP_OVERSIZE=0. The snippet below fixes this and runs build once again.
 put ""
-put "The build has finished with known error, fixing it in auto-generated lwipopts.h and running once again..."
+put "The build has finished with known error, fixing it in auto-generated lwipopts.h and running build once again..."
 put ""
 app clean all
-set lwipopts_header "./xsct_ws/ethernet_test_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/include/lwipopts.h"
-set file_orig  [open ${lwipopts_header}       r]
-set file_fixed [open ${lwipopts_header}_fixed w]
+set file_orig  [open ${lwip_xil_path}/include/lwipopts.h       r]
+set file_fixed [open ${lwip_xil_path}/include/lwipopts_fixed.h w]
 while {[gets $file_orig line] >= 0} {
     set line [string map {"#define TCP_OVERSIZE 0" "#define TCP_OVERSIZE 1 //required by LWIP_NETIF_TX_SINGLE_PBUF=1" } $line]
     puts $file_fixed $line
 }
 close $file_orig
 close $file_fixed
-file rename -force ${lwipopts_header}_fixed $lwipopts_header
+file rename -force ${lwip_xil_path}/include/lwipopts_fixed.h ${lwip_xil_path}/include/lwipopts.h
+
+#Copying LwIP-level driver for Eth core in order to compile it
+file copy ${lwip_xil_path}/netif/xaxiemacif.c ./xsct_ws/eth_test/src/eth_hw/
+
 app build all
 
 exit

@@ -652,23 +652,23 @@ extern "C" {
  * The next few constants help upper layers determine the size of memory
  * pools used for Ethernet buffers and descriptor lists.
  */
-#define XAE_MAC_ADDR_SIZE		6	/* MAC addresses are 6 bytes */
+// #define XAE_MAC_ADDR_SIZE		6	/* MAC addresses are 6 bytes */
 #define XAE_MTU				1500	/* Max MTU size of an Ethernet
 						 * frame
 						 */
-#define XAE_JUMBO_MTU			8982	/* Max MTU size of a jumbo
-						 * Ethernet frame
-						 */
+// #define XAE_JUMBO_MTU			8982	/* Max MTU size of a jumbo
+// 						 * Ethernet frame
+// 						 */
 #define XAE_HDR_SIZE			14	/* Size of an Ethernet header*/
-#define XAE_HDR_VLAN_SIZE		18	/* Size of an Ethernet header
-						 * with VLAN
-						 */
-#define XAE_TRL_SIZE			4	/* Size of an Ethernet trailer
-						 * (FCS)
-						 */
-#define XAE_MAX_FRAME_SIZE	 (XAE_MTU + XAE_HDR_SIZE + XAE_TRL_SIZE)
-#define XAE_MAX_VLAN_FRAME_SIZE  (XAE_MTU + XAE_HDR_VLAN_SIZE + XAE_TRL_SIZE)
-#define XAE_MAX_JUMBO_FRAME_SIZE (XAE_JUMBO_MTU + XAE_HDR_SIZE + XAE_TRL_SIZE)
+// #define XAE_HDR_VLAN_SIZE		18	/* Size of an Ethernet header
+// 						 * with VLAN
+// 						 */
+// #define XAE_TRL_SIZE			4	/* Size of an Ethernet trailer
+// 						 * (FCS)
+// 						 */
+// #define XAE_MAX_FRAME_SIZE	 (XAE_MTU + XAE_HDR_SIZE + XAE_TRL_SIZE)
+// #define XAE_MAX_VLAN_FRAME_SIZE  (XAE_MTU + XAE_HDR_VLAN_SIZE + XAE_TRL_SIZE)
+// #define XAE_MAX_JUMBO_FRAME_SIZE (XAE_JUMBO_MTU + XAE_HDR_SIZE + XAE_TRL_SIZE)
 
 /*
  * Constant values returned by XAxiEthernet_GetPhysicalInterface(). Note that
@@ -787,6 +787,12 @@ typedef struct XAxiEthernet {
 } XAxiEthernet;
 
 
+XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base);
+
+// void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif);
+#define init_axiemac(xaxiemac,netif)
+
+
 /***************** Macros (Inline Functions) Definitions *********************/
 
 /*****************************************************************************/
@@ -828,6 +834,7 @@ typedef struct XAxiEthernet {
 *
 ******************************************************************************/
 // #define XAxiEthernet_IsDma(InstancePtr) (((InstancePtr)->Config.AxiDevType == XPAR_AXI_DMA) ? TRUE: FALSE)
+#define XAxiEthernet_IsDma(InstancePtr) (TRUE)
 
 /*****************************************************************************/
 /**
@@ -847,6 +854,7 @@ typedef struct XAxiEthernet {
 *
 ******************************************************************************/
 // #define XAxiEthernet_IsFifo(InstancePtr) (((InstancePtr)->Config.AxiDevType == XPAR_AXI_FIFO) ? TRUE: FALSE)
+#define XAxiEthernet_IsFifo(InstancePtr) (FALSE)
 
 /*****************************************************************************/
 /**
@@ -864,6 +872,7 @@ typedef struct XAxiEthernet {
 *
 ******************************************************************************/
 // #define XAxiEthernet_IsMcDma(InstancePtr) (((InstancePtr)->Config.AxiDevType == XPAR_AXI_MCDMA) ? TRUE: FALSE)
+#define XAxiEthernet_IsMcDma(InstancePtr) (FALSE)
 
 /*****************************************************************************/
 /**

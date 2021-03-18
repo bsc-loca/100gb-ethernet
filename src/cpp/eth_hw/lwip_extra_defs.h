@@ -1,6 +1,7 @@
 
 //----- General definitions
 #define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET // defining presence of Ethernet core
+// #define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA // defining presence of DMA for Ethernet core (used at app build stage)
 #define LWIPERF_CHECK_RX_DATA 1
 
 #define LWIP_NETIF_TX_SINGLE_PBUF 1 // TCP packet shouldn't be cut among few allocations for DMA+100GbEth cores proper functioning

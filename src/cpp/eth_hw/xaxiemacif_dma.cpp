@@ -48,8 +48,7 @@
 #include "lwip/inet_chksum.h"
 
 #include "netif/xadapter.h"
-// #include "netif/xaxiemacif.h"
-#include "xaxiemacif.h"
+#include "netif/xaxiemacif.h"
 
 #if XLWIP_CONFIG_INCLUDE_AXIETH_ON_ZYNQ == 1
 #include "xscugic.h"
@@ -63,6 +62,8 @@
 #include "xparameters.h"
 
 #include "ethdrv.h"
+using namespace EthDefs;
+enum {XAE_MAX_FRAME_SIZE = XEL_MAX_FRAME_SIZE};
 
 #ifdef CONFIG_XTRACE
 #include "xtrace.h"
@@ -116,6 +117,17 @@ u32 xInsideISR = 0;
 #if defined (__aarch64__) || defined (ARMR5)
 u8_t bd_space[0x200000] __attribute__ ((aligned (0x200000)));
 #endif
+
+XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base)
+  {return NULL;}
+
+// void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif)
+//   {};
+
+int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr,
+			    XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress)
+  {return 0;};
+
 
 static inline void bd_csum_enable(XAxiDma_Bd *bd)
 {
@@ -657,7 +669,8 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 
-err_enum_t init_axi_dma(struct xemac_s *xemac)
+// err_enum_t init_axi_dma(struct xemac_s *xemac)
+XStatus init_axi_dma(struct xemac_s *xemac)
 {
 	XAxiDma_Config *dmaconfig;
 	XAxiDma_Bd bdtemplate;

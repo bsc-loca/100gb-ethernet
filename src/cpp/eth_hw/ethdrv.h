@@ -206,18 +206,23 @@ namespace EthDefs {
     XEL_HEADER_SIZE = 14,   // Size of header in bytes
     XEL_MTU_SIZE    = 1500, // Max size of data in frame
     XEL_FCS_SIZE    = 4,    // Size of CRC
+    XEL_MAX_FRAME_SIZE    = (XEL_HEADER_SIZE+XEL_MTU_SIZE+XEL_FCS_SIZE), // Max length of Rx frame used if length/type fieldcontains the type(> 1500)
+    XEL_MAX_TX_FRAME_SIZE = (XEL_HEADER_SIZE+XEL_MTU_SIZE), // Max length of Tx frame
+
+    XEL_VLAN_TAG_SIZE = 4,    // VLAN Tag Size
+    XAE_HDR_VLAN_SIZE = 18,   // Size of an Ethernet header with VLAN
+    XAE_MAX_VLAN_FRAME_SIZE = (XEL_MTU_SIZE + XAE_HDR_VLAN_SIZE + XEL_FCS_SIZE),
+
+    XAE_JUMBO_MTU = 8982, // Max MTU size of a jumbo Ethernet frame
+    XAE_MAX_JUMBO_FRAME_SIZE = (XAE_JUMBO_MTU + XEL_HEADER_SIZE + XEL_FCS_SIZE),
 
     XEL_HEADER_OFFSET           = 12, // Offset to length field
     XEL_HEADER_IP_LENGTH_OFFSET = 16, // IP Length Offset
-
-    XEL_MAX_FRAME_SIZE    = (XEL_HEADER_SIZE+XEL_MTU_SIZE+XEL_FCS_SIZE), // Max length of Rx frame used if length/type fieldcontains the type(> 1500)
-    XEL_MAX_TX_FRAME_SIZE = (XEL_HEADER_SIZE+XEL_MTU_SIZE), // Max length of Tx frame
-    XEL_ARP_PACKET_SIZE   = 28, // Max ARP packet size
+    XEL_ARP_PACKET_SIZE         = 28, // Max ARP packet size
 
     XEL_ETHER_PROTO_TYPE_IP	  = 0x0800, // IP Protocol
     XEL_ETHER_PROTO_TYPE_ARP  = 0x0806, // ARP Protocol
     XEL_ETHER_PROTO_TYPE_VLAN =	0x8100, // VLAN Tagged
-    XEL_VLAN_TAG_SIZE         = 4,      // VLAN Tag Size
 
     BROADCAST_PACKET    = 1,      // Broadcast packet
     MAC_MATCHED_PACKET  = 2,      // Dest MAC matched with local MAC
