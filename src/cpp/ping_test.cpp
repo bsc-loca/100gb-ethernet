@@ -177,7 +177,7 @@ void PingReqstTest::SendEchoReqFrame()
 	/*
 	 * Add echo field information.
 	 */
-	*(TxFramePtr + ICMP_ECHO_FIELD_LOC) = Xil_Htons(XEL_ETHER_PROTO_TYPE_IP);
+	*(TxFramePtr + ICMP_ECHO_FIELD_LOC) = Xil_Htons(XAE_ETHER_PROTO_TYPE_IP);
 
 	/*
 	 * Checksum value is initialized to zeros.
@@ -262,11 +262,11 @@ void PingReqstTest::SendArpReqFrame()
 	 *	- IP version (IPv6/IPv4)
 	 *	- ARP Request
 	 */
-	*TxFramePtr++ = Xil_Htons(XEL_ETHER_PROTO_TYPE_ARP);
+	*TxFramePtr++ = Xil_Htons(XAE_ETHER_PROTO_TYPE_ARP);
 	*TxFramePtr++ = Xil_Htons(HW_TYPE);
-	*TxFramePtr++ = Xil_Htons(XEL_ETHER_PROTO_TYPE_IP);
+	*TxFramePtr++ = Xil_Htons(XAE_ETHER_PROTO_TYPE_IP);
 	*TxFramePtr++ = Xil_Htons(IP_VERSION);
-	*TxFramePtr++ = Xil_Htons(ARP_REQUEST);
+	*TxFramePtr++ = Xil_Htons(ARP_REQ);
 
 	/*
 	 * Add local MAC address.
@@ -383,11 +383,11 @@ int PingReqstTest::ProcessRcvFrame()
 		/*
 		 * Check ARP type.
 		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_ARP ) {
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XAE_ETHER_PROTO_TYPE_ARP ) {
 			/*
 			 * Check ARP status.
 			 */
-			if (Xil_Ntohs(*(RxFramePtr + ARP_REQ_STATUS_LOC)) == ARP_REPLY) {
+			if (Xil_Ntohs(*(RxFramePtr + ARP_REQ_STATUS_LOC)) == ARP_RPLY) {
 
 				/*
 				 * Check destination IP address with
@@ -423,7 +423,7 @@ int PingReqstTest::ProcessRcvFrame()
 		/*
 		 * Check for IP type.
 		 */
-		else if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_IP) {
+		else if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XAE_ETHER_PROTO_TYPE_IP) {
 			/*
 			 * Calculate checksum.
 			 */
@@ -652,7 +652,7 @@ void PingReplyTest::ProcessRcvFrame()
 		/*
 		 * Check for an ARP Packet if so generate a reply.
 		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_ARP) {
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XAE_ETHER_PROTO_TYPE_ARP) {
 			/*
 			 * IP address of the local machine.
 			 */
@@ -670,7 +670,7 @@ void PingReplyTest::ProcessRcvFrame()
 				 * Check ARP packet type(request/reply).
 				 */
 				if (Xil_Ntohs(*(RxFramePtr + ARP_REQ_STATUS_LOC)) ==
-								ARP_REQUEST) {
+								ARP_REQ) {
 
 					/*
 					 * Add destination MAC address
@@ -717,7 +717,7 @@ void PingReplyTest::ProcessRcvFrame()
 					 * Add ARP reply status to the reply
 					 * packet.
 					 */
-					*TxFramePtr++ = Xil_Htons(ARP_REPLY);
+					*TxFramePtr++ = Xil_Htons(ARP_RPLY);
 
 					/*
 					 * Add local MAC Address
@@ -793,7 +793,7 @@ void PingReplyTest::ProcessRcvFrame()
 		/*
 		 * Check ICMP packet.
 		 */
-		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XEL_ETHER_PROTO_TYPE_IP) {
+		if (Xil_Ntohs(*(RxFramePtr + ETHER_PROTO_TYPE_LOC)) == XAE_ETHER_PROTO_TYPE_IP) {
 			/*
 			 * Check the IP header checksum.
 			 */

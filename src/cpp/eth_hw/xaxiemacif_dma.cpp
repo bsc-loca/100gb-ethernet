@@ -62,8 +62,6 @@
 #include "xparameters.h"
 
 #include "ethdrv.h"
-using namespace EthDefs;
-enum {XAE_MAX_FRAME_SIZE = XEL_MAX_FRAME_SIZE};
 
 #ifdef CONFIG_XTRACE
 #include "xtrace.h"

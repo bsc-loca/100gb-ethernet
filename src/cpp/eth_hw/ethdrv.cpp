@@ -51,8 +51,7 @@
 #include <algorithm>
 
 #include "ethdrv.h"
-
-using namespace EthDefs;
+#include "eth_defs.h"
 
 //***************** Initialization of 100Gb Ethernet Core *****************
 void EthSyst::ethCoreInit(bool gtLoopback) {
@@ -105,7 +104,7 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   
   if (gtLoopback) {
     xil_printf("Enabling Near-End PMA Loopback\n");
-    // gtCtrl[GT_CTRL] = 0x2222; // via GPIO: https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
+    // gtCtrl[GT_CTRL] = 0x2222; // via GPIO: http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
     xil_printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
     ethCore[GT_LOOPBACK_REG] = GT_LOOPBACK_REG_CTL_GT_LOOPBACK_MASK;
     xil_printf("GT_LOOPBACK_REG: %0lX \n", ethCore[GT_LOOPBACK_REG]);
@@ -127,7 +126,7 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   xil_printf("\n");
   
   xil_printf("Ethernet core bring-up.\n");
-  // https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+  // http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
   // via GPIO
   // rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
   // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
@@ -209,6 +208,7 @@ void EthSyst::ethTxRxDisable() {
 
 //***************** Initialization of Timer *****************
 void EthSyst::timerCntInit() {
+  // AXI Timer direct control: http://www.xilinx.com/support/documentation/ip_documentation/axi_timer/v2_0/pg079-axi-timer.pdf
   xil_printf("------- Initializing Timer -------\n");
   // Controlling Timer via Xilinx driver.
   // Initialize the Timer driver so that it is ready to use
@@ -355,7 +355,7 @@ void EthSyst::intrCtrlStop_l() {
 //***************** Initialization of DMA engine *****************
 void EthSyst::axiDmaInit() {
   xil_printf("------- Initializing DMA -------\n");
-  // Direct AXI DMA control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
+  // AXI DMA direct control: http://www.xilinx.com/support/documentation/ip_documentation/axi_dma/v7_1/pg021_axi_dma.pdf
   uint32_t* dmaCore = reinterpret_cast<uint32_t*>(XPAR_ETH_DMA_BASEADDR);
   enum {
     MM2S_DMACR = (XAXIDMA_CR_OFFSET + XAXIDMA_TX_OFFSET) / sizeof(uint32_t),
@@ -624,7 +624,7 @@ uint32_t EthSyst::dmaBDCheck(bool RxnTx)
 
 //***************** AXI-Stream Switches control *****************
 void EthSyst::switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
-  // AXIS switches control: https://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
+  // AXIS switches control: http://www.xilinx.com/support/documentation/ip_documentation/axis_infrastructure_ip_suite/v1_1/pg085-axi4stream-infrastructure.pdf#page=27
   uint32_t* strSwitch = txNrx ? reinterpret_cast<uint32_t*>(XPAR_TX_AXIS_SWITCH_BASEADDR) :
                                 reinterpret_cast<uint32_t*>(XPAR_RX_AXIS_SWITCH_BASEADDR);
   enum {SW_CTR = XAXIS_SCR_CTRL_OFFSET         / sizeof(uint32_t),
@@ -676,17 +676,17 @@ int EthSyst::flushReceive() {
   if(XAxiDma_HasSg(&axiDma)) { // in SG mode
 	  uint32_t rxdBDs = 0;
 	  do {
-        dmaBDTransfer(size_t(rxMem), XEL_MAX_FRAME_SIZE, XEL_MAX_FRAME_SIZE, 1, true);
+        dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, true);
         rxdBDs = dmaBDCheck(true);
 	    xil_printf("Flushing %ld Rx transfers \n", rxdBDs);
 	  } while (rxdBDs != 0);
   } else // in simple mode
     while ((XAxiDma_ReadReg(axiDma.RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
 	       !XAxiDma_Busy   (&axiDma, XAXIDMA_DEVICE_TO_DMA)) {
-      int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+      int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XAE_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
       if (XST_SUCCESS != status) {
         xil_printf("\nERROR: Initial Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
-                   size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
+                   size_t(rxMem), XAE_MAX_FRAME_SIZE, status);
         return status;
       }
 	  xil_printf("Flushing Rx data... \n");
@@ -904,7 +904,7 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 	/*
 	 * The frame is in the buffer, now send it.
 	 */
-    ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XEL_MAX_TX_FRAME_SIZE));
+    ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XAE_MAX_TX_FRAME_SIZE));
     if(XAxiDma_HasSg(&axiDma)) { // in SG mode
       dmaBDTransfer(size_t(txMem), ByteCount, ByteCount, 1, false);
 	  return XST_SUCCESS;
@@ -1086,7 +1086,7 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 *
 * @param	InstancePtr is a pointer to the XEmacLite instance.
 * @param 	FramePtr is a pointer to a buffer where the frame will
-*		be stored. The buffer must be at least XEL_MAX_FRAME_SIZE bytes.
+*		be stored. The buffer must be at least XAE_MAX_FRAME_SIZE bytes.
 *		For optimal performance, a 32-bit aligned buffer should be used
 *		but it is not required, the function will align the data if
 *		necessary.
@@ -1094,7 +1094,7 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 * @return
 *
 * The type/length field of the frame received.  When the type/length field
-* contains the type, XEL_MAX_FRAME_SIZE bytes will be copied out of the
+* contains the type, XAE_MAX_FRAME_SIZE bytes will be copied out of the
 * buffer and it is up to the higher layers to sort out the frame.
 * Function returns 0 if there is no data waiting in the receive buffer or
 * the pong buffer if configured.
@@ -1120,32 +1120,32 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	/*
 	 * Get the length of the frame that arrived.
 	 */
-	LengthType = getReceiveDataLength(XEL_HEADER_OFFSET);
+	LengthType = getReceiveDataLength(XAE_HEADER_OFFSET);
 
 	/*
 	 * Check if length is valid.
 	 */
-	if (LengthType > XEL_MAX_FRAME_SIZE) {
+	if (LengthType > XAE_MAX_FRAME_SIZE) {
 
 
-		if (LengthType == XEL_ETHER_PROTO_TYPE_IP) {
+		if (LengthType == XAE_ETHER_PROTO_TYPE_IP) {
 
-      Length = getReceiveDataLength(XEL_HEADER_IP_LENGTH_OFFSET);
-      Length += XEL_HEADER_SIZE + XEL_FCS_SIZE;
+      Length = getReceiveDataLength(XAE_HEADER_IP_LENGTH_OFFSET);
+      Length += XAE_HDR_SIZE + XAE_TRL_SIZE;
 
-    } else if (LengthType == XEL_ETHER_PROTO_TYPE_ARP) {
+    } else if (LengthType == XAE_ETHER_PROTO_TYPE_ARP) {
 
 			/*
 			 * The packet is an ARP Packet.
 			 */
-			Length = XEL_ARP_PACKET_SIZE + XEL_HEADER_SIZE + XEL_FCS_SIZE;
+			Length = XAE_ARP_PACKET_SIZE + XAE_HDR_SIZE + XAE_TRL_SIZE;
 
 		} else {
 			/*
 			 * Field contains type other than IP or ARP, use max
 			 * frame size and let user parse it.
 			 */
-			Length = XEL_MAX_FRAME_SIZE;
+			Length = XAE_MAX_FRAME_SIZE;
 
 		}
 	} else {
@@ -1153,7 +1153,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 		/*
 		 * Use the length in the frame, plus the header and trailer.
 		 */
-		Length = LengthType + XEL_HEADER_SIZE + XEL_FCS_SIZE;
+		Length = LengthType + XAE_HDR_SIZE + XAE_TRL_SIZE;
 	}
 
 	alignedRead(FramePtr, Length);
@@ -1162,12 +1162,12 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	 * Acknowledge the frame.
 	 */
   if(XAxiDma_HasSg(&axiDma)) // in SG mode
-      dmaBDTransfer(size_t(rxMem), XEL_MAX_FRAME_SIZE, XEL_MAX_FRAME_SIZE, 1, true);
+      dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, true);
 	else { // in simple mode
-	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XEL_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XAE_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
       if (XST_SUCCESS != status) {
         xil_printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
-		       size_t(rxMem), XEL_MAX_FRAME_SIZE, status);
+		       size_t(rxMem), XAE_MAX_FRAME_SIZE, status);
 	  }
 	}
 

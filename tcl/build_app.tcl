@@ -204,9 +204,9 @@ app build all
 #but there are no means to set TCP_OVERSIZE=1 what is required by LWIP_NETIF_TX_SINGLE_PBUF=1
 #(set in lwip_extra_defs.h to exclude TCP packet cutting among few memory allocations for DMA+100GbEth cores proper functioning).
 #This leads the first build to error: "LWIP_NETIF_TX_SINGLE_PBUF needs TCP_OVERSIZE enabled to create single-pbuf TCP packets"
-#because of auto-generated during it lwipopts.h with TCP_OVERSIZE=0. The snippet below fixes this and runs build once again.
+#because of auto-generated during it lwipopts.h with TCP_OVERSIZE=0. The snippet below fixes this and runs the build once again.
 put ""
-put "The build has finished with known error, fixing it in auto-generated lwipopts.h and running build once again..."
+put "The build has finished with known error, fixing it in auto-generated lwipopts.h and running the build once again..."
 put ""
 app clean all
 set file_orig  [open ${lwip_xil_path}/include/lwipopts.h       r]

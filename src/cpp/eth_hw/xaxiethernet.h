@@ -499,6 +499,7 @@ extern "C" {
 #include "xstatus.h"
 #include "xil_assert.h"
 // #include "xaxiethernet_hw.h"
+#include "eth_defs.h"
 
 /************************** Constant Definitions *****************************/
 
@@ -653,13 +654,13 @@ extern "C" {
  * pools used for Ethernet buffers and descriptor lists.
  */
 // #define XAE_MAC_ADDR_SIZE		6	/* MAC addresses are 6 bytes */
-#define XAE_MTU				1500	/* Max MTU size of an Ethernet
-						 * frame
-						 */
+// #define XAE_MTU				1500	/* Max MTU size of an Ethernet
+// 						 * frame
+// 						 */
 // #define XAE_JUMBO_MTU			8982	/* Max MTU size of a jumbo
 // 						 * Ethernet frame
 // 						 */
-#define XAE_HDR_SIZE			14	/* Size of an Ethernet header*/
+// #define XAE_HDR_SIZE			14	/* Size of an Ethernet header*/
 // #define XAE_HDR_VLAN_SIZE		18	/* Size of an Ethernet header
 // 						 * with VLAN
 // 						 */

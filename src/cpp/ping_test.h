@@ -13,8 +13,7 @@
 
 //***************************** Include Files *********************************
 #include "eth_hw/ethdrv.h"
-
-using namespace EthDefs;
+#include "eth_defs.h"
 
 //*********** Ping Request Class *************
 class PingReqstTest {
@@ -44,8 +43,8 @@ class PingReqstTest {
   uint16_t IpHeaderInfo[IP_HEADER_INFO_LEN] = {0x0800, 0x4500, 0x003C, 0x5566, 0x0000, 0x8001, 0x0000};
 
   // Buffers used for Transmission and Reception of Packets.
-  uint8_t RxFrame[XEL_MAX_FRAME_SIZE];
-  uint8_t TxFrame[XEL_MAX_FRAME_SIZE];
+  uint8_t RxFrame[XAE_MAX_FRAME_SIZE];
+  uint8_t TxFrame[XAE_MAX_FRAME_SIZE];
 
   int SeqNum; // Variable used to indicate the sequence number of the ICMP(echo) packet.
   int NumOfPingReqPkts; // Variable used to indicate the number of ping request packets to be send.
@@ -76,8 +75,8 @@ class PingReplyTest {
   uint8_t LocalIpAddr[IP_ADDR_SIZE] = {172, 16, 63, 121};
 
   // Buffers used for Transmission and Reception of Packets.
-  uint8_t RxFrame[XEL_MAX_FRAME_SIZE];
-  uint8_t TxFrame[XEL_MAX_FRAME_SIZE];
+  uint8_t RxFrame[XAE_MAX_FRAME_SIZE];
+  uint8_t TxFrame[XAE_MAX_FRAME_SIZE];
 
   uint32_t NumOfPingReplies; // Variable used to indicate the number of Ping replies sent.
 
