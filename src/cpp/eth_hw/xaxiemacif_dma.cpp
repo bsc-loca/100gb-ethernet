@@ -116,15 +116,18 @@ u32 xInsideISR = 0;
 u8_t bd_space[0x200000] __attribute__ ((aligned (0x200000)));
 #endif
 
-XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base)
-  {return NULL;}
-
 // void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif)
 //   {};
-
-int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr,
-			    XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress)
-  {return 0;};
+XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base)
+  {return NULL;}
+int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr, XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress)
+  {return 0;}
+u32 XAxiEthernet_IsDma(XAxiEthernet *InstancePtr)
+  {return 1;}
+u32 XAxiEthernet_IsFifo(XAxiEthernet *InstancePtr)
+  {return 0;}
+u32 XAxiEthernet_IsMcDma(XAxiEthernet *InstancePtr)
+  {return 0;}
 
 
 static inline void bd_csum_enable(XAxiDma_Bd *bd)
