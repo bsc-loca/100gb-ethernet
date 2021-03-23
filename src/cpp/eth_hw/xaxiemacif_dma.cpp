@@ -1,4 +1,8 @@
-/*
+/*****************************************************************************/
+/**
+*
+* @file Initially started from original Xilinx xaxiemacif_dma.c
+*
  * Copyright (C) 2010 - 2019 Xilinx, Inc.
  * All rights reserved.
  *
@@ -31,36 +35,17 @@
 #include <unistd.h>
 #include "lwipopts.h"
 
-#if !NO_SYS
-#ifdef OS_IS_XILKERNEL
-#include "xmk.h"
-#include "sys/intr.h"
-#endif
-#ifdef OS_IS_FREERTOS
-#include "FreeRTOS.h"
-#include "semphr.h"
-#include "timers.h"
-#endif
-#include "lwip/sys.h"
-#endif
-
 #include "lwip/stats.h"
 #include "lwip/inet_chksum.h"
 
 #include "netif/xadapter.h"
 #include "netif/xaxiemacif.h"
 
-#if XLWIP_CONFIG_INCLUDE_AXIETH_ON_ZYNQ == 1
-#include "xscugic.h"
-#else
 #include "xintc_l.h"
-#endif
-
 #include "xstatus.h"
 
 #include "xlwipconfig.h"
 #include "xparameters.h"
-
 #include "ethdrv.h"
 
 #ifdef CONFIG_XTRACE
@@ -71,22 +56,10 @@
 #include "xil_mmu.h"
 #endif
 
-#if XLWIP_CONFIG_INCLUDE_AXIETH_ON_ZYNQ == 1
-#ifndef XCACHE_FLUSH_DCACHE_RANGE
-#define XCACHE_FLUSH_DCACHE_RANGE(data, length)	\
-		Xil_DCacheFlushRange((UINTPTR)data, length)
-#endif
-#ifndef XCACHE_INVALIDATE_DCACHE_RANGE
-#define XCACHE_INVALIDATE_DCACHE_RANGE(data, length)	\
-		Xil_DCacheInvalidateRange((u32)data, length)
-#endif
-
-#endif
-
-#define XLWIP_CONFIG_N_RX_DESC 64  // build_app.tcl: bsp config n_rx_descriptors
-#define XLWIP_CONFIG_N_TX_DESC 512 // build_app.tcl: bsp config n_tx_descriptors
-#define XLWIP_CONFIG_N_RX_COALESCE 1 // build_app.tcl: n_rx_coalesce
-#define XLWIP_CONFIG_N_TX_COALESCE 1 // build_app.tcl: n_tx_coalesce
+#define XLWIP_CONFIG_N_RX_DESC 64    // should come from lwipopts.h after "bsp config n_rx_descriptors" (build_app.tcl)
+#define XLWIP_CONFIG_N_TX_DESC 512   // should come from lwipopts.h after "bsp config n_tx_descriptors" (build_app.tcl)
+#define XLWIP_CONFIG_N_RX_COALESCE 1 // should come from lwipopts.h after "bsp config n_rx_coalesce"    (build_app.tcl)
+#define XLWIP_CONFIG_N_TX_COALESCE 1 // should come from lwipopts.h after "bsp config n_tx_coalesce"    (build_app.tcl)
 
 
 /* Byte alignment of BDs */
@@ -108,27 +81,9 @@ struct xemac_s *xemac_fast;
 xaxiemacif_s *xaxiemacif_fast;
 #endif
 
-#ifdef OS_IS_FREERTOS
-u32 xInsideISR = 0;
-#endif
-
 #if defined (__aarch64__) || defined (ARMR5)
 u8_t bd_space[0x200000] __attribute__ ((aligned (0x200000)));
 #endif
-
-// void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif)
-//   {};
-XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base)
-  {return NULL;}
-int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr, XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress)
-  {return 0;}
-u32 XAxiEthernet_IsDma(XAxiEthernet *InstancePtr)
-  {return 1;}
-u32 XAxiEthernet_IsFifo(XAxiEthernet *InstancePtr)
-  {return 0;}
-u32 XAxiEthernet_IsMcDma(XAxiEthernet *InstancePtr)
-  {return 0;}
-
 
 static inline void bd_csum_enable(XAxiDma_Bd *bd)
 {
@@ -193,69 +148,69 @@ static inline u32_t csum_sub(u32_t csum, u16_t v)
  * compare if the h/w computed checksum (stored in the rxbd)
  * equals the TCP checksum value in the packet
  */
-// s32_t is_checksum_valid(XAxiDma_Bd *rxbd, struct pbuf *p) {
-// 	struct ethip_hdr *ehdr = (ethip_hdr *)p->payload;
-// 	u8_t proto = IPH_PROTO(&ehdr->ip);
+s32_t is_checksum_valid(XAxiDma_Bd *rxbd, struct pbuf *p) {
+	struct ethip_hdr *ehdr = p->payload;
+	u8_t proto = IPH_PROTO(&ehdr->ip);
 
-// 	/* check if it is a TCP packet */
-// 	if (htons(ehdr->eth.type) == ETHTYPE_IP && proto == IP_PROTO_TCP) {
-// 		u32_t iphdr_len;
-// 		u16_t csum_in_rxbd, pseudo_csum, iphdr_csum, padding_csum;
-// 		u16_t tcp_payload_offset;
-// 		u32_t computed_csum;
-// 		u16_t padding_len, tcp_payload_len, packet_len;
-// 		u16_t csum;
+	/* check if it is a TCP packet */
+	if (htons(ehdr->eth.type) == ETHTYPE_IP && proto == IP_PROTO_TCP) {
+		u32_t iphdr_len;
+		u16_t csum_in_rxbd, pseudo_csum, iphdr_csum, padding_csum;
+		u16_t tcp_payload_offset;
+		u32_t computed_csum;
+		u16_t padding_len, tcp_payload_len, packet_len;
+		u16_t csum;
 
-// 		/* determine length of IP header */
-// 		iphdr_len = (IPH_HL(&ehdr->ip) * 4);
-// 		tcp_payload_offset = XAE_HDR_SIZE + iphdr_len;
-// 		tcp_payload_len = htons(IPH_LEN(&ehdr->ip)) - IPH_HL(&ehdr->ip) * 4;
-//                 packet_len = extract_packet_len(rxbd);
-// 		padding_len = packet_len - tcp_payload_offset - tcp_payload_len;
+		/* determine length of IP header */
+		iphdr_len = (IPH_HL(&ehdr->ip) * 4);
+		tcp_payload_offset = XAE_HDR_SIZE + iphdr_len;
+		tcp_payload_len = htons(IPH_LEN(&ehdr->ip)) - IPH_HL(&ehdr->ip) * 4;
+                packet_len = extract_packet_len(rxbd);
+		padding_len = packet_len - tcp_payload_offset - tcp_payload_len;
 
-// 		csum_in_rxbd = extract_csum(rxbd);
-// 		pseudo_csum = htons(inet_chksum_pseudo(NULL,
-// 					(ip_addr_t *)&ehdr->ip.src, (ip_addr_t *)&ehdr->ip.dest,
-// 					proto, tcp_payload_len));
+		csum_in_rxbd = extract_csum(rxbd);
+		pseudo_csum = htons(inet_chksum_pseudo(NULL,
+					(ip_addr_t *)&ehdr->ip.src, (ip_addr_t *)&ehdr->ip.dest,
+					proto, tcp_payload_len));
 
-// 		/* xps_ll_temac computes the checksum of the packet starting at byte 14
-// 		 * we need to subtract the values of the ethernet & IP headers
-// 		 */
-// 		iphdr_csum  = inet_chksum(p->payload + 14, tcp_payload_offset - 14);
+		/* xps_ll_temac computes the checksum of the packet starting at byte 14
+		 * we need to subtract the values of the ethernet & IP headers
+		 */
+		iphdr_csum  = inet_chksum(p->payload + 14, tcp_payload_offset - 14);
 
-// 		/* compute csum of padding bytes, if any */
-// 		padding_csum = inet_chksum(p->payload + p->tot_len - padding_len,
-// 					padding_len);
+		/* compute csum of padding bytes, if any */
+		padding_csum = inet_chksum(p->payload + p->tot_len - padding_len,
+					padding_len);
 
-// 		/* get the h/w checksum value */
-// 		computed_csum = (u32_t)csum_in_rxbd;
+		/* get the h/w checksum value */
+		computed_csum = (u32_t)csum_in_rxbd;
 
-// 		/* remove the effect of csumming the iphdr */
-// 		computed_csum = csum_sub(computed_csum, ~iphdr_csum);
+		/* remove the effect of csumming the iphdr */
+		computed_csum = csum_sub(computed_csum, ~iphdr_csum);
 
-// 		/* add in the pseudo csum */
-// 		computed_csum = csum_sub(computed_csum, ~pseudo_csum);
+		/* add in the pseudo csum */
+		computed_csum = csum_sub(computed_csum, ~pseudo_csum);
 
-// 		/* remove any padding effect */
-// 		computed_csum = csum_sub(computed_csum, ~padding_csum);
+		/* remove any padding effect */
+		computed_csum = csum_sub(computed_csum, ~padding_csum);
 
-// 		/* normalize computed csum */
-// 		while (computed_csum >> 16) {
-// 			computed_csum = (computed_csum & 0xffff) + (computed_csum >> 16);
-// 		}
+		/* normalize computed csum */
+		while (computed_csum >> 16) {
+			computed_csum = (computed_csum & 0xffff) + (computed_csum >> 16);
+		}
 
-// 		/* convert to 16 bits and take 1's complement */
-// 		csum = (u16_t)computed_csum;
-// 		csum = ~csum;
+		/* convert to 16 bits and take 1's complement */
+		csum = (u16_t)computed_csum;
+		csum = ~csum;
 
-// 		/* chksum is valid if: computed csum over the packet is 0 */
-// 		return !csum;
-// 	} else {
-// 		/* just say yes to all other packets */
-// 		/* the upper layers in the stack will compute and verify the checksum */
-// 		return 1;
-// 	}
-// }
+		/* chksum is valid if: computed csum over the packet is 0 */
+		return !csum;
+	} else {
+		/* just say yes to all other packets */
+		/* the upper layers in the stack will compute and verify the checksum */
+		return 1;
+	}
+}
 
 static inline void *alloc_bdspace(int n_desc, bool RxnTx)
 {
@@ -263,12 +218,13 @@ static inline void *alloc_bdspace(int n_desc, bool RxnTx)
 	size_t padding = BD_ALIGNMENT*2;
 	size_t const sgMemAddr = RxnTx ? EthSyst::RX_SG_MEM_ADDR : EthSyst::TX_SG_MEM_ADDR;
 	size_t const sgMemSize = RxnTx ? EthSyst::RX_SG_MEM_SIZE : EthSyst::TX_SG_MEM_SIZE;
+
+	// void *unaligned_mem = mem_malloc(space + padding*4);
 	if (sgMemSize < space + padding*4) {
       xil_printf("\nERROR: RxnTx=%d, Available %x BD memory is less than required %x for %d BDs at addr %x\r\n",
 	             RxnTx, sgMemSize, space+padding*4, n_desc, sgMemAddr);
       exit(1);
 	}
-	// void *unaligned_mem = mem_malloc(space + padding*4);
 	void *unaligned_mem = (void *)sgMemAddr;
 	void *aligned_mem =
 	(void *)(((UINTPTR)(unaligned_mem + BD_ALIGNMENT)) & ~(BD_ALIGNMENT - 1));
@@ -287,12 +243,8 @@ static void axidma_send_handler(void *arg)
 	xaxiemacif_s   *xaxiemacif;
 	XAxiDma_BdRing *txringptr;
 
-    if (0)
-      xil_printf("Send handler started \n");
+    if (0) xil_printf("Send handler started \n");
 
-#ifdef OS_IS_FREERTOS
-	xInsideISR++;
-#endif
 	xemac = (struct xemac_s *)(arg);
 	xaxiemacif = (xaxiemacif_s *)(xemac->state);
 	txringptr = XAxiDma_GetTxRing(&xaxiemacif->axidma);
@@ -313,9 +265,6 @@ static void axidma_send_handler(void *arg)
 		xil_printf("%s: Error: axidma error interrupt is asserted\r\n",
 			__FUNCTION__);
 		XAxiDma_Reset(&xaxiemacif->axidma);
-#ifdef OS_IS_FREERTOS
-		xInsideISR--;
-#endif
 		return;
 	}
 	/* If Transmit done interrupt is asserted, process completed BD's */
@@ -324,10 +273,6 @@ static void axidma_send_handler(void *arg)
 	}
 
 	XAxiDma_BdRingIntEnable(txringptr, XAXIDMA_IRQ_ALL_MASK);
-
-#ifdef OS_IS_FREERTOS
-	xInsideISR--;
-#endif
 }
 
 static void setup_rx_bds(XAxiDma_BdRing *rxring)
@@ -351,7 +296,7 @@ static void setup_rx_bds(XAxiDma_BdRing *rxring)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
-			xil_printf("setup_rx_bds: unable to alloc pbuf\r\n");
+			xil_printf("setup_rx_bds(): unable to alloc pbuf\r\n");
 			return;
 		}
 		status = XAxiDma_BdRingAlloc(rxring, 1, &rxbd);
@@ -407,11 +352,7 @@ static void axidma_recv_handler(void *arg)
 	xaxiemacif_s *xaxiemacif;
 	XAxiDma_BdRing *rxring;
 
-    // xil_printf("Recv handler started \n");
-
-#ifdef OS_IS_FREERTOS
-	xInsideISR++;
-#endif
+    if (0) xil_printf("Recv handler started \n");
 
 	xemac = (struct xemac_s *)(arg);
 	xaxiemacif = (xaxiemacif_s *)(xemac->state);
@@ -443,9 +384,6 @@ static void axidma_recv_handler(void *arg)
 		}
 		XAxiDma_BdRingIntEnable(rxring, XAXIDMA_IRQ_ALL_MASK);
 		XAxiDma_Resume(&xaxiemacif->axidma);
-#ifdef OS_IS_FREERTOS
-		xInsideISR--;
-#endif
 		return;
 	}
 	/* If Reception done interrupt is asserted, call RX call back function
@@ -470,7 +408,6 @@ static void axidma_recv_handler(void *arg)
               xil_printf("Recv handler: Rx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", p->payload, p->len, p->tot_len, p->ref, p->next);
             }
 
-			// pbuf_realloc(p, rx_bytes);
 			pbuf_realloc(p, rx_act_len);
 
 #ifdef USE_JUMBO_FRAMES
@@ -507,15 +444,8 @@ static void axidma_recv_handler(void *arg)
 		/* return all the processed bd's back to the stack */
 		/* setup_rx_bds -> use XAxiDma_BdRingGetFreeCnt */
 		setup_rx_bds(rxring);
-#if !NO_SYS
-		sys_sem_signal(&xemac->sem_rx_data_available);
-#endif
 	}
 	XAxiDma_BdRingIntEnable(rxring, XAXIDMA_IRQ_ALL_MASK);
-#ifdef OS_IS_FREERTOS
-	xInsideISR--;
-#endif
-
 }
 
 s32_t is_tx_space_available(xaxiemacif_s *emac)
@@ -571,7 +501,7 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
     while (freeBdCount < XLWIP_CONFIG_N_TX_DESC) {
       // checking if this wait ever happens (Tx DMA interrupt handler provides immediate descriptors release)
       xil_printf("DMA is to send %d buffers, %ld BDs of %d are free \n", n_pbufs, freeBdCount, XLWIP_CONFIG_N_TX_DESC);
-      // sleep(1); // in seconds, user wait process
+      sleep(1); // in seconds, user wait process
       freeBdCount = XAxiDma_BdRingGetFreeCnt(txring);
     }
 
@@ -589,7 +519,8 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 		 */
 		XAxiDma_BdSetBufAddr(txbd, (UINTPTR)q->payload);
 		if (q->len > max_frame_size) {
-			XAxiDma_BdSetLength(txbd, max_frame_size, txring->MaxTransferLen);
+			XAxiDma_BdSetLength(txbd, max_frame_size,
+											txring->MaxTransferLen);
 		}
 		else if (q->tot_len < EthSyst::ETH_MIN_PACK_SIZE) {
 			XAxiDma_BdSetLength(txbd, EthSyst::ETH_MIN_PACK_SIZE, txring->MaxTransferLen);
@@ -607,7 +538,6 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
           xil_printf("BD at addr %x is used to send a Packet of %d at addr %x; \n", txbd, n_pbufs, q);
           xil_printf("Tx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", q->payload, q->len, q->tot_len, q->ref, q->next);
         }
-
 
 		last_txbd = txbd;
 		txbd = (XAxiDma_Bd *)XAxiDma_BdRingNext(txring, txbd);
@@ -670,7 +600,6 @@ XStatus axidma_sgsend(xaxiemacif_s *xaxiemacif, struct pbuf *p)
 	return XAxiDma_BdRingToHw(txring, n_pbufs, txbdset);
 }
 
-// err_enum_t init_axi_dma(struct xemac_s *xemac)
 XStatus init_axi_dma(struct xemac_s *xemac)
 {
 	XAxiDma_Config *dmaconfig;
@@ -705,12 +634,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 	xaxiemacif_fast = xaxiemacif;
 	xemac_fast = xemac;
 #endif
-#if NO_SYS
-	struct xtopology_t *xtopologyp = &xtopology[xemac->topology_index];
-#endif
-#ifdef OS_IS_FREERTOS
-	struct xtopology_t *xtopologyp = &xtopology[xemac->topology_index];
-#endif
+	// struct xtopology_t *xtopologyp = &xtopology[xemac->topology_index];
 
 	/* FIXME: On ZyqnMP Multiple Axi Ethernet are not supported */
 #if defined (__aarch64__) || defined (ARMR5)
@@ -730,8 +654,10 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 #endif
 
 
-	LWIP_DEBUGF(NETIF_DEBUG, ("rx_bdspace: 0x%08x\r\n",	xaxiemacif->rx_bdspace));
-	LWIP_DEBUGF(NETIF_DEBUG, ("tx_bdspace: 0x%08x\r\n",	xaxiemacif->tx_bdspace));
+	LWIP_DEBUGF(NETIF_DEBUG, ("rx_bdspace: 0x%08x\r\n",
+												xaxiemacif->rx_bdspace));
+	LWIP_DEBUGF(NETIF_DEBUG, ("tx_bdspace: 0x%08x\r\n",
+												xaxiemacif->tx_bdspace));
 
 	if (!xaxiemacif->rx_bdspace || !xaxiemacif->tx_bdspace) {
 		xil_printf("%s@%d: Error: Unable to allocate memory for RX buffer descriptors",
@@ -739,10 +665,8 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 		return ERR_IF;
 	}
 	/* initialize DMA */
-	// baseaddr = xaxiemacif->axi_ethernet.Config.AxiDevBaseAddress;
-	// dmaconfig = XAxiDma_LookupConfigBaseAddr(baseaddr);
-	dmaconfig = XAxiDma_LookupConfigBaseAddr(XPAR_ETH_DMA_BASEADDR);
     // dmaconfig = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
+	dmaconfig = XAxiDma_LookupConfigBaseAddr(XPAR_ETH_DMA_BASEADDR);
     if (!dmaconfig || dmaconfig->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
       xil_printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
       return ERR_IF;
@@ -815,7 +739,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
-			xil_printf("init_axi_dma: unable to alloc pbuf\r\n");
+			xil_printf("init_axi_dma(): unable to alloc pbuf\r\n");
 			return ERR_IF;
 		}
 		else {
@@ -873,179 +797,55 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 	XAxiDma_BdRingIntEnable(txringptr, XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_BdRingIntEnable(rxringptr, XAXIDMA_IRQ_ALL_MASK);
 
-#if XLWIP_CONFIG_INCLUDE_AXIETH_ON_ZYNQ == 1
-	XScuGic_RegisterHandler(xtopologyp->scugic_baseaddr,
-			xaxiemacif->axi_ethernet.Config.TemacIntr,
-			(Xil_ExceptionHandler)xaxiemac_error_handler,
-			&xaxiemacif->axi_ethernet);
-	XScuGic_RegisterHandler(xtopologyp->scugic_baseaddr,
-				xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
-				(Xil_ExceptionHandler)axidma_send_handler,
-				xemac);
-	XScuGic_RegisterHandler(xtopologyp->scugic_baseaddr,
-				xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
-				(Xil_ExceptionHandler)axidma_recv_handler,
-				xemac);
-
-	XScuGic_SetPriTrigTypeByDistAddr(INTC_DIST_BASE_ADDR,
-			xaxiemacif->axi_ethernet.Config.TemacIntr,
-			AXIETH_INTR_PRIORITY_SET_IN_GIC,
-			TRIG_TYPE_RISING_EDGE_SENSITIVE);
-	XScuGic_SetPriTrigTypeByDistAddr(INTC_DIST_BASE_ADDR,
-			xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
-			AXIDMA_TX_INTR_PRIORITY_SET_IN_GIC,
-			TRIG_TYPE_RISING_EDGE_SENSITIVE);
-        XScuGic_SetPriTrigTypeByDistAddr(INTC_DIST_BASE_ADDR,
-			xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
-			AXIDMA_RX_INTR_PRIORITY_SET_IN_GIC,
-			TRIG_TYPE_RISING_EDGE_SENSITIVE);
-
-	XScuGic_EnableIntr(INTC_DIST_BASE_ADDR,
-				xaxiemacif->axi_ethernet.Config.TemacIntr);
-	XScuGic_EnableIntr(INTC_DIST_BASE_ADDR,
-				xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr);
-	XScuGic_EnableIntr(INTC_DIST_BASE_ADDR,
-				xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr);
-#else
-#if NO_SYS
 #if XPAR_INTC_0_HAS_FAST == 1
 
 	/* Register axiethernet interrupt with interrupt controller as Fast
 							Interrupts */
-
 	// XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
 	// 		xaxiemacif->axi_ethernet.Config.TemacIntr,
 	// 		(XFastInterruptHandler)xaxiemac_errorfast_handler);
 
-	// XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-	// 		xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
-	// 		(XFastInterruptHandler)axidma_sendfast_handler);
-
-	// XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-	// 		xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
-	// 		(XFastInterruptHandler)axidma_recvfast_handler);
-
-    xil_printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
-	        XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
-	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
+    xil_printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x \n",
+	        XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, XPAR_INTC_0_BASEADDR);
+	XIntc_RegisterFastHandler(XPAR_INTC_0_BASEADDR, XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_sendfast_handler);
 
-    xil_printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x(%x) \n",
-	        XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
-	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
+    xil_printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x \n",
+	        XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, XPAR_INTC_0_BASEADDR);
+	XIntc_RegisterFastHandler(XPAR_INTC_0_BASEADDR,	XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_recvfast_handler);
 #else
 	/* Register axiethernet interrupt with interrupt controller */
-	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.TemacIntr,
-			(XInterruptHandler)xaxiemac_error_handler,
-			&xaxiemacif->axi_ethernet);
+	// XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
+	// 		xaxiemacif->axi_ethernet.Config.TemacIntr,
+	// 		(XInterruptHandler)xaxiemac_error_handler,
+	// 		&xaxiemacif->axi_ethernet);
+
 	/* connect & enable DMA interrupts */
-	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
+	XIntc_RegisterHandler(XPAR_INTC_0_BASEADDR, XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XInterruptHandler)axidma_send_handler,
 				xemac);
-	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
+	XIntc_RegisterHandler(XPAR_INTC_0_BASEADDR,	XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XInterruptHandler)axidma_recv_handler,
 				xemac);
 #endif
 	/* Enable EMAC interrupts in the interrupt controller */
 	do {
-        xil_printf("Starting Interrupt Controller at addr 0x%x(%x) \n", xtopologyp->intc_baseaddr, XPAR_INTC_0_BASEADDR);
+        xil_printf("Starting Interrupt Controller at addr 0x%x \n", XPAR_INTC_0_BASEADDR);
 		/* read current interrupt enable mask */
-		unsigned int cur_mask = XIntc_In32(xtopologyp->intc_baseaddr +
-							XIN_IER_OFFSET);
-
-		/* form new mask enabling AXIDMA & axiethernet interrupts */
-		cur_mask = cur_mask |
-			// | (1 << xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr)
-			// | (1 << xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr)
-			// | (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
-			(1 << XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID) |
-			(1 << XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
-
-		/* set new mask */
-		XIntc_EnableIntr(xtopologyp->intc_baseaddr, cur_mask);
-
-        // Set the master enable bit.
-        XIntc_MasterEnable(xtopologyp->intc_baseaddr);
-        Xil_ExceptionInit(); // Initialize the exception table.
-        // Register the interrupt controller handler with the exception table.
-        Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler)XIntc_DeviceInterruptHandler, XPAR_INTC_0_DEVICE_ID);
-        Xil_ExceptionEnable(); // Enable exceptions.
-	} while (0);
-#else
-#ifdef OS_IS_XILKERNEL
-	/* connect & enable axiethernet interrupts */
-	register_int_handler(xaxiemacif->axi_ethernet.Config.TemacIntr,
-			(XInterruptHandler)xaxiemac_error_handler,
-			&xaxiemacif->axi_ethernet);
-	enable_interrupt(xaxiemacif->axi_ethernet.Config.TemacIntr);
-
-	/* connect & enable DMA interrupts */
-	register_int_handler(xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
-			(XInterruptHandler)axidma_send_handler,
-			xemac);
-	enable_interrupt(xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr);
-
-	register_int_handler(xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
-			(XInterruptHandler)axidma_recv_handler,
-			xemac);
-	enable_interrupt(xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr);
-#else
-#if XPAR_INTC_0_HAS_FAST == 1
-
-	/* Register axiethernet interrupt with interrupt controller as Fast
-							Interrupts */
-	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.TemacIntr,
-			(XFastInterruptHandler)xaxiemac_errorfast_handler);
-
-	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
-			(XFastInterruptHandler)axidma_sendfast_handler);
-
-	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
-			(XFastInterruptHandler)axidma_recvfast_handler);
-#else
-	/* Register axiethernet interrupt with interrupt controller */
-	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.TemacIntr,
-			(XInterruptHandler)xaxiemac_error_handler,
-			&xaxiemacif->axi_ethernet);
-	/* connect & enable DMA interrupts */
-	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
-			(XInterruptHandler)axidma_send_handler,
-				xemac);
-	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
-			xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
-			(XInterruptHandler)axidma_recv_handler,
-				xemac);
-#endif
-	/* Enable EMAC interrupts in the interrupt controller */
-	do {
-		/* read current interrupt enable mask */
-		unsigned int cur_mask = XIntc_In32(xtopologyp->intc_baseaddr +
+		unsigned int cur_mask = XIntc_In32(XPAR_INTC_0_BASEADDR +
 							XIN_IER_OFFSET);
 
 		/* form new mask enabling AXIDMA & axiethernet interrupts */
 		cur_mask = cur_mask
-			| (1 << xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr)
-			| (1 << xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr)
-			| (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
+			| (1 << XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID)
+			| (1 << XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
+			// | (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
 
 		/* set new mask */
-		XIntc_EnableIntr(xtopologyp->intc_baseaddr, cur_mask);
+		XIntc_EnableIntr(XPAR_INTC_0_BASEADDR, cur_mask);
 	} while (0);
-#endif
-#endif
-#endif
-	return ERR_OK;
+	return 0;
 }
 
 #if XPAR_INTC_0_HAS_FAST == 1
@@ -1064,8 +864,20 @@ static void axidma_sendfast_handler(void)
 /****************************** Fast Error Handler ***************************/
 // static void xaxiemac_errorfast_handler(void)
 // {
-// 	// xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
-// 	xil_printf("MEEP: xaxiemac_errorfast_handler() is not defined so far. \n");
-// 	exit(1);
+// 	xaxiemac_error_handler(&xaxiemacif_fast->axi_ethernet);
 // }
 #endif
+
+/****************************** Dummy Eth driver functions ***************************/
+// void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif)
+//   {};
+XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base)
+  {return NULL;}
+int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr, XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress)
+  {return 0;}
+u32 XAxiEthernet_IsDma(XAxiEthernet *InstancePtr)
+  {return 1;}
+u32 XAxiEthernet_IsFifo(XAxiEthernet *InstancePtr)
+  {return 0;}
+u32 XAxiEthernet_IsMcDma(XAxiEthernet *InstancePtr)
+  {return 0;}

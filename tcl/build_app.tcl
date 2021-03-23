@@ -196,7 +196,7 @@ app config -name eth_test -get linker-misc
 app config -name eth_test -get linker-script
 app config -name eth_test -get undef-compiler-symbols
 
-#Build the app
+#Build the app in 2-pass way
 app clean all
 app build all
 
@@ -219,7 +219,19 @@ close $file_orig
 close $file_fixed
 file rename -force ${lwip_xil_path}/include/lwipopts_fixed.h ${lwip_xil_path}/include/lwipopts.h
 
-#Copying LwIP-level driver for Eth core in order to compile it
+#As we anyway do 2-pass compilation, making small fix in original definition for Eth core
+set file_orig  [open ${lwip_xil_path}/netif/xtopology_g.c       r]
+set file_fixed [open ${lwip_xil_path}/netif/xtopology_g_fixed.c w]
+while {[gets $file_orig line] >= 0} {
+    set line [string map {"0x00802000,"              "XPAR_ETH100GB_BASEADDR,  //Eth core address"             } $line]
+    set line [string map {"xemac_type_xps_emaclite," "xemac_type_axi_ethernet, //Eth core type which we mimic" } $line]
+    puts $file_fixed $line
+}
+close $file_orig
+close $file_fixed
+file rename -force ${lwip_xil_path}/netif/xtopology_g_fixed.c ${lwip_xil_path}/netif/xtopology_g.c
+
+#Copying LwIP-level driver for Eth core we mimic in order to compile it
 file copy ${lwip_xil_path}/netif/xaxiemacif.c ./xsct_ws/eth_test/src/eth_hw/
 
 app build all
