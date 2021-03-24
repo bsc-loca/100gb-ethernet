@@ -29,6 +29,10 @@
 #ifndef __PLATFORM_H_
 #define __PLATFORM_H_
 
+#define PLATFORM_TIMER_BASEADDR       XPAR_TMRCTR_0_BASEADDR
+#define PLATFORM_TIMER_INTERRUPT_INTR XPAR_INTC_0_TMRCTR_0_VEC_ID
+#define PLATFORM_TIMER_INTERRUPT_MASK (1 << XPAR_INTC_0_TMRCTR_0_VEC_ID)
+
 void init_platform();
 void cleanup_platform();
 #ifdef __MICROBLAZE__

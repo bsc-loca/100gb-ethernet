@@ -486,7 +486,6 @@
 #ifndef XAXIETHERNET_H		/* prevent circular inclusions */
 #define XAXIETHERNET_H		/* by using protection macros */
 
-// #include "netif/xaxiemacif.h"
 #include "eth_defs.h"
 
 /**************************** Type Definitions *******************************/
@@ -507,16 +506,6 @@ typedef struct XAxiEthernet {
 	u32 IsReady;		 /**< Device is initialized and ready */
 } XAxiEthernet;
 
-
-/************************** Function Prototypes ******************************/
-
-// void init_axiemac(xaxiemacif_s*, struct netif*);
-#define init_axiemac(xaxiemac,netif)
-
-XAxiEthernet_Config *xaxiemac_lookup_config(unsigned);
-
-int XAxiEthernet_Initialize(XAxiEthernet*, XAxiEthernet_Config*, UINTPTR);
-
 /*****************************************************************************/
 /**
 *
@@ -533,7 +522,7 @@ int XAxiEthernet_Initialize(XAxiEthernet*, XAxiEthernet_Config*, UINTPTR);
 *
 ******************************************************************************/
 // #define XAxiEthernet_IsDma(InstancePtr) (((InstancePtr)->Config.AxiDevType == XPAR_AXI_DMA) ? TRUE: FALSE)
-u32 XAxiEthernet_IsDma(XAxiEthernet*);
+#define XAxiEthernet_IsDma(InstancePtr) (TRUE)
 
 /*****************************************************************************/
 /**
@@ -553,7 +542,7 @@ u32 XAxiEthernet_IsDma(XAxiEthernet*);
 *
 ******************************************************************************/
 // #define XAxiEthernet_IsFifo(InstancePtr) (((InstancePtr)->Config.AxiDevType == XPAR_AXI_FIFO) ? TRUE: FALSE)
-u32 XAxiEthernet_IsFifo(XAxiEthernet*);
+#define XAxiEthernet_IsFifo(InstancePtr) (FALSE)
 
 /*****************************************************************************/
 /**
@@ -571,7 +560,21 @@ u32 XAxiEthernet_IsFifo(XAxiEthernet*);
 *
 ******************************************************************************/
 // #define XAxiEthernet_IsMcDma(InstancePtr) (((InstancePtr)->Config.AxiDevType == XPAR_AXI_MCDMA) ? TRUE: FALSE)
-u32 XAxiEthernet_IsMcDma(XAxiEthernet*);
+#define XAxiEthernet_IsMcDma(InstancePtr) (FALSE)
+
+/************************** Function Prototypes ******************************/
+
+/*
+ * Initialization functions in xaxiethernet.c
+ */
+// int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr,
+// 			    XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress);
+#define XAxiEthernet_Initialize(InstancePtr, CfgPtr, VirtualAddress)
+
+XAxiEthernet_Config * xaxiemac_lookup_config(unsigned mac_base);
+
+// void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif);
+#define init_axiemac(xaxiemacif, netif)
 
 #endif /* end of protection macro */
 /** @} */

@@ -869,15 +869,5 @@ static void axidma_sendfast_handler(void)
 #endif
 
 /****************************** Dummy Eth driver functions ***************************/
-// void init_axiemac(xaxiemacif_s *xaxiemacif, struct netif *netif)
-//   {};
-XAxiEthernet_Config *xaxiemac_lookup_config(unsigned mac_base)
+XAxiEthernet_Config* xaxiemac_lookup_config(unsigned mac_base)
   {return NULL;}
-int XAxiEthernet_Initialize(XAxiEthernet *InstancePtr, XAxiEthernet_Config *CfgPtr, UINTPTR VirtualAddress)
-  {return 0;}
-u32 XAxiEthernet_IsDma(XAxiEthernet *InstancePtr)
-  {return 1;}
-u32 XAxiEthernet_IsFifo(XAxiEthernet *InstancePtr)
-  {return 0;}
-u32 XAxiEthernet_IsMcDma(XAxiEthernet *InstancePtr)
-  {return 0;}

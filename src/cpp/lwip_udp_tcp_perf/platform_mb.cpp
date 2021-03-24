@@ -34,13 +34,12 @@
 #ifdef __MICROBLAZE__
 
 #include "arch/cc.h"
-#include "xparameters.h"
 #include "platform.h"
 // #include "platform_config.h"
-#include "lwip_example_platform_config.h"
 
 #include "mb_interface.h"
 
+#include "xparameters.h"
 #include "xintc.h"
 #include "xtmrctr_l.h"
 

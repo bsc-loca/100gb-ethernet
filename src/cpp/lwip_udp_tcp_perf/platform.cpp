@@ -27,11 +27,10 @@
  */
 #if __MICROBLAZE__
 #include "arch/cc.h"
-#include "xparameters.h"
 #include "platform.h"
 // #include "platform_config.h"
-#include "lwip_example_platform_config.h"
 #include "xil_cache.h"
+#include "xparameters.h"
 #include "xintc.h"
 #include "xil_exception.h"
 #include "lwip/tcp.h"

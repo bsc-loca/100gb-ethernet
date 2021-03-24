@@ -206,7 +206,7 @@ static void udp_recv_perf_traffic(void *arg, struct udp_pcb *tpcb,
 		/* Avoid rest of the packets if client
 		 * connection is already terminated.
 		 */
-		// return;
+		return;
 	}
 
 	if (recv_id < 0) {
