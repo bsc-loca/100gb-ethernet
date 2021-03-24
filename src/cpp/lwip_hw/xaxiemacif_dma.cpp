@@ -46,7 +46,7 @@
 
 #include "xlwipconfig.h"
 #include "xparameters.h"
-#include "ethdrv.h"
+#include "EthSyst.h"
 
 #ifdef CONFIG_XTRACE
 #include "xtrace.h"

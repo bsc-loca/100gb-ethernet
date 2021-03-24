@@ -64,8 +64,10 @@ bsp config sys_debug   true
 # bsp config tcp_debug   true
 # bsp config udp_debug   true
 
-bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG -I../../../../../../../../../src/cpp/eth_hw \
-                                         -Werror=div-by-zero -imacros ../../../../../../../../../src/cpp/eth_hw/lwip_extra_defs.h"
+bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG \
+                                         -I../../../../../../../../../src/cpp/eth_hw \
+                                         -I../../../../../../../../../src/cpp/lwip_hw \
+                                  -imacros ../../../../../../../../../src/cpp/lwip_hw/lwip_extra_defs.h -Werror=div-by-zero"
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc
@@ -177,7 +179,9 @@ importsources -name eth_test -path ./src/cpp/
 app config -name eth_test -set build-config release
 set lwip_xil_path "./xsct_ws/ethernet_test_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/"
 app config -name eth_test -add compiler-misc "-std=c++17 -fpermissive -Wall -Og \
-                                              -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA -I../src/eth_hw \
+                                              -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA \
+                                              -I../src/eth_hw \
+                                              -I../src/lwip_hw \
                                               -I../../../${lwip_xil_path}/netif"
 # by default:_STACK_SIZE=0x400, _HEAP_SIZE=0x800
 app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x80000}
@@ -232,7 +236,7 @@ close $file_fixed
 file rename -force ${lwip_xil_path}/netif/xtopology_g_fixed.c ${lwip_xil_path}/netif/xtopology_g.c
 
 #Copying LwIP-level driver for Eth core we mimic in order to compile it
-file copy ${lwip_xil_path}/netif/xaxiemacif.c ./xsct_ws/eth_test/src/eth_hw/
+file copy ${lwip_xil_path}/netif/xaxiemacif.c ./xsct_ws/eth_test/src/lwip_hw/
 
 app build all
 

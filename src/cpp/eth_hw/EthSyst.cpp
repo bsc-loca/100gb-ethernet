@@ -50,7 +50,7 @@
 #include <unistd.h>
 #include <algorithm>
 
-#include "ethdrv.h"
+#include "EthSyst.h"
 #include "eth_defs.h"
 
 //***************** Initialization of 100Gb Ethernet Core *****************

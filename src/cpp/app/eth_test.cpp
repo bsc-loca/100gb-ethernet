@@ -16,7 +16,7 @@
 // #include <sys/stat.h>
 
 #include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
-#include "ethdrv.h"
+#include "EthSyst.h"
 #include "ping_test.h"
 
 // using namespace std;

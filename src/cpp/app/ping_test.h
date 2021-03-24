@@ -12,7 +12,7 @@
 
 
 //***************************** Include Files *********************************
-#include "eth_hw/ethdrv.h"
+#include "EthSyst.h"
 #include "eth_defs.h"
 
 //*********** Ping Request Class *************
