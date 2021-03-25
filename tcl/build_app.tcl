@@ -65,7 +65,7 @@ bsp config sys_debug   true
 # bsp config udp_debug   true
 
 bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG \
-                                         -I../../../../../../../../../src/cpp/eth_hw \
+                                         -I../../../../../../../../../src/cpp/syst_hw \
                                          -I../../../../../../../../../src/cpp/lwip_hw \
                                   -imacros ../../../../../../../../../src/cpp/lwip_hw/lwip_extra_defs.h -Werror=div-by-zero"
 # bsp regenerate
@@ -180,8 +180,9 @@ app config -name eth_test -set build-config release
 set lwip_xil_path "./xsct_ws/ethernet_test_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/"
 app config -name eth_test -add compiler-misc "-std=c++17 -fpermissive -Wall -Og \
                                               -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA \
-                                              -I../src/eth_hw \
-                                              -I../src/lwip_hw \
+                                              -I../../../project \
+                                              -I../../../src/cpp/syst_hw \
+                                              -I../../../src/cpp/lwip_hw \
                                               -I../../../${lwip_xil_path}/netif"
 # by default:_STACK_SIZE=0x400, _HEAP_SIZE=0x800
 app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x80000}
@@ -223,11 +224,10 @@ close $file_orig
 close $file_fixed
 file rename -force ${lwip_xil_path}/include/lwipopts_fixed.h ${lwip_xil_path}/include/lwipopts.h
 
-#As we anyway do 2-pass compilation, making small fix in original definition for Eth core
+#As we anyway do 2-pass compilation, replacing the type of dummy Eth core present in the design with one we are going to mimic for LwIP
 set file_orig  [open ${lwip_xil_path}/netif/xtopology_g.c       r]
 set file_fixed [open ${lwip_xil_path}/netif/xtopology_g_fixed.c w]
 while {[gets $file_orig line] >= 0} {
-    set line [string map {"0x00802000,"              "XPAR_ETH100GB_BASEADDR,  //Eth core address"             } $line]
     set line [string map {"xemac_type_xps_emaclite," "xemac_type_axi_ethernet, //Eth core type which we mimic" } $line]
     puts $file_fixed $line
 }

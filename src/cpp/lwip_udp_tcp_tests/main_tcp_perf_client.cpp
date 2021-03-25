@@ -48,9 +48,7 @@
 extern volatile int dhcp_timoutcntr;
 #endif
 
-#include "tcp_perf_client.h"
-// #define DEFAULT_IP_ADDRESS	"192.168.1.10"
-#define DEFAULT_IP_ADDRESS	TCP_SERVER_IP_ADDRESS
+#define DEFAULT_IP_ADDRESS	"192.168.1.10"
 #define DEFAULT_IP_MASK		"255.255.255.0"
 #define DEFAULT_GW_ADDRESS	"192.168.1.1"
 #endif /* LWIP_IPV6 */
@@ -58,10 +56,10 @@ extern volatile int dhcp_timoutcntr;
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 
-
 void platform_enable_interrupts(void);
-void start_tcp_server_app(void);
-void print_tcp_server_app_header(void);
+void start_tcp_client_app(void);
+void trans_tcp_client_data(void);
+void print_tcp_client_app_header(void);
 
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
@@ -77,7 +75,7 @@ int IicPhyReset(void);
 #endif
 #endif
 
-netif tcp_server_netif;
+netif tcp_client_netif;
 
 #if LWIP_IPV6==1
 static void print_ipv6(char *msg, ip_addr_t *ip)
@@ -120,17 +118,17 @@ static void assign_default_ip(ip_addr_t *ip, ip_addr_t *mask, ip_addr_t *gw)
 }
 #endif /* LWIP_IPV6 */
 
-bool tcpServerActive;
+bool tcpClientActive;
 // int main(void)
-int tcp_perf_server()
+int tcp_perf_client()
 {
 	struct netif *netif;
 
 	/* the mac address of the board. this should be unique per board */
 	unsigned char mac_ethernet_address[] = {
-		0x00, 0x0a, 0x35, 0x03, 0x02, 0x01 };
+		0x00, 0x0a, 0x35, 0x00, 0x01, 0x02 };
 
-	netif = &tcp_server_netif;
+	netif = &tcp_client_netif;
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
 		XPAR_GIGE_PCS_PMA_1000BASEX_CORE_PRESENT == 1
@@ -149,14 +147,14 @@ int tcp_perf_server()
 	init_platform();
 
 	// xil_printf("\r\n\r\n");
-	xil_printf("-----lwIP RAW Mode TCP Server Application-----\r\n\n");
+	xil_printf("-----lwIP RAW Mode TCP Client Application-----\r\n\n");
 
 	/* initialize lwIP */
 	lwip_init();
 
 	/* Add network interface to the netif_list, and set it as default */
 	if (!xemac_add(netif, NULL, NULL, NULL, mac_ethernet_address,
-				XPAR_ETH100GB_BASEADDR)) {
+				XPAR_ETHMAC_LITE_BASEADDR)) { // putting address of LwIP-supported EthLite core present in the design as dummy unit
 		xil_printf("Error adding N/W interface\r\n");
 		return -1;
 	}
@@ -165,9 +163,8 @@ int tcp_perf_server()
 	netif->ip6_autoconfig_enabled = 1;
 	netif_create_ip6_linklocal_address(netif, 1);
 	netif_ip6_addr_set_state(netif, 0, IP6_ADDR_VALID);
-	print_ipv6("\n\rlink local IPv6 address is:", &netif->ip6_addr[0]);
+	print_ipv6("\n\rlink local IPv6 address is:",&netif->ip6_addr[0]);
 #endif /* LWIP_IPV6 */
-
 	netif_set_default(netif);
 
 	/* now enable interrupts */
@@ -201,19 +198,18 @@ int tcp_perf_server()
 #endif
 	print_ip_settings(&(netif->ip_addr), &(netif->netmask), &(netif->gw));
 #endif /* LWIP_IPV6 */
-
 	xil_printf("\r\n");
 
 	/* print app header */
-	print_tcp_server_app_header();
+	print_tcp_client_app_header();
 
 	/* start the application*/
-	start_tcp_server_app();
+	start_tcp_client_app();
 	xil_printf("\r\n");
 
-	tcpServerActive = true; // starting TCP test
+	tcpClientActive = true; // starting TCP test
 	// while (1) {
-	while (tcpServerActive) {
+	while (tcpClientActive) {
 		if (TcpFastTmrFlag) {
 			tcp_fasttmr();
 			TcpFastTmrFlag = 0;
@@ -223,7 +219,8 @@ int tcp_perf_server()
 			TcpSlowTmrFlag = 0;
 		}
 		int in_packets = xemacif_input(netif);
-		if (0) xil_printf("tcp_perf_server(): Packet(s) received: %d \n", in_packets);
+		if (0) xil_printf("tcp_perf_client(): Packet(s) received: %d \n", in_packets);
+		trans_tcp_client_data();
 	}
 
 	/* never reached */

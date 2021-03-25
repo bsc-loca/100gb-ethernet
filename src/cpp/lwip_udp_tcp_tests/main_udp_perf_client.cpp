@@ -141,7 +141,7 @@ int udp_perf_client()
 
 	/* Add network interface to the netif_list, and set it as default */
 	if (!xemac_add(netif, NULL, NULL, NULL, mac_ethernet_address,
-				XPAR_ETH100GB_BASEADDR)) {
+				XPAR_ETHMAC_LITE_BASEADDR)) { // putting address of LwIP-supported EthLite core present in the design as dummy unit
 		xil_printf("Error adding N/W interface\r\n");
 		return -1;
 	}

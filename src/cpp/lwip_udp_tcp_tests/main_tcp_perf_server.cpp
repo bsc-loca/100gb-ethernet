@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 - 2019 Xilinx, Inc.
+ * Copyright (C) 2018 - 2019 Xilinx, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -37,25 +37,31 @@
 #include "lwip/priv/tcp_priv.h"
 #include "lwip/init.h"
 #include "lwip/inet.h"
-#include "xil_cache.h"
+
+#if LWIP_IPV6==1
+#include "lwip/ip6_addr.h"
+#include "lwip/ip6.h"
+#else
 
 #if LWIP_DHCP==1
 #include "lwip/dhcp.h"
 extern volatile int dhcp_timoutcntr;
 #endif
 
+#include "tcp_perf_client.h"
+// #define DEFAULT_IP_ADDRESS	"192.168.1.10"
+#define DEFAULT_IP_ADDRESS	TCP_SERVER_IP_ADDRESS
+#define DEFAULT_IP_MASK		"255.255.255.0"
+#define DEFAULT_GW_ADDRESS	"192.168.1.1"
+#endif /* LWIP_IPV6 */
+
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 
-#include "udp_perf_client.h"
-// #define DEFAULT_IP_ADDRESS	"192.168.1.10"
-#define DEFAULT_IP_ADDRESS	UDP_SERVER_IP_ADDRESS
-#define DEFAULT_IP_MASK		"255.255.255.0"
-#define DEFAULT_GW_ADDRESS	"192.168.1.1"
 
 void platform_enable_interrupts(void);
-void start_udp_server_app(void);
-void print_udp_server_app_header(void);
+void start_tcp_server_app(void);
+void print_tcp_server_app_header(void);
 
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
@@ -71,8 +77,15 @@ int IicPhyReset(void);
 #endif
 #endif
 
-struct netif udp_server_netif;
+netif tcp_server_netif;
 
+#if LWIP_IPV6==1
+static void print_ipv6(char *msg, ip_addr_t *ip)
+{
+	print(msg);
+	xil_printf(" %s\n\r", inet6_ntoa(*ip));
+}
+#else
 static void print_ip(const char* msg, ip_addr_t *ip)
 {
 	print(msg);
@@ -105,10 +118,11 @@ static void assign_default_ip(ip_addr_t *ip, ip_addr_t *mask, ip_addr_t *gw)
 	if (!err)
 		xil_printf("Invalid default gateway address: %d\r\n", err);
 }
+#endif /* LWIP_IPV6 */
 
-bool udpServerActive;
+bool tcpServerActive;
 // int main(void)
-int udp_perf_server()
+int tcp_perf_server()
 {
 	struct netif *netif;
 
@@ -116,7 +130,7 @@ int udp_perf_server()
 	unsigned char mac_ethernet_address[] = {
 		0x00, 0x0a, 0x35, 0x03, 0x02, 0x01 };
 
-	netif = &udp_server_netif;
+	netif = &tcp_server_netif;
 #if defined (__arm__) && !defined (ARMR5)
 #if XPAR_GIGE_PCS_PMA_SGMII_CORE_PRESENT == 1 || \
 		XPAR_GIGE_PCS_PMA_1000BASEX_CORE_PRESENT == 1
@@ -135,17 +149,25 @@ int udp_perf_server()
 	init_platform();
 
 	// xil_printf("\r\n\r\n");
-	xil_printf("-----lwIP RAW Mode UDP Server Application-----\r\n\n");
+	xil_printf("-----lwIP RAW Mode TCP Server Application-----\r\n\n");
 
 	/* initialize lwIP */
 	lwip_init();
 
 	/* Add network interface to the netif_list, and set it as default */
 	if (!xemac_add(netif, NULL, NULL, NULL, mac_ethernet_address,
-				XPAR_ETH100GB_BASEADDR)) {
+				XPAR_ETHMAC_LITE_BASEADDR)) { // putting address of LwIP-supported EthLite core present in the design as dummy unit
 		xil_printf("Error adding N/W interface\r\n");
 		return -1;
 	}
+
+#if LWIP_IPV6==1
+	netif->ip6_autoconfig_enabled = 1;
+	netif_create_ip6_linklocal_address(netif, 1);
+	netif_ip6_addr_set_state(netif, 0, IP6_ADDR_VALID);
+	print_ipv6("\n\rlink local IPv6 address is:", &netif->ip6_addr[0]);
+#endif /* LWIP_IPV6 */
+
 	netif_set_default(netif);
 
 	/* now enable interrupts */
@@ -154,6 +176,7 @@ int udp_perf_server()
 	/* specify that the network if is up */
 	netif_set_up(netif);
 
+#if (LWIP_IPV6==0)
 #if (LWIP_DHCP==1)
 	/* Create a new DHCP client for this interface.
 	 * Note: you must call dhcp_fine_tmr() and dhcp_coarse_tmr() at
@@ -177,19 +200,20 @@ int udp_perf_server()
 	assign_default_ip(&(netif->ip_addr), &(netif->netmask), &(netif->gw));
 #endif
 	print_ip_settings(&(netif->ip_addr), &(netif->netmask), &(netif->gw));
+#endif /* LWIP_IPV6 */
 
 	xil_printf("\r\n");
 
 	/* print app header */
-	print_udp_server_app_header();
+	print_tcp_server_app_header();
 
 	/* start the application*/
-	start_udp_server_app();
+	start_tcp_server_app();
 	xil_printf("\r\n");
 
-	udpServerActive = true; // starting UDP test
+	tcpServerActive = true; // starting TCP test
 	// while (1) {
-	while (udpServerActive) {
+	while (tcpServerActive) {
 		if (TcpFastTmrFlag) {
 			tcp_fasttmr();
 			TcpFastTmrFlag = 0;
@@ -199,7 +223,7 @@ int udp_perf_server()
 			TcpSlowTmrFlag = 0;
 		}
 		int in_packets = xemacif_input(netif);
-		if (0) xil_printf("udp_perf_server(): Packet(s) received: %d \n", in_packets);
+		if (0) xil_printf("tcp_perf_server(): Packet(s) received: %d \n", in_packets);
 	}
 
 	/* never reached */

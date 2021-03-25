@@ -1,6 +1,6 @@
 
 //----- General definitions
-#define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET // defining presence of Ethernet core, actually one which we mimic
+#define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET // defining presence of Ethernet core, actually one which we mimic for LwIP
 // #define XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA // defining presence of DMA for Ethernet core (used at app build stage)
 #define LWIPERF_CHECK_RX_DATA 1
 
