@@ -29,6 +29,7 @@
 #ifndef __PLATFORM_H_
 #define __PLATFORM_H_
 
+#define PLATFORM_EMAC_BASEADDR        XPAR_ETHMAC_LITE_BASEADDR // setting the address of LwIP-supported EthLite core, present in the design as dummy unit
 #define PLATFORM_TIMER_BASEADDR       XPAR_TMRCTR_0_BASEADDR
 #define PLATFORM_TIMER_INTERRUPT_INTR XPAR_INTC_0_TMRCTR_0_VEC_ID
 #define PLATFORM_TIMER_INTERRUPT_MASK (1 << XPAR_INTC_0_TMRCTR_0_VEC_ID)

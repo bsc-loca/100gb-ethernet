@@ -154,7 +154,7 @@ int tcp_perf_client()
 
 	/* Add network interface to the netif_list, and set it as default */
 	if (!xemac_add(netif, NULL, NULL, NULL, mac_ethernet_address,
-				XPAR_ETHMAC_LITE_BASEADDR)) { // putting address of LwIP-supported EthLite core present in the design as dummy unit
+				PLATFORM_EMAC_BASEADDR)) {
 		xil_printf("Error adding N/W interface\r\n");
 		return -1;
 	}
