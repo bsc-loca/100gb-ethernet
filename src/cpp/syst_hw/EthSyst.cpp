@@ -476,7 +476,7 @@ void EthSyst::dmaBDSetup(bool RxnTx)
 
 //*************************************************************************
 // This non-blocking function transfers packets through the DMA engine in SG mode
-void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_t packets, bool RxnTx, bool bunchKickoff)
+void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_t packets, size_t bunchSize, bool RxnTx)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -501,7 +501,8 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 
 
 	XAxiDma_Bd* CurBdPtr = BdPtr;
-	for (size_t packet = 0; packet < packets; packet++) {
+  size_t packet;
+	for (packet = 0; packet < packets; packet++) {
 	  // Set up the BD using the information of the packet to transmit
 	  Status = XAxiDma_BdSetBufAddr(CurBdPtr, bufAddr);
 	  if (Status != XST_SUCCESS) {
@@ -512,8 +513,8 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 
 	  Status = XAxiDma_BdSetLength(CurBdPtr, packLen, BdRingPtr->MaxTransferLen);
 	  if (Status != XST_SUCCESS) {
-	    xil_printf("\nERROR: RxnTx=%d, Set of transfer length %d on BD %x failed for packet %d of %d with status %d\r\n",
-		              RxnTx, packLen, size_t(CurBdPtr), packet, packets, Status);
+	    xil_printf("\nERROR: RxnTx=%d, Set of transfer length %d (max=%d) on BD %x failed for packet %d of %d with status %d\r\n",
+		              RxnTx, packLen, BdRingPtr->MaxTransferLen, size_t(CurBdPtr), packet, packets, Status);
         exit(1);
 	  }
 
@@ -531,27 +532,20 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
                                               XAXIDMA_BD_CTRL_TXSOF_MASK);
       XAxiDma_BdSetId  (CurBdPtr, bufAddr);
 
-      // Give the BD to DMA to kick off the transfer of each packet separately
-      if (!bunchKickoff) {
-        int Status = XAxiDma_BdRingToHw(BdRingPtr, 1, CurBdPtr);
-        if (Status != XST_SUCCESS) {
-          xil_printf("\nERROR: RxnTx=%d, Submit of BD %x to hw failed for packet %d of %d with status %d\r\n",
-                       RxnTx, size_t(CurBdPtr), packet, packets, Status);
-          exit(1);
-        }
-      }
-
       bufAddr += bufLen;
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
 	}
 
-  // Give the BD to DMA to kick off the transfer of whole bunch at once
-  if (bunchKickoff) {
-    int Status = XAxiDma_BdRingToHw(BdRingPtr, packets, BdPtr);
+  // Give the BDs to DMA to kick off the transfer
+  for (CurBdPtr = BdPtr, packet = 0; packet < packets; packet += bunchSize) {
+    int Status = XAxiDma_BdRingToHw(BdRingPtr, std::min(bunchSize, packets-packet), CurBdPtr);
     if (Status != XST_SUCCESS) {
-      xil_printf("\nERROR: RxnTx=%d, Submit of BD ring with %d BDs to hw failed with status %d\r\n", RxnTx, packets, Status);
+      xil_printf("\nERROR: RxnTx=%d, Submit of BD %x to hw failed for packet %d of %d with status %d\r\n",
+                  RxnTx, size_t(CurBdPtr), packet, packets, Status);
       exit(1);
-	  }
+    }
+    // CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
+    CurBdPtr = (XAxiDma_Bd*)((UINTPTR)CurBdPtr + bunchSize * (BdRingPtr->Separation));
   }
 }
 
@@ -564,12 +558,15 @@ void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
 	                                    XAxiDma_GetTxRing(&axiDma);
 
 	// Wait until the BD transfers are done
-	XAxiDma_Bd *BdPtr;
+	XAxiDma_Bd* BdPtr = 0;
 	uint32_t ProcessedBdCount = 0;
 	while (ProcessedBdCount < packets) {
-      // xil_printf("RxnTx=%d, Waiting untill %d BD transfers finish: %ld \n", RxnTx, packets, ProcessedBdCount);
+      XAxiDma_Bd* CurBdPtr;
+      ProcessedBdCount += XAxiDma_BdRingFromHw(BdRingPtr, XAXIDMA_ALL_BDS, &CurBdPtr);
+      if (ProcessedBdCount && !BdPtr) BdPtr = CurBdPtr;
+      // xil_printf("RxnTx=%d, Waiting untill %d BD transfers finish: %ld BDs processed from BD %x \n",
+      //             RxnTx, packets, ProcessedBdCount, size_t(CurBdPtr));
       // sleep(1); // in seconds, user wait process
-      ProcessedBdCount += XAxiDma_BdRingFromHw(BdRingPtr, XAXIDMA_ALL_BDS, &BdPtr);
 	}
 
   // check actual transferred packet length vs expected (if it is the same for all packets)
@@ -578,8 +575,8 @@ void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
     for (size_t packet = 0; packet < ProcessedBdCount; packet++) {
       size_t packActLen = XAxiDma_BdGetActualLength(CurBdPtr, BdRingPtr->MaxTransferLen);
       if (packActLen != packCheckLen) {
-        xil_printf("\nERROR: RxnTx=%d, Transferred length %d differes from expected %d in packet %d of transferred %ld \r\n",
-                   RxnTx, packActLen, packCheckLen, packet, ProcessedBdCount);
+        xil_printf("\nERROR: RxnTx=%d, Transferred length %d (max=%d) differes from expected %d in packet %d of transferred %ld \r\n",
+                   RxnTx, packActLen, BdRingPtr->MaxTransferLen, packCheckLen, packet, ProcessedBdCount);
         exit(1);
       }
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
@@ -676,7 +673,7 @@ int EthSyst::flushReceive() {
   if(XAxiDma_HasSg(&axiDma)) { // in SG mode
 	  uint32_t rxdBDs = 0;
 	  do {
-        dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, true);
+        dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, 1, true);
         rxdBDs = dmaBDCheck(true);
 	    xil_printf("Flushing %ld Rx transfers \n", rxdBDs);
 	  } while (rxdBDs != 0);
@@ -906,7 +903,7 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 	 */
     ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XAE_MAX_TX_FRAME_SIZE));
     if(XAxiDma_HasSg(&axiDma)) { // in SG mode
-      dmaBDTransfer(size_t(txMem), ByteCount, ByteCount, 1, false);
+      dmaBDTransfer(size_t(txMem), ByteCount, ByteCount, 1, 1, false);
 	  return XST_SUCCESS;
     } else { // in simple mode
       int status = XAxiDma_SimpleTransfer(&axiDma, size_t(txMem), ByteCount, XAXIDMA_DMA_TO_DEVICE);
@@ -1162,7 +1159,7 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	 * Acknowledge the frame.
 	 */
   if(XAxiDma_HasSg(&axiDma)) // in SG mode
-      dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, true);
+      dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, 1, true);
 	else { // in simple mode
 	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XAE_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
       if (XST_SUCCESS != status) {
