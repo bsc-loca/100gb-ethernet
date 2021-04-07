@@ -226,8 +226,6 @@ class EthSyst {
   uint32_t txBdCount = 0;
   uint32_t rxBdCount = 0;
 
-  XTmrCtr timerCnt; // The instance of the timer counter
-
   void     dmaBDSetup(bool);
   uint32_t dmaBDCheck(bool);
   void alignedWrite(void*, unsigned);
@@ -235,14 +233,16 @@ class EthSyst {
   uint16_t getReceiveDataLength(uint16_t);
   
   public:
-  XIntc intrCtrl; // Instance of the Interrupt Controller
-  XAxiDma axiDma; // AXI DMA instance definitions
+  XIntc   intrCtrl; // Instance of Interrupt Controller
+  XTmrCtr timerCnt; // Instance of Timer counter
+  XAxiDma axiDma;   // AXI DMA instance definitions
   // DMA Scatter-Gather memory Rx/Tx distribution
   #ifndef XPAR_SG_MEM_CPU_S_AXI_BASEADDR
     // dummy SG memory definitions for simple DMA design
     #define XPAR_SG_MEM_CPU_S_AXI_BASEADDR 0
     #define XPAR_SG_MEM_CPU_S_AXI_HIGHADDR 0
   #endif
+  float const TIMER_TICK = 10.; //ns
   enum {
     ETH_MIN_PACK_SIZE = 64, // Limitations in 100Gb Ethernet IP (set in Vivado)
     ETH_MAX_PACK_SIZE = 9600,
@@ -261,7 +261,8 @@ class EthSyst {
 
   void axiDmaInit();
   void dmaBDTransfer(size_t, size_t, size_t, size_t, size_t, bool);
-  void dmaBDPoll(size_t, size_t, bool);
+  XAxiDma_Bd* dmaBDPoll(size_t, bool);
+  void dmaBDFree(XAxiDma_Bd*, size_t, size_t, bool);
   void switch_CPU_DMAxEth_LB(bool, bool);
 
   void intrCtrlInit();

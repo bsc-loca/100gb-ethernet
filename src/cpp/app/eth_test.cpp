@@ -221,9 +221,9 @@ int main(int argc, char *argv[])
                                                  XPAR_ETH_DMA_S2MM_BURST_SIZE),
         CPU_PACKET_LEN   = ETH_WORD_SIZE * 8, // the parameter to play with
         CPU_PACKET_WORDS = (CPU_PACKET_LEN + ETH_WORD_SIZE - 1) / ETH_WORD_SIZE,
-        DMA_PACKET_LEN   = ETH_WORD_SIZE*(64*3+3) + sizeof(uint32_t) + 3, // the parameter to play with (no issies met for any values and granularities)
-        ETH_PACKET_LEN   = ETH_WORD_SIZE*150 - sizeof(uint32_t), // the parameter to play with (no issues met for granularity=sizeof(uint32_t) and 
-                                                                 // range=[(1...~150)*ETH_WORD_SIZE] (defaults in Eth100Gb IP as min/max packet length=64...9600))
+        DMA_PACKET_LEN   = txrxMemSize/3     - sizeof(uint32_t), // the parameter to play with (no issies met for any values and granularities)
+        ETH_PACKET_LEN   = ETH_WORD_SIZE*150 - sizeof(uint32_t), // the parameter to play with (no issues met for granularity=sizeof(uint32_t) and range=[(1...~150)*ETH_WORD_SIZE]
+                                                                 // (defaults in Eth100Gb IP as min/max packet length=64...9600(but only upto 9596 works)))
         ETH_MEMPACK_SIZE = ETH_PACKET_LEN > DMA_AXI_BURST/2  ? ((ETH_PACKET_LEN + DMA_AXI_BURST-1) / DMA_AXI_BURST) * DMA_AXI_BURST :
                            ETH_PACKET_LEN > DMA_AXI_BURST/4  ? DMA_AXI_BURST/2  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/8  ? DMA_AXI_BURST/4  :
@@ -331,7 +331,12 @@ int main(int argc, char *argv[])
         size_t dmaMemPtr = size_t(ethSyst.txMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, packets, false);
-          ethSyst.dmaBDPoll                               (CPU_PACKET_LEN, packets,          false);
+          XAxiDma_Bd*       BdPtr = ethSyst.dmaBDPoll(                     packets,          false);
+          ethSyst.dmaBDFree(BdPtr,                         CPU_PACKET_LEN, packets,          false);
+          uint32_t transDat = packets * CPU_PACKET_LEN;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float speed = (transDat * 8) / txTime;
+          printf("Transfer: %ld Bytes, Tx time: %f ns, Speed: %f Gb/s \n", transDat, txTime, speed);
         }
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
@@ -365,7 +370,12 @@ int main(int argc, char *argv[])
         dmaMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, packets, true);
-          ethSyst.dmaBDPoll                               (CPU_PACKET_LEN, packets,          true);
+          XAxiDma_Bd*       BdPtr = ethSyst.dmaBDPoll(                     packets,          true);
+          ethSyst.dmaBDFree(BdPtr,                         CPU_PACKET_LEN, packets,          true);
+          uint32_t transDat = packets * CPU_PACKET_LEN;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          float speed = (transDat * 8) / rxTime;
+          printf("Transfer: %ld Bytes, Rx time: %f ns, Speed: %f Gb/s \n", transDat, rxTime, speed);
         }
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaMemPtr, CPU_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -408,8 +418,20 @@ int main(int argc, char *argv[])
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaRxMemPtr, DMA_PACKET_LEN, DMA_PACKET_LEN, packets, packets, true ); // Rx
           ethSyst.dmaBDTransfer(dmaTxMemPtr, DMA_PACKET_LEN, DMA_PACKET_LEN, packets, packets, false); // Tx
-          ethSyst.dmaBDPoll                                 (DMA_PACKET_LEN, packets,          false); // Tx
-          ethSyst.dmaBDPoll                                 (DMA_PACKET_LEN, packets,          true ); // Rx
+          XAxiDma_Bd*       txBdPtr = ethSyst.dmaBDPoll(                     packets,          false); // Tx
+          XAxiDma_Bd*       rxBdPtr = ethSyst.dmaBDPoll(                     packets,          true ); // Rx
+          ethSyst.dmaBDFree(txBdPtr,                         DMA_PACKET_LEN, packets,          false); // Tx
+          ethSyst.dmaBDFree(rxBdPtr,                         DMA_PACKET_LEN, packets,          true ); // Rx
+
+          uint32_t transDat = packets * DMA_PACKET_LEN;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          float txSpeed = (transDat * 8) / txTime;
+          float rxSpeed = (transDat * 8) / rxTime;
+          xil_printf("Transfer: %ld Bytes \n", transDat);
+          printf("Tx time: %f ns, Speed: %f Gb/s \n", txTime, txSpeed);
+          printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed);
+
         }
         else for (size_t packet = 0; packet < packets; packet++) {
 		      int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, DMA_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -459,8 +481,19 @@ int main(int argc, char *argv[])
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
           ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, packets, true ); // Rx
           ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, 1,       false); // Tx, each packet kick-off
-          ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, packets,          false); // Tx
-          ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, packets,          true ); // Rx
+          XAxiDma_Bd*       txBdPtr = ethSyst.dmaBDPoll(                       packets,          false); // Tx
+          XAxiDma_Bd*       rxBdPtr = ethSyst.dmaBDPoll(                       packets,          true ); // Rx
+          ethSyst.dmaBDFree(txBdPtr,                           ETH_PACKET_LEN, packets,          false); // Tx
+          ethSyst.dmaBDFree(rxBdPtr,                           ETH_PACKET_LEN, packets,          true ); // Rx
+
+          uint32_t transDat = packets * ETH_PACKET_LEN;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          float txSpeed = (transDat * 8) / txTime;
+          float rxSpeed = (transDat * 8) / rxTime;
+          xil_printf("Transfer: %ld Bytes \n", transDat);
+          printf("Tx time: %f ns, Speed: %f Gb/s \n", txTime, txSpeed);
+          printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed);
         }
         else for (size_t packet = 0; packet < packets; packet++) {
           int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -613,10 +646,6 @@ int main(int argc, char *argv[])
           }
         }
         xil_printf("------- Interrupt Controller test PASSED -------\n\n");
-
-        xil_printf("------- Running Timer test -------\n");
-        ethSyst.timerCntInit();
-        xil_printf("------- Timer test PASSED -------\n\n");
       }
       break;
 
@@ -666,8 +695,19 @@ int main(int argc, char *argv[])
           ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, packets, true ); // Rx
           sleep(1); // in seconds, timeout before Tx transfer to make sure opposite side also has set Rx transfer
           ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, 1,       false); // Tx, each packet kick-off
-          ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, packets,          false); // Tx
-          ethSyst.dmaBDPoll                                   (ETH_PACKET_LEN, packets,          true ); // Rx
+          XAxiDma_Bd*       txBdPtr = ethSyst.dmaBDPoll(                       packets,          false); // Tx
+          XAxiDma_Bd*       rxBdPtr = ethSyst.dmaBDPoll(                       packets,          true ); // Rx
+          ethSyst.dmaBDFree(txBdPtr,                           ETH_PACKET_LEN, packets,          false); // Tx
+          ethSyst.dmaBDFree(rxBdPtr,                           ETH_PACKET_LEN, packets,          true ); // Rx
+
+          uint32_t transDat = packets * ETH_PACKET_LEN;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          float txSpeed = (transDat * 8) / txTime;
+          float rxSpeed = (transDat * 8) / rxTime;
+          xil_printf("Transfer: %ld Bytes \n", transDat);
+          printf("Tx time: %f ns, Speed: %f Gb/s \n", txTime, txSpeed);
+          printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed);
         }
         else for (size_t packet = 0; packet < packets; packet++) {
           int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);

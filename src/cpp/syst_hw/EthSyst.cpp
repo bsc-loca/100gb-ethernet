@@ -213,7 +213,8 @@ void EthSyst::timerCntInit() {
   // Controlling Timer via Xilinx driver.
   // Initialize the Timer driver so that it is ready to use
   int status = XTmrCtr_Initialize(&timerCnt, XPAR_TMRCTR_0_DEVICE_ID);
-  if (XST_SUCCESS != status) {
+  if (status != XST_SUCCESS &&
+      status != XST_DEVICE_IS_STARTED) { // in case a timer has already been initialized and started
     xil_printf("\nERROR: Timer initialization failed with status %d\n", status);
     exit(1);
   }
@@ -224,8 +225,6 @@ void EthSyst::timerCntInit() {
       xil_printf("\nERROR: Timer %d selftest failed with status %d\n", cnt, status);
       exit(1);
     }
-    XTmrCtr_Stop (&timerCnt, cnt);
-    XTmrCtr_Reset(&timerCnt, cnt);
   }
 }
 
@@ -424,6 +423,8 @@ void EthSyst::axiDmaInit() {
     xil_printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
     xil_printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
   }
+
+  timerCntInit(); // initializing Timer as we use it in DMA transfer measurements
 }
 
 
@@ -536,23 +537,37 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
 	}
 
-  // Give the BDs to DMA to kick off the transfer
-  for (CurBdPtr = BdPtr, packet = 0; packet < packets; packet += bunchSize) {
-    int Status = XAxiDma_BdRingToHw(BdRingPtr, std::min(bunchSize, packets-packet), CurBdPtr);
-    if (Status != XST_SUCCESS) {
-      xil_printf("\nERROR: RxnTx=%d, Submit of BD %x to hw failed for packet %d of %d with status %d\r\n",
-                  RxnTx, size_t(CurBdPtr), packet, packets, Status);
-      exit(1);
+  CurBdPtr = BdPtr;
+  // (Re)Start both timers when transfer started from initially set zero value
+  XTmrCtr_Start(&timerCnt, 1); // Start "Rx" Timer
+  XTmrCtr_Start(&timerCnt, 0); // Start "Tx" Timer
+  // Give the BDs to DMA to kick off the transfer with extra branching for perf measurement optimization
+  if (bunchSize == packets)
+    Status = XAxiDma_BdRingToHw(BdRingPtr, packets, CurBdPtr);
+  else if (bunchSize == 1)
+    for (packet = 0; packet < packets; packet++) {
+      Status = XAxiDma_BdRingToHw(BdRingPtr, 1, CurBdPtr);
+      if (Status != XST_SUCCESS) break;
+      // (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
+      CurBdPtr = (XAxiDma_Bd*)((UINTPTR)CurBdPtr + (BdRingPtr->Separation));
     }
-    // CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
-    CurBdPtr = (XAxiDma_Bd*)((UINTPTR)CurBdPtr + bunchSize * (BdRingPtr->Separation));
+  else
+    for (packet = 0; packet < packets; packet += bunchSize) {
+      Status = XAxiDma_BdRingToHw(BdRingPtr, std::min(bunchSize, packets-packet), CurBdPtr);
+      if (Status != XST_SUCCESS) break;
+      CurBdPtr = (XAxiDma_Bd*)((UINTPTR)CurBdPtr + bunchSize * (BdRingPtr->Separation));
+    }
+  if (Status != XST_SUCCESS) {
+    xil_printf("\nERROR: RxnTx=%d, Submit of BD %x to hw failed for packet %d of %d with status %d\r\n",
+                RxnTx, size_t(CurBdPtr), packet, packets, Status);
+    exit(1);
   }
 }
 
 
 //*************************************************************************
 // Blocking polling process for finishing the transfer of packets through the DMA engine in SG mode
-void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
+XAxiDma_Bd* EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -568,15 +583,26 @@ void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
       //             RxnTx, packets, ProcessedBdCount, size_t(CurBdPtr));
       // sleep(1); // in seconds, user wait process
 	}
+  XTmrCtr_Stop(&timerCnt, RxnTx ? 1:0); // Stop Timer when transfer is finished
+  return BdPtr;
+}
+
+
+//*************************************************************************
+// Freeing of all processed BDs
+void EthSyst::dmaBDFree(XAxiDma_Bd* BdPtr, size_t packCheckLen, size_t packets, bool RxnTx)
+{
+	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
+	                                    XAxiDma_GetTxRing(&axiDma);
 
   // check actual transferred packet length vs expected (if it is the same for all packets)
   if (packCheckLen) {
     XAxiDma_Bd* CurBdPtr = BdPtr;
-    for (size_t packet = 0; packet < ProcessedBdCount; packet++) {
+    for (size_t packet = 0; packet < packets; packet++) {
       size_t packActLen = XAxiDma_BdGetActualLength(CurBdPtr, BdRingPtr->MaxTransferLen);
       if (packActLen != packCheckLen) {
         xil_printf("\nERROR: RxnTx=%d, Transferred length %d (max=%d) differes from expected %d in packet %d of transferred %ld \r\n",
-                   RxnTx, packActLen, BdRingPtr->MaxTransferLen, packCheckLen, packet, ProcessedBdCount);
+                   RxnTx, packActLen, BdRingPtr->MaxTransferLen, packCheckLen, packet, packets);
         exit(1);
       }
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
@@ -584,14 +610,14 @@ void EthSyst::dmaBDPoll(size_t packCheckLen, size_t packets, bool RxnTx)
   }
 
 	// Free all processed BDs for future transfers
-  int status = XAxiDma_BdRingFree(BdRingPtr, ProcessedBdCount, BdPtr);
+  int status = XAxiDma_BdRingFree(BdRingPtr, packets, BdPtr);
   if (status != XST_SUCCESS) {
-    xil_printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
+    xil_printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, packets, status);
     exit(1);
 	}
 	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs are available after their release \n",
-	                               RxnTx, ProcessedBdCount, freeBdCount);
+  xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs are available after their release \n",
+              RxnTx, packets, freeBdCount);
 }
 
 
@@ -612,10 +638,10 @@ uint32_t EthSyst::dmaBDCheck(bool RxnTx)
     xil_printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, ProcessedBdCount, status);
     exit(1);
 	}
-	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (ProcessedBdCount > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are done, %ld free BDs are available after their release \n",
-	                                        RxnTx, ProcessedBdCount, freeBdCount);
-    return ProcessedBdCount;
+  uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+  if (ProcessedBdCount > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are done, %ld free BDs are available after their release \n",
+                                        RxnTx, ProcessedBdCount, freeBdCount);
+  return ProcessedBdCount;
 }
 
 
