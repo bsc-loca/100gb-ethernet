@@ -330,9 +330,10 @@ int main(int argc, char *argv[])
                     packets, CPU_PACKET_LEN, DMA_TX_LOOPBACK_DEPTH);
         size_t dmaMemPtr = size_t(ethSyst.txMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
-          ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, packets, false);
-          XAxiDma_Bd*       BdPtr = ethSyst.dmaBDPoll(                     packets,          false);
-          ethSyst.dmaBDFree(BdPtr,                         CPU_PACKET_LEN, packets,          false);
+          XAxiDma_Bd* BdPtr = ethSyst.dmaBDAlloc(false, packets, CPU_PACKET_LEN, CPU_PACKET_LEN, dmaMemPtr);
+          ethSyst.dmaBDTransfer                 (false, packets, packets,        BdPtr);
+          BdPtr             = ethSyst.dmaBDPoll (false, packets);
+          ethSyst.dmaBDFree                     (false, packets, CPU_PACKET_LEN, BdPtr);
           uint32_t transDat = packets * CPU_PACKET_LEN;
           float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
           float speed = (transDat * 8) / txTime;
@@ -369,9 +370,10 @@ int main(int argc, char *argv[])
                 packets, CPU_PACKET_LEN, DMA_RX_LOOPBACK_DEPTH);
         dmaMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
-          ethSyst.dmaBDTransfer(dmaMemPtr, CPU_PACKET_LEN, CPU_PACKET_LEN, packets, packets, true);
-          XAxiDma_Bd*       BdPtr = ethSyst.dmaBDPoll(                     packets,          true);
-          ethSyst.dmaBDFree(BdPtr,                         CPU_PACKET_LEN, packets,          true);
+          XAxiDma_Bd* BdPtr = ethSyst.dmaBDAlloc(true, packets, CPU_PACKET_LEN, CPU_PACKET_LEN, dmaMemPtr);
+          ethSyst.dmaBDTransfer                 (true, packets, packets,        BdPtr);
+          BdPtr             = ethSyst.dmaBDPoll (true, packets);
+          ethSyst.dmaBDFree                     (true, packets, CPU_PACKET_LEN, BdPtr);
           uint32_t transDat = packets * CPU_PACKET_LEN;
           float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
           float speed = (transDat * 8) / rxTime;
@@ -416,12 +418,14 @@ int main(int argc, char *argv[])
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
         size_t dmaRxMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
-          ethSyst.dmaBDTransfer(dmaRxMemPtr, DMA_PACKET_LEN, DMA_PACKET_LEN, packets, packets, true ); // Rx
-          ethSyst.dmaBDTransfer(dmaTxMemPtr, DMA_PACKET_LEN, DMA_PACKET_LEN, packets, packets, false); // Tx
-          XAxiDma_Bd*       txBdPtr = ethSyst.dmaBDPoll(                     packets,          false); // Tx
-          XAxiDma_Bd*       rxBdPtr = ethSyst.dmaBDPoll(                     packets,          true ); // Rx
-          ethSyst.dmaBDFree(txBdPtr,                         DMA_PACKET_LEN, packets,          false); // Tx
-          ethSyst.dmaBDFree(rxBdPtr,                         DMA_PACKET_LEN, packets,          true ); // Rx
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, DMA_PACKET_LEN, DMA_PACKET_LEN, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, DMA_PACKET_LEN, DMA_PACKET_LEN, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr); // Rx
+          ethSyst.dmaBDTransfer                   (false, packets, packets,        txBdPtr); // Tx
+          txBdPtr             = ethSyst.dmaBDPoll (false, packets); // Tx
+          rxBdPtr             = ethSyst.dmaBDPoll (true,  packets); // Rx
+          ethSyst.dmaBDFree                       (false, packets, DMA_PACKET_LEN, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, DMA_PACKET_LEN, rxBdPtr); // Rx
 
           uint32_t transDat = packets * DMA_PACKET_LEN;
           float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
@@ -479,12 +483,14 @@ int main(int argc, char *argv[])
         dmaTxMemPtr = size_t(ethSyst.txMem);
         dmaRxMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
-          ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, packets, true ); // Rx
-          ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, 1,       false); // Tx, each packet kick-off
-          XAxiDma_Bd*       txBdPtr = ethSyst.dmaBDPoll(                       packets,          false); // Tx
-          XAxiDma_Bd*       rxBdPtr = ethSyst.dmaBDPoll(                       packets,          true ); // Rx
-          ethSyst.dmaBDFree(txBdPtr,                           ETH_PACKET_LEN, packets,          false); // Tx
-          ethSyst.dmaBDFree(rxBdPtr,                           ETH_PACKET_LEN, packets,          true ); // Rx
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, ETH_PACKET_LEN, ETH_MEMPACK_SIZE, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, ETH_PACKET_LEN, ETH_MEMPACK_SIZE, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr);  // Rx
+          ethSyst.dmaBDTransfer                   (false, packets, 1,              txBdPtr); // Tx, each packet kick-off
+          txBdPtr             = ethSyst.dmaBDPoll (false, packets); // Tx
+          rxBdPtr             = ethSyst.dmaBDPoll (true,  packets); // Rx
+          ethSyst.dmaBDFree                       (false, packets, ETH_PACKET_LEN, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, ETH_PACKET_LEN, rxBdPtr); // Rx
 
           uint32_t transDat = packets * ETH_PACKET_LEN;
           float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
@@ -692,13 +698,15 @@ int main(int argc, char *argv[])
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
         size_t dmaRxMemPtr = size_t(ethSyst.rxMem);
         if (XAxiDma_HasSg(&ethSyst.axiDma)) {
-          ethSyst.dmaBDTransfer(dmaRxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, packets, true ); // Rx
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, ETH_PACKET_LEN, ETH_MEMPACK_SIZE, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, ETH_PACKET_LEN, ETH_MEMPACK_SIZE, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr); // Rx
           sleep(1); // in seconds, timeout before Tx transfer to make sure opposite side also has set Rx transfer
-          ethSyst.dmaBDTransfer(dmaTxMemPtr, ETH_MEMPACK_SIZE, ETH_PACKET_LEN, packets, 1,       false); // Tx, each packet kick-off
-          XAxiDma_Bd*       txBdPtr = ethSyst.dmaBDPoll(                       packets,          false); // Tx
-          XAxiDma_Bd*       rxBdPtr = ethSyst.dmaBDPoll(                       packets,          true ); // Rx
-          ethSyst.dmaBDFree(txBdPtr,                           ETH_PACKET_LEN, packets,          false); // Tx
-          ethSyst.dmaBDFree(rxBdPtr,                           ETH_PACKET_LEN, packets,          true ); // Rx
+          ethSyst.dmaBDTransfer                   (false, packets, 1,              txBdPtr); // Tx, each packet kick-off
+          txBdPtr             = ethSyst.dmaBDPoll (false, packets); // Tx
+          rxBdPtr             = ethSyst.dmaBDPoll (true,  packets); // Rx
+          ethSyst.dmaBDFree                       (false, packets, ETH_PACKET_LEN, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, ETH_PACKET_LEN, rxBdPtr); // Rx
 
           uint32_t transDat = packets * ETH_PACKET_LEN;
           float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;

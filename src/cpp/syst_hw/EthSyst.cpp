@@ -126,6 +126,7 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   xil_printf("\n");
   
   xil_printf("Ethernet core bring-up.\n");
+  physConnOrder = PHYS_CONN_WAIT_INI;
   // http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
   // via GPIO
   // rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
@@ -145,6 +146,7 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
     xil_printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
     xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
                                                        ethCore[STAT_RX_STATUS_REG]);
+    if (physConnOrder) physConnOrder--;
     sleep(1); // in seconds, user wait process
   }
   xil_printf("RX is aligned and RFI is got from TX side:\n");
@@ -175,6 +177,7 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   xil_printf("STAT_TX/RX_STATUS_PINS: %0lX/%0lX \n", rxtxCtrl[TX_CTRL], rxtxCtrl[RX_CTRL]);
   xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
                                                      ethCore[STAT_RX_STATUS_REG]);
+  xil_printf("This Eth instance is physically connected in order (zero means 1st, non-zero means 2nd): %d \n", physConnOrder);
 }
 
 
@@ -476,8 +479,7 @@ void EthSyst::dmaBDSetup(bool RxnTx)
 
 
 //*************************************************************************
-// This non-blocking function transfers packets through the DMA engine in SG mode
-void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_t packets, size_t bunchSize, bool RxnTx)
+XAxiDma_Bd* EthSyst::dmaBDAlloc(bool RxnTx, size_t packets, size_t packLen, size_t bufLen, size_t bufAddr)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -502,8 +504,7 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 
 
 	XAxiDma_Bd* CurBdPtr = BdPtr;
-  size_t packet;
-	for (packet = 0; packet < packets; packet++) {
+	for (size_t packet = 0; packet < packets; packet++) {
 	  // Set up the BD using the information of the packet to transmit
 	  Status = XAxiDma_BdSetBufAddr(CurBdPtr, bufAddr);
 	  if (Status != XST_SUCCESS) {
@@ -536,8 +537,19 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
       bufAddr += bufLen;
       CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
 	}
+  return BdPtr;
+}
 
-  CurBdPtr = BdPtr;
+
+//*************************************************************************
+// This non-blocking function kicks-off packet transfers through the DMA engine in SG mode
+void EthSyst::dmaBDTransfer(bool RxnTx, size_t packets, size_t bunchSize, XAxiDma_Bd* BdPtr)
+{
+	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
+	                                    XAxiDma_GetTxRing(&axiDma);
+  XAxiDma_Bd* CurBdPtr = BdPtr;
+  size_t packet = 0;
+  int Status = XST_FAILURE;
   // (Re)Start both timers when transfer started from initially set zero value
   XTmrCtr_Start(&timerCnt, 1); // Start "Rx" Timer
   XTmrCtr_Start(&timerCnt, 0); // Start "Tx" Timer
@@ -567,7 +579,7 @@ void EthSyst::dmaBDTransfer(size_t bufAddr, size_t bufLen, size_t packLen, size_
 
 //*************************************************************************
 // Blocking polling process for finishing the transfer of packets through the DMA engine in SG mode
-XAxiDma_Bd* EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
+XAxiDma_Bd* EthSyst::dmaBDPoll(bool RxnTx, size_t packets)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -590,7 +602,7 @@ XAxiDma_Bd* EthSyst::dmaBDPoll(size_t packets, bool RxnTx)
 
 //*************************************************************************
 // Freeing of all processed BDs
-void EthSyst::dmaBDFree(XAxiDma_Bd* BdPtr, size_t packCheckLen, size_t packets, bool RxnTx)
+void EthSyst::dmaBDFree(bool RxnTx, size_t packets, size_t packCheckLen, XAxiDma_Bd* BdPtr)
 {
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
@@ -699,9 +711,10 @@ int EthSyst::flushReceive() {
   if(XAxiDma_HasSg(&axiDma)) { // in SG mode
 	  uint32_t rxdBDs = 0;
 	  do {
-        dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, 1, true);
+        XAxiDma_Bd* BdPtr = dmaBDAlloc(true, 1, XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, size_t(rxMem));
+        dmaBDTransfer(true, 1, 1, BdPtr);
         rxdBDs = dmaBDCheck(true);
-	    xil_printf("Flushing %ld Rx transfers \n", rxdBDs);
+        xil_printf("Flushing %ld Rx transfers \n", rxdBDs);
 	  } while (rxdBDs != 0);
   } else // in simple mode
     while ((XAxiDma_ReadReg(axiDma.RxBdRing[0].ChanBase, XAXIDMA_SR_OFFSET) & XAXIDMA_HALTED_MASK) ||
@@ -929,8 +942,9 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 	 */
     ByteCount = std::max((unsigned)ETH_MIN_PACK_SIZE, std::min(ByteCount, (unsigned)XAE_MAX_TX_FRAME_SIZE));
     if(XAxiDma_HasSg(&axiDma)) { // in SG mode
-      dmaBDTransfer(size_t(txMem), ByteCount, ByteCount, 1, 1, false);
-	  return XST_SUCCESS;
+      XAxiDma_Bd* BdPtr = dmaBDAlloc(false, 1, ByteCount, ByteCount, size_t(txMem));
+      dmaBDTransfer(false, 1, 1, BdPtr);
+	    return XST_SUCCESS;
     } else { // in simple mode
       int status = XAxiDma_SimpleTransfer(&axiDma, size_t(txMem), ByteCount, XAXIDMA_DMA_TO_DEVICE);
       if (XST_SUCCESS != status) {
@@ -1184,8 +1198,10 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 	/*
 	 * Acknowledge the frame.
 	 */
-  if(XAxiDma_HasSg(&axiDma)) // in SG mode
-      dmaBDTransfer(size_t(rxMem), XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, 1, 1, true);
+  if(XAxiDma_HasSg(&axiDma)) { // in SG mode
+      XAxiDma_Bd* BdPtr = dmaBDAlloc(true, 1, XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, size_t(rxMem));
+      dmaBDTransfer(true, 1, 1, BdPtr);
+  }
 	else { // in simple mode
 	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XAE_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
       if (XST_SUCCESS != status) {

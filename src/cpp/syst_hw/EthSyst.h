@@ -255,14 +255,19 @@ class EthSyst {
   uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
   uint32_t* sgMem = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
 
+  // Indicator of physical connection wait order (reaching zero while waiting for connection indicates Eth instance as first connected)
+  uint8_t physConnOrder;
+  enum {PHYS_CONN_WAIT_INI = 2};
+
   void ethCoreInit(bool);
   void ethTxRxEnable();
   void ethTxRxDisable();
 
   void axiDmaInit();
-  void dmaBDTransfer(size_t, size_t, size_t, size_t, size_t, bool);
-  XAxiDma_Bd* dmaBDPoll(size_t, bool);
-  void dmaBDFree(XAxiDma_Bd*, size_t, size_t, bool);
+  XAxiDma_Bd* dmaBDAlloc   (bool, size_t, size_t, size_t, size_t);
+  void        dmaBDTransfer(bool, size_t, size_t, XAxiDma_Bd*);
+  XAxiDma_Bd* dmaBDPoll    (bool, size_t);
+  void        dmaBDFree    (bool, size_t, size_t, XAxiDma_Bd*);
   void switch_CPU_DMAxEth_LB(bool, bool);
 
   void intrCtrlInit();
