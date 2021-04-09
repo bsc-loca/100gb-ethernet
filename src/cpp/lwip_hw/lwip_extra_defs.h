@@ -26,7 +26,9 @@
 #include "xparameters.h"
 //We want DMA+100GbEth cores compliant memory alignment like for ETH_MEMPACK_SIZE in eth_test.cpp,
 //so for packet size below 2KB the alignment should be at least 2KB:
-#define DMA_AXI_BURST (64*64) // the parameter set in Vivado AXI_DMA IP
+#define ETH_WORD_SIZE 64
+#define DMA_AXI_BURST (ETH_WORD_SIZE * (XPAR_ETH_DMA_MM2S_BURST_SIZE > XPAR_ETH_DMA_S2MM_BURST_SIZE ? \
+                                        XPAR_ETH_DMA_MM2S_BURST_SIZE : XPAR_ETH_DMA_S2MM_BURST_SIZE)) // the parameter set in Vivado AXI_DMA IP
 #define MEMPACK_ALIGN_SIZE (DMA_AXI_BURST/2)
 #define LWIP_MEM_ALIGN_SIZE(size) (((size) + MEMPACK_ALIGN_SIZE-1) / MEMPACK_ALIGN_SIZE * MEMPACK_ALIGN_SIZE)
 
