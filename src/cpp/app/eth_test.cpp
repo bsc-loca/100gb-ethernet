@@ -715,7 +715,7 @@ int main(int argc, char *argv[])
           float rxSpeed = (transDat * 8) / rxTime;
           xil_printf("Transfer: %ld Bytes \n", transDat);
           printf("Tx time: %f ns, Speed: %f Gb/s \n", txTime, txSpeed);
-          // printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed); // meaningless here
+          if (0) printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed); // meaningless here
         }
         else for (size_t packet = 0; packet < packets; packet++) {
           int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
