@@ -681,7 +681,7 @@ int main(int argc, char *argv[])
 
         ethSyst.axiDmaInit();
 
-        xil_printf("------- DMA 2-boards communication test -------\n");
+        xil_printf("------- Async DMA 2-boards communication test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
         sleep(1); // in seconds
@@ -715,7 +715,7 @@ int main(int argc, char *argv[])
           float rxSpeed = (transDat * 8) / rxTime;
           xil_printf("Transfer: %ld Bytes \n", transDat);
           printf("Tx time: %f ns, Speed: %f Gb/s \n", txTime, txSpeed);
-          printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed);
+          // printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed); // meaningless here
         }
         else for (size_t packet = 0; packet < packets; packet++) {
           int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
@@ -756,7 +756,95 @@ int main(int argc, char *argv[])
         }
 
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
-        xil_printf("------- DMA 2-boards communication test PASSED -------\n\n");
+        xil_printf("------- Async DMA 2-boards communication test PASSED -------\n\n");
+
+
+        xil_printf("------- Round-trip DMA 2-boards communication test -------\n");
+        ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
+        ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        sleep(1); // in seconds
+
+        srand(1);
+        for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
+        for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
+
+        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
+
+        packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
+                    packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
+        dmaTxMemPtr = size_t(ethSyst.txMem);
+        dmaRxMemPtr = size_t(ethSyst.rxMem);
+        if (XAxiDma_HasSg(&ethSyst.axiDma)) {
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, ETH_PACKET_LEN, ETH_MEMPACK_SIZE, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, ETH_PACKET_LEN, ETH_MEMPACK_SIZE, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr); // Rx
+          if (ethSyst.physConnOrder) { // depending on board instance play "initiator" role
+            xil_printf("Initiator side: starting the transfer and receiving it back \n");
+            sleep(1); // in seconds, timeout before Tx transfer to make sure opposite side also has set Rx transfer
+            ethSyst.dmaBDTransfer                 (false, packets, 1,              txBdPtr); // Tx, each packet kick-off
+            txBdPtr           = ethSyst.dmaBDPoll (false, packets); // Tx
+            rxBdPtr           = ethSyst.dmaBDPoll (true,  packets); // Rx
+          } else { // depending on board instance play "responder" role
+            xil_printf("Responder side: accepting the transfer and sending it back \n");
+            rxBdPtr           = ethSyst.dmaBDPoll (true,  packets); // Rx
+            ethSyst.dmaBDTransfer                 (false, packets, 1,              txBdPtr); // Tx, each packet kick-off
+            txBdPtr           = ethSyst.dmaBDPoll (false, packets); // Tx
+          }
+          ethSyst.dmaBDFree                       (false, packets, ETH_PACKET_LEN, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, ETH_PACKET_LEN, rxBdPtr); // Rx
+          uint32_t transDat = packets * ETH_PACKET_LEN;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          float txSpeed = (    transDat * 8) / txTime;
+          float rxSpeed = (2 * transDat * 8) / rxTime; //transfer is doubled due to round-trip
+          xil_printf("Transfer: %ld Bytes \n", transDat);
+          printf("Tx time: %f ns, Speed: %f Gb/s \n", txTime, txSpeed);
+          if (ethSyst.physConnOrder) printf("Rx time: %f ns, Speed: %f Gb/s \n", rxTime, rxSpeed);
+        }
+        else {
+          xil_printf("For Simple DMA mode no Round-trip exchange is done, Asynch exchange is executed instead \n");
+          for (size_t packet = 0; packet < packets; packet++) {
+          int status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaRxMemPtr, ETH_PACKET_LEN, XAXIDMA_DEVICE_TO_DMA);
+          if (XST_SUCCESS != status) {
+            xil_printf("\nERROR: XAxiDma Rx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+          }
+          if (packet == 0) sleep(1); // in seconds, timeout before 1st packet Tx transfer to make sure opposite side also has set Rx transfer
+          status = XAxiDma_SimpleTransfer(&(ethSyst.axiDma), dmaTxMemPtr, ETH_PACKET_LEN, XAXIDMA_DMA_TO_DEVICE);
+          if (XST_SUCCESS != status) {
+            xil_printf("\nERROR: XAxiDma Tx transfer %d failed with status %d\n", packet, status);
+            exit(1);
+          }
+          while ((XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DEVICE_TO_DMA)) ||
+                 (XAxiDma_Busy(&(ethSyst.axiDma),XAXIDMA_DMA_TO_DEVICE))) {
+            // xil_printf("Waiting untill Tx/Rx transfer finishes \n");
+            // sleep(1); // in seconds, user wait process
+          }
+          dmaTxMemPtr += ETH_MEMPACK_SIZE;
+          dmaRxMemPtr += ETH_MEMPACK_SIZE;
+          }
+        }
+
+        for (size_t packet = 0; packet < packets; packet++)
+        for (size_t word   = 0; word < ETH_MEMPACK_SIZE/sizeof(uint32_t); word++) {
+          size_t addr = packet*ETH_MEMPACK_SIZE/sizeof(uint32_t) + word;
+          if (word < ETH_PACKET_LEN/sizeof(uint32_t)) {
+            if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
+              xil_printf("\nERROR: Incorrect data transferred by DMA in 32-bit word %d of packet %d at addr %d: %0lX, expected: %0lX \n",
+                          word, packet, addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
+              exit(1);
+            }
+          }
+          else if (ethSyst.rxMem[addr] != 0) {
+              xil_printf("\nERROR: Data in 32-bit word %d of packet %d overwrite stored zero at addr %d: %0lX \n",
+                          word, packet, addr, ethSyst.rxMem[addr]);
+              exit(1);
+          }
+        }
+
+        ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
+        xil_printf("------- Round-trip DMA 2-boards communication test PASSED -------\n\n");
       }
       break;
 
