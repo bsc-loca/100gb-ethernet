@@ -223,9 +223,6 @@ class EthSyst {
     RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
   };
 
-  uint32_t txBdCount = 0;
-  uint32_t rxBdCount = 0;
-
   void     dmaBDSetup(bool);
   uint32_t dmaBDCheck(bool);
   void alignedWrite(void*, unsigned);
@@ -254,6 +251,9 @@ class EthSyst {
   uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
   uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
   uint32_t* sgMem = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
+
+  size_t txBdCount = 0;
+  size_t rxBdCount = 0;
 
   // Indicator of physical connection wait order (reaching zero while waiting for connection indicates Eth instance as first connected)
   uint8_t physConnOrder;

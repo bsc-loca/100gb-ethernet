@@ -484,13 +484,13 @@ XAxiDma_Bd* EthSyst::dmaBDAlloc(bool RxnTx, size_t packets, size_t packLen, size
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
 
-	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld free BDs of %ld are available to transfer %d packets \n",
-	                               RxnTx, freeBdCount, RxnTx ? rxBdCount:txBdCount , packets);
-	if (packets > freeBdCount) {
-      xil_printf("\nERROR: RxnTx=%d, Insufficient %ld free BDs to transfer %d packets \r\n", RxnTx, freeBdCount, packets);
-      exit(1);
-	}
+  uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+  if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld free BDs of %d are available to transfer %d packets \n",
+                               RxnTx, freeBdCount, RxnTx ? rxBdCount:txBdCount , packets);
+  if (packets > freeBdCount) {
+    xil_printf("\nERROR: RxnTx=%d, Insufficient %ld free BDs to transfer %d packets \r\n", RxnTx, freeBdCount, packets);
+    exit(1);
+  }
 
 	// Allocate BDs
 	XAxiDma_Bd* BdPtr;
