@@ -412,8 +412,11 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
 
-        packets = std::min(txrxMemSize/DMA_PACKET_LEN,
-                  std::min(ethSyst.txBdCount, ethSyst.rxBdCount));
+        packets = txrxMemSize/DMA_PACKET_LEN;
+        if (XAxiDma_HasSg(&ethSyst.axiDma))
+          packets = std::min(packets,
+                    std::min(ethSyst.txBdCount,
+                             ethSyst.rxBdCount));
         xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes \n",
                     packets, DMA_PACKET_LEN, txrxMemSize);
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
@@ -478,8 +481,11 @@ int main(int argc, char *argv[])
 
         ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
-        packets = std::min(txrxMemSize/ETH_MEMPACK_SIZE,
-                  std::min(ethSyst.txBdCount, ethSyst.rxBdCount));
+        packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        if (XAxiDma_HasSg(&ethSyst.axiDma))
+          packets = std::min(packets,
+                    std::min(ethSyst.txBdCount,
+                             ethSyst.rxBdCount));
         size_t txBunch = ETH_PACKET_LEN > ETH_WORD_SIZE*4 ? 1 : packets; // whole bunch Tx kick-off for small packets
         xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
@@ -695,8 +701,11 @@ int main(int argc, char *argv[])
 
         ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
-        size_t packets = std::min(txrxMemSize/ETH_MEMPACK_SIZE,
-                         std::min(ethSyst.txBdCount, ethSyst.rxBdCount));
+        size_t packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        if (XAxiDma_HasSg(&ethSyst.axiDma))
+          packets = std::min(packets,
+                    std::min(ethSyst.txBdCount,
+                             ethSyst.rxBdCount));
         size_t txBunch = ETH_PACKET_LEN > ETH_WORD_SIZE*4 ? 1 : packets; // whole bunch Tx kick-off for small packets
         xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
@@ -775,8 +784,11 @@ int main(int argc, char *argv[])
 
         ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
-        packets = std::min(txrxMemSize/ETH_MEMPACK_SIZE,
-                  std::min(ethSyst.txBdCount, ethSyst.rxBdCount));
+        packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        if (XAxiDma_HasSg(&ethSyst.axiDma))
+          packets = std::min(packets,
+                    std::min(ethSyst.txBdCount,
+                             ethSyst.rxBdCount));
         txBunch = ETH_PACKET_LEN > ETH_WORD_SIZE*4 ? 1 : packets; // whole bunch Tx kick-off for small packets
         xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
