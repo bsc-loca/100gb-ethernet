@@ -634,7 +634,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 	xaxiemacif_fast = xaxiemacif;
 	xemac_fast = xemac;
 #endif
-	// struct xtopology_t *xtopologyp = &xtopology[xemac->topology_index];
+	struct xtopology_t *xtopologyp = &xtopology[xemac->topology_index];
 
 	/* FIXME: On ZyqnMP Multiple Axi Ethernet are not supported */
 #if defined (__aarch64__) || defined (ARMR5)
@@ -806,13 +806,15 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 	// 		(XFastInterruptHandler)xaxiemac_errorfast_handler);
 
     xil_printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x \n",
-	        XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, XPAR_INTC_0_BASEADDR);
-	XIntc_RegisterFastHandler(XPAR_INTC_0_BASEADDR, XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
+               XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, xtopologyp->intc_baseaddr);
+	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+               XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_sendfast_handler);
 
     xil_printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x \n",
-	        XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, XPAR_INTC_0_BASEADDR);
-	XIntc_RegisterFastHandler(XPAR_INTC_0_BASEADDR,	XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
+               XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, xtopologyp->intc_baseaddr);
+	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+	           XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_recvfast_handler);
 #else
 	/* Register axiethernet interrupt with interrupt controller */
@@ -822,18 +824,20 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 	// 		&xaxiemacif->axi_ethernet);
 
 	/* connect & enable DMA interrupts */
-	XIntc_RegisterHandler(XPAR_INTC_0_BASEADDR, XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
+	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
+             XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XInterruptHandler)axidma_send_handler,
 				xemac);
-	XIntc_RegisterHandler(XPAR_INTC_0_BASEADDR,	XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
+	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
+             XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XInterruptHandler)axidma_recv_handler,
 				xemac);
 #endif
 	/* Enable EMAC interrupts in the interrupt controller */
 	do {
-        xil_printf("Starting Interrupt Controller at addr 0x%x \n", XPAR_INTC_0_BASEADDR);
+        xil_printf("Starting Interrupt Controller at addr 0x%x \n", xtopologyp->intc_baseaddr);
 		/* read current interrupt enable mask */
-		unsigned int cur_mask = XIntc_In32(XPAR_INTC_0_BASEADDR +
+		unsigned int cur_mask = XIntc_In32(xtopologyp->intc_baseaddr +
 							XIN_IER_OFFSET);
 
 		/* form new mask enabling AXIDMA & axiethernet interrupts */
@@ -843,7 +847,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 			// | (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
 
 		/* set new mask */
-		XIntc_EnableIntr(XPAR_INTC_0_BASEADDR, cur_mask);
+		XIntc_EnableIntr(xtopologyp->intc_baseaddr, cur_mask);
 	} while (0);
 	return 0;
 }
