@@ -25,7 +25,7 @@
 //----- Replacement of built-in LwIP memory allocation with one based on dedicated Tx/Rx DMA memories
 #include "xparameters.h"
 //We want DMA+100GbEth cores compliant memory alignment like for ETH_MEMPACK_SIZE in eth_test.cpp,
-//so for packet size below 2KB the alignment should be at least 2KB:
+//so for packet size below 2KB ((XAE_MAX_FRAME_SIZE-18) in xaxiemacif_dma.cpp) the alignment should be at least 2KB:
 #define ETH_WORD_SIZE 64
 #define DMA_AXI_BURST (ETH_WORD_SIZE * (XPAR_ETH_DMA_MM2S_BURST_SIZE > XPAR_ETH_DMA_S2MM_BURST_SIZE ? \
                                         XPAR_ETH_DMA_MM2S_BURST_SIZE : XPAR_ETH_DMA_S2MM_BURST_SIZE)) // the parameter set in Vivado AXI_DMA IP
