@@ -124,6 +124,7 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 update_ip_catalog -rebuild
 
 source $root_dir/tcl/gen_bd.tcl
+# source $root_dir/tcl/gen_bd4piton.tcl
 
 create_root_design ""
 
@@ -152,4 +153,5 @@ add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_a
 
 puts "Project generation ended successfully"
 
+# source $root_dir/tcl/gen_ip.tcl
 source $root_dir/tcl/gen_bitstream.tcl
