@@ -161,11 +161,9 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
-  set QSFP0_FS [ create_bd_port -dir O -from 0 -to 0 QSFP0_FS ]
-  set QSFP0_OEB [ create_bd_port -dir O -from 0 -to 0 QSFP0_OEB ]
-  set QSFP1_FS [ create_bd_port -dir O -from 0 -to 0 QSFP1_FS ]
-  set QSFP1_OEB [ create_bd_port -dir O -from 0 -to 0 QSFP1_OEB ]
   set intc [ create_bd_port -dir O -from 1 -to 0 intc ]
+  set qsfp0_fs [ create_bd_port -dir O -from 0 -to 0 qsfp0_fs ]
+  set qsfp0_oeb [ create_bd_port -dir O -from 0 -to 0 qsfp0_oeb ]
   set s_axi_clk [ create_bd_port -dir I -type clk s_axi_clk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {s_axi} \
@@ -614,12 +612,12 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   connect_bd_net -net cmac_usplus_0_stat_rx_test_pattern_mismatch [get_bd_pins STAT_RX_STATUS_REG/In9] [get_bd_pins eth100gb/stat_rx_test_pattern_mismatch]
   connect_bd_net -net cmac_usplus_0_stat_tx_local_fault [get_bd_pins STAT_TX_STATUS_REG/In0] [get_bd_pins eth100gb/stat_tx_local_fault]
   connect_bd_net -net concat_intc_dout [get_bd_ports intc] [get_bd_pins concat_intc/dout]
-  connect_bd_net -net const_gnd_dout [get_bd_ports QSFP0_OEB] [get_bd_ports QSFP1_OEB] [get_bd_pins axi_timer_0/capturetrig0] [get_bd_pins axi_timer_0/capturetrig1] [get_bd_pins axi_timer_0/freeze] [get_bd_pins const_gnd/dout] [get_bd_pins eth100gb/drp_en] [get_bd_pins eth100gb/drp_we] [get_bd_pins eth100gb/pm_tick] [get_bd_pins eth100gb/tx_axis_tuser]
+  connect_bd_net -net const_gnd_dout [get_bd_ports qsfp0_oeb] [get_bd_pins axi_timer_0/capturetrig0] [get_bd_pins axi_timer_0/capturetrig1] [get_bd_pins axi_timer_0/freeze] [get_bd_pins const_gnd/dout] [get_bd_pins eth100gb/drp_en] [get_bd_pins eth100gb/drp_we] [get_bd_pins eth100gb/pm_tick] [get_bd_pins eth100gb/tx_axis_tuser]
   connect_bd_net -net const_gndx17_dout [get_bd_pins STAT_RX_STATUS_REG/In13] [get_bd_pins const_gndx17/dout]
   connect_bd_net -net const_gndx18_dout [get_bd_pins STAT_TX_STATUS_REG/In1] [get_bd_pins const_gndx31/dout]
   connect_bd_net -net const_gndx28_dout [get_bd_pins GT_STATUS/In1] [get_bd_pins const_gndx28/dout]
   connect_bd_net -net const_gndx56_dout [get_bd_pins const_gndx56/dout] [get_bd_pins eth100gb/tx_preamblein]
-  connect_bd_net -net const_vcc_dout [get_bd_ports QSFP0_FS] [get_bd_ports QSFP1_FS] [get_bd_pins const_vcc/dout]
+  connect_bd_net -net const_vcc_dout [get_bd_ports qsfp0_fs] [get_bd_pins const_vcc/dout]
   connect_bd_net -net ctl_tx_send_idle_Dout [get_bd_pins ctl_tx_send_idle/Dout] [get_bd_pins eth100gb/ctl_tx_send_idle]
   connect_bd_net -net ctl_tx_send_lfi_Dout [get_bd_pins ctl_tx_send_lfi/Dout] [get_bd_pins eth100gb/ctl_tx_send_lfi]
   connect_bd_net -net ctl_tx_send_rfi_Dout [get_bd_pins ctl_tx_send_rfi/Dout] [get_bd_pins eth100gb/ctl_tx_send_rfi]
