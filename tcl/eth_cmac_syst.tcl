@@ -1,64 +1,94 @@
+# Proc to create BD Eth_CMAC_syst
+proc cr_bd_Eth_CMAC_syst { parentCell } {
 
-################################################################
-# This is a generated script based on design: ethernet_test
-#
-# Though there are limitations about the generated script,
-# the main purpose of this utility is to make learning
-# IP Integrator Tcl commands easier.
-################################################################
+  # CHANGE DESIGN NAME HERE
+  set design_name Eth_CMAC_syst
 
-namespace eval _tcl {
-proc get_script_folder {} {
-   set script_path [file normalize [info script]]
-   set script_folder [file dirname $script_path]
-   return $script_folder
+# This script was generated for a remote BD. To create a non-remote design,
+# change the variable <run_remote_bd_flow> to <0>.
+
+set run_remote_bd_flow 1
+if { $run_remote_bd_flow == 1 } {
+  # Set the reference directory for source file relative paths (by default 
+  # the value is script directory path)
+  set origin_dir ./bd
+
+  # Use origin directory path location variable, if specified in the tcl shell
+  if { [info exists ::origin_dir_loc] } {
+     set origin_dir $::origin_dir_loc
+  }
+
+  set str_bd_folder [file normalize ${origin_dir}]
+  set str_bd_filepath ${str_bd_folder}/${design_name}/${design_name}.bd
+
+  # Check if remote design exists on disk
+  if { [file exists $str_bd_filepath ] == 1 } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2030 -severity "ERROR" "The remote BD file path <$str_bd_filepath> already exists!"}
+     common::send_gid_msg -ssname BD::TCL -id 2031 -severity "INFO" "To create a non-remote BD, change the variable <run_remote_bd_flow> to <0>."
+     common::send_gid_msg -ssname BD::TCL -id 2032 -severity "INFO" "Also make sure there is no design <$design_name> existing in your current project."
+
+     return 1
+  }
+
+  # Check if design exists in memory
+  set list_existing_designs [get_bd_designs -quiet $design_name]
+  if { $list_existing_designs ne "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2033 -severity "ERROR" "The design <$design_name> already exists in this project! Will not create the remote BD <$design_name> at the folder <$str_bd_folder>."}
+
+     common::send_gid_msg -ssname BD::TCL -id 2034 -severity "INFO" "To create a non-remote BD, change the variable <run_remote_bd_flow> to <0> or please set a different value to variable <design_name>."
+
+     return 1
+  }
+
+  # Check if design exists on disk within project
+  set list_existing_designs [get_files -quiet */${design_name}.bd]
+  if { $list_existing_designs ne "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2035 -severity "ERROR" "The design <$design_name> already exists in this project at location:
+    $list_existing_designs"}
+     catch {common::send_gid_msg -ssname BD::TCL -id 2036 -severity "ERROR" "Will not create the remote BD <$design_name> at the folder <$str_bd_folder>."}
+
+     common::send_gid_msg -ssname BD::TCL -id 2037 -severity "INFO" "To create a non-remote BD, change the variable <run_remote_bd_flow> to <0> or please set a different value to variable <design_name>."
+
+     return 1
+  }
+
+  # Now can create the remote BD
+  # NOTE - usage of <-dir> will create <$str_bd_folder/$design_name/$design_name.bd>
+  create_bd_design -dir $str_bd_folder $design_name
+} else {
+
+  # Create regular design
+  if { [catch {create_bd_design $design_name} errmsg] } {
+     common::send_gid_msg -ssname BD::TCL -id 2038 -severity "INFO" "Please set a different value to variable <design_name>."
+
+     return 1
+  }
 }
-}
-variable script_folder
-set script_folder [_tcl::get_script_folder]
 
-################################################################
-# Check if script is running in correct Vivado version.
-################################################################
-set scripts_vivado_version 2020.1
-set current_vivado_version [version -short]
+current_bd_design $design_name
 
-if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
-   puts ""
-   catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "ERROR" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."}
-
-   return 1
-}
-
-################################################################
-# START
-################################################################
-
-# To test this script, run the following commands from Vivado Tcl console:
-# source ethernet_test_script.tcl
-
-set bCheckIPsPassed 1
-##################################################################
-# CHECK IPs
-##################################################################
-set bCheckIPs 1
-if { $bCheckIPs == 1 } {
-   set list_check_ips "\ 
-xilinx.com:ip:xlconcat:2.1\
-xilinx.com:ip:axi_timer:2.0\
-xilinx.com:ip:xlconstant:1.1\
-xilinx.com:ip:xlslice:1.0\
-xilinx.com:ip:cmac_usplus:3.1\
-xilinx.com:ip:axi_dma:7.1\
-xilinx.com:ip:util_vector_logic:2.0\
-xilinx.com:ip:axi_gpio:2.0\
-xilinx.com:ip:util_reduced_logic:2.0\
-xilinx.com:ip:axis_data_fifo:2.0\
-xilinx.com:ip:axis_switch:1.1\
-xilinx.com:ip:blk_mem_gen:8.4\
-xilinx.com:ip:axi_bram_ctrl:4.1\
-xilinx.com:ip:proc_sys_reset:5.0\
-"
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\ 
+  xilinx.com:ip:xlconcat:2.1\
+  xilinx.com:ip:axi_timer:2.0\
+  xilinx.com:ip:xlconstant:1.1\
+  xilinx.com:ip:xlslice:1.0\
+  xilinx.com:ip:cmac_usplus:3.1\
+  xilinx.com:ip:axi_dma:7.1\
+  xilinx.com:ip:util_vector_logic:2.0\
+  xilinx.com:ip:axi_gpio:2.0\
+  xilinx.com:ip:util_reduced_logic:2.0\
+  xilinx.com:ip:axis_data_fifo:2.0\
+  xilinx.com:ip:axis_switch:1.1\
+  xilinx.com:ip:blk_mem_gen:8.4\
+  xilinx.com:ip:axi_bram_ctrl:4.1\
+  xilinx.com:ip:proc_sys_reset:5.0\
+  "
 
    set list_ips_missing ""
    common::send_gid_msg -ssname BD::TCL -id 2011 -severity "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
@@ -75,22 +105,12 @@ xilinx.com:ip:proc_sys_reset:5.0\
       set bCheckIPsPassed 0
    }
 
-}
+  }
 
-if { $bCheckIPsPassed != 1 } {
-  common::send_gid_msg -ssname BD::TCL -id 2023 -severity "WARNING" "Will not continue with creation of design due to the error(s) above."
-  return 3
-}
-
-##################################################################
-# DESIGN PROCs
-##################################################################
-
-
-
-# Procedure to create entire design; Provide argument to make
-# procedure reusable. If parentCell is "", will use root.
-proc create_root_design { parentCell } {
+  if { $bCheckIPsPassed != 1 } {
+    common::send_gid_msg -ssname BD::TCL -id 2023 -severity "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
 
   variable script_folder
 
@@ -658,26 +678,8 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
+  save_bd_design
+  close_bd_design $design_name 
 }
-# End of create_root_design()
-
-
-
-
-proc available_tcl_procs { } {
-   puts "##################################################################"
-   puts "# Available Tcl procedures to recreate hierarchical blocks:"
-   puts "#"
-   puts "#    create_root_design"
-   puts "#"
-   puts "#"
-   puts "# The following procedures will create hiearchical blocks with addressing "
-   puts "# for IPs within those blocks and their sub-hierarchical blocks. Addressing "
-   puts "# will not be handled outside those blocks:"
-   puts "#"
-   puts "#    create_root_design"
-   puts "#"
-   puts "##################################################################"
-}
-
-available_tcl_procs
+# End of cr_bd_Eth_CMAC_syst()

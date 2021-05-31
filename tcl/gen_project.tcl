@@ -123,9 +123,12 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 
 update_ip_catalog -rebuild
 
-source $root_dir/tcl/gen_bd.tcl
-# source $root_dir/tcl/gen_bd4piton.tcl
+# creating isolated Ethernet subsystem BD as IP for integration with OpenPiton
+source $root_dir/tcl/eth_cmac_syst.tcl
+cr_bd_Eth_CMAC_syst ""
 
+# creating full BD (with microBlaze environment)
+source $root_dir/tcl/gen_bd.tcl
 create_root_design ""
 
 
