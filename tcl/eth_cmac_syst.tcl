@@ -149,7 +149,7 @@ current_bd_design $design_name
 
   set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH {32} \
+   CONFIG.ADDR_WIDTH {22} \
    CONFIG.ARUSER_WIDTH {0} \
    CONFIG.AWUSER_WIDTH {0} \
    CONFIG.BUSER_WIDTH {0} \
