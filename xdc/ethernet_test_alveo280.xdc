@@ -23,7 +23,10 @@ set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
 # https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug912-vivado-properties.pdf#page=386
 set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]]
 set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]]
-set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_units"]
+#As clocks are not applied to memories explicitly in BD, include them separately to SLR placement.
+set eth_txmem [get_cells -hierarchical tx_mem]
+set eth_rxmem [get_cells -hierarchical rx_mem]
+set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_units $eth_txmem $eth_rxmem"]
 
 #--------------------------------------------
 # Create Clock Constraints (whole board)
