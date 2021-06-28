@@ -4,7 +4,6 @@
 set tcl_orig   [open ./bd/Eth_CMAC_syst/eth_cmac_syst.tcl         r]
 file mkdir           ./bd/Eth_syst_w_uBlaze/
 set tcl_uBlaze [open ./bd/Eth_syst_w_uBlaze/eth_syst_w_uBlaze.tcl w]
-file delete $tcl_uBlaze
 
 while {[gets $tcl_orig line] >= 0} {
   # renaming the Block Design
