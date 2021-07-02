@@ -26,7 +26,8 @@ set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarc
 #As clocks are not applied to memories explicitly in BD, include them separately to SLR placement.
 set eth_txmem [get_cells -hierarchical tx_mem]
 set eth_rxmem [get_cells -hierarchical rx_mem]
-set_property USER_SLR_ASSIGNMENT eth_test_slr [get_cells "$tx_clk_units $rx_clk_units $eth_txmem $eth_rxmem"]
+#Setting specific SLR to which QSFP are wired since placer may miss it if just "group_name" is applied
+set_property USER_SLR_ASSIGNMENT SLR2 [get_cells "$tx_clk_units $rx_clk_units $eth_txmem $eth_rxmem"]
 
 #--------------------------------------------
 # Create Clock Constraints (whole board)
