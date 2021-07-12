@@ -1,6 +1,7 @@
 
 # script to run bare-metal application via JTAG
 # XSCT reference: https://www.xilinx.com/html_docs/xilinx2020_1/vitis_doc/upu1569395223804.html
+# XSCT uses Xvfb and thus "ssh -X" should be used for remote run
 
 # ----- Connecting to the board via JTAG, initializing target
 # Remote connection case (on remote host with board connected "hw_server -s tcp::3121" should be run with port 3121 enabled in firewall)

@@ -1,6 +1,7 @@
 
 # script to build bare-metal application
 # XSCT reference: http://www.xilinx.com/html_docs/xilinx2020_2/vitis_doc/obi1585821551850.html
+# XSCT uses Xvfb and thus "ssh -X" should be used for remote run
 
 #Set Vitis workspace
 setws ./xsct_ws
