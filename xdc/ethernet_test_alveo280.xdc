@@ -60,23 +60,24 @@ set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -mi
 set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
 set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
 #
-# Timing constraints for domains crossings in Ethernet MAC Lite + 1Gb Ethernet PHY
-# set phy_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out2     ]]
-# set txl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/userclk_out  ]]
-# set rxl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/rxuserclk_out]]
+# Timing constraints for domains crossings in Ethernet MAC Lite + 1Gb Ethernet PHY (not all CDC present in BD)
+create_clock -period 6.400 -name gt1refclk1 [get_ports "qsfp1_156mhz_clk_p"]
+set phy_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out2     ]]
+set txl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/userclk_out  ]]
+set rxl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/rxuserclk_out]]
 # Ethernet MAC Lite
-# set_max_delay -datapath_only -from $sys_clk -to $txl_clk [expr [get_property -min period $sys_clk] * 0.9]
-# set_max_delay -datapath_only -from $sys_clk -to $rxl_clk [expr [get_property -min period $sys_clk] * 0.9]
-# set_max_delay -datapath_only -from $txl_clk -to $sys_clk [expr [get_property -min period $txl_clk] * 0.9]
-# set_max_delay -datapath_only -from $rxl_clk -to $sys_clk [expr [get_property -min period $rxl_clk] * 0.9]
+set_max_delay -datapath_only -from $sys_clk -to $txl_clk [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $sys_clk -to $rxl_clk [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $txl_clk -to $sys_clk [expr [get_property -min period $txl_clk] * 0.9]
+set_max_delay -datapath_only -from $rxl_clk -to $sys_clk [expr [get_property -min period $rxl_clk] * 0.9]
 # 1Gb Ethernet PHY
-# set_max_delay -datapath_only -from $phy_clk -to $txl_clk [expr [get_property -min period $phy_clk] * 0.9]
-# set_max_delay -datapath_only -from $phy_clk -to $rxl_clk [expr [get_property -min period $phy_clk] * 0.9]
-# set_max_delay -datapath_only -from $txl_clk -to $phy_clk [expr [get_property -min period $txl_clk] * 0.9]
-# set_max_delay -datapath_only -from $rxl_clk -to $phy_clk [expr [get_property -min period $rxl_clk] * 0.9]
+set_max_delay -datapath_only -from $phy_clk -to $txl_clk [expr [get_property -min period $phy_clk] * 0.9]
+set_max_delay -datapath_only -from $phy_clk -to $rxl_clk [expr [get_property -min period $phy_clk] * 0.9]
+set_max_delay -datapath_only -from $txl_clk -to $phy_clk [expr [get_property -min period $txl_clk] * 0.9]
+set_max_delay -datapath_only -from $rxl_clk -to $phy_clk [expr [get_property -min period $rxl_clk] * 0.9]
 # both
-# set_max_delay -datapath_only -from $txl_clk -to $rxl_clk [expr [get_property -min period $txl_clk] * 0.9]
-# set_max_delay -datapath_only -from $rxl_clk -to $txl_clk [expr [get_property -min period $rxl_clk] * 0.9]
+set_max_delay -datapath_only -from $txl_clk -to $rxl_clk [expr [get_property -min period $txl_clk] * 0.9]
+set_max_delay -datapath_only -from $rxl_clk -to $txl_clk [expr [get_property -min period $rxl_clk] * 0.9]
 
 
 #--------------------------------------------
@@ -122,8 +123,8 @@ set_property PULLTYPE    PULLDOWN [get_ports "HBM_CATTRIP"]  ;# Setting HBM_CATT
 # set_property PACKAGE_PIN T42      [get_ports "MGT_SI570_CLOCK0_P"]  ;# Bank 134 - MGTREFCLK0P_134, platform: io_clk_gtyquad_refclk0_00_clk_p
 #
 ## QSFP0_CLOCK        -> MGT Ref Clock 1 User selectable by QSFP0_FS=0 161.132812 MHz and QSFP0_FS=1 156.250MHz; QSFP0_OEB must driven low to enable clock output
-# set_property PACKAGE_PIN R41      [get_ports "qsfp0_156mhz_clk_n"]  ;# Bank 134 - MGTREFCLK1N_134, platform: io_clk_gtyquad_refclk1_00_clk_n
-# set_property PACKAGE_PIN R40      [get_ports "qsfp0_156mhz_clk_p"]  ;# Bank 134 - MGTREFCLK1P_134, platform: io_clk_gtyquad_refclk1_00_clk_p
+# set_property PACKAGE_PIN R41      [get_ports "QSFP0_CLOCK_N"]  ;# Bank 134 - MGTREFCLK1N_134, platform: io_clk_gtyquad_refclk1_00_clk_n
+# set_property PACKAGE_PIN R40      [get_ports "QSFP0_CLOCK_P"]  ;# Bank 134 - MGTREFCLK1P_134, platform: io_clk_gtyquad_refclk1_00_clk_p
 #
 ## QSFP0_CLOCK control signals
 set_property PACKAGE_PIN G32       [get_ports "QSFP0_FS" ]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_FS"   - IO_L9N_T1L_N5_AD12N_75, platform: QSFP0_FS[0:0]
