@@ -8,25 +8,28 @@
 # connect -url tcp:192.168.0.14:3121
 # Local connection case
 connect -url tcp:localhost:3121
+# connect
 connect -list
 
 # ---- Reading FPGA state
+targets
+# targets 1
+# targets
 fpga -boot-status
 fpga -config-status
 fpga -state
-targets
 
 # ---- Programming FPGA
 fpga -file ./project/ethernet_test_wrapper.bit
 fpga -boot-status
 fpga -config-status
 fpga -state
-targets
 
 # ---- Setting CPU as debug target
-targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
+targets
+# targets 3
 # loadhw -hw ./project/ethernet_test_wrapper.xsa
-# targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
+targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
 targets
 state
 rst -system
