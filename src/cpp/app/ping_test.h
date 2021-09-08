@@ -19,7 +19,7 @@
 class PingReqstTest {
   // User Test run definitions
   enum {
-    NUM_OF_PING_REQ_PKTS   = 10,    // Number of ping req it generates, change this parameter to limit the number of ping requests sent by this program.
+    NUM_OF_PING_REQ_PKTS   = 11,    // Number of ping req it generates, change this parameter to limit the number of ping requests sent by this program.
     NUM_RX_PACK_CHECK_REQ  = 10,	  // Max num of Rx pack to be checked	before sending another request
     NUM_PACK_CHECK_RX_PACK = 100000 // Max number of pack to be checked before to identify a Rx packet
   };

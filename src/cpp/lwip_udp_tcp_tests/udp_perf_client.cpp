@@ -211,7 +211,7 @@ static void udp_packet_send(u8_t finished)
 		usleep(2);
 #endif /* __aarch64__ */
         // the same story is for 100Gb Eth core working with MicroBlaze: getting memory underflow without this pause
-		usleep(70);
+		usleep(200);
 
 	}
 	packet_id++;
