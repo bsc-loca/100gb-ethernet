@@ -5,30 +5,6 @@
 ##
 ############################################################################
 #
-# ------------------------------------------------------------------------
-## Bitstream Configuration
-set_property CONFIG_VOLTAGE 1.8                        [current_design]
-set_property BITSTREAM.CONFIG.CONFIGFALLBACK Enable    [current_design]
-set_property BITSTREAM.GENERAL.COMPRESS TRUE           [current_design]
-set_property CONFIG_MODE SPIx4                         [current_design]
-set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4           [current_design]
-set_property BITSTREAM.CONFIG.CONFIGRATE 85.0          [current_design]
-set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
-set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES        [current_design]
-set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup         [current_design]
-set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
-
-#--------------------------------------------
-# Specifying the placement of QSFP clock domain modules into single SLR to facilitate routing
-# https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug912-vivado-properties.pdf#page=386
-set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]]
-set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]]
-#As clocks are not applied to memories explicitly in BD, include them separately to SLR placement.
-set eth_txmem [get_cells -hierarchical tx_mem]
-set eth_rxmem [get_cells -hierarchical rx_mem]
-#Setting specific SLR to which QSFP are wired since placer may miss it if just "group_name" is applied
-set_property USER_SLR_ASSIGNMENT SLR2 [get_cells "$tx_clk_units $rx_clk_units $eth_txmem $eth_rxmem"]
-
 #--------------------------------------------
 # Create Clock Constraints (whole board)
 #
@@ -45,54 +21,23 @@ set_property USER_SLR_ASSIGNMENT SLR2 [get_cells "$tx_clk_units $rx_clk_units $e
 # create_clock -period 6.206  -name gt1refclk1      [get_ports "QSFP1_CLOCK_P"]
 
 #--------------------------------------------
-# Timing constraints for domains crossings, which didn't apply automatically (e.g. for GPIO)
-#
-set sys_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out1 ]]
-set tx_clk  [get_clocks -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]
-set rx_clk  [get_clocks -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]
-# set_false_path -from $xxx_clk -to $yyy_clk
-# controlling resync paths to be less than source clock period
-# (-datapath_only to exclude clock paths)
-set_max_delay -datapath_only -from $sys_clk -to $tx_clk  [expr [get_property -min period $sys_clk] * 0.9]
-set_max_delay -datapath_only -from $sys_clk -to $rx_clk  [expr [get_property -min period $sys_clk] * 0.9]
-set_max_delay -datapath_only -from $tx_clk  -to $sys_clk [expr [get_property -min period $tx_clk ] * 0.9]
-set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -min period $tx_clk ] * 0.9]
-set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
-set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
-#
-# Timing constraints for domains crossings in Ethernet MAC Lite + 1Gb Ethernet PHY (not all CDC present in BD)
-create_clock -period 6.400 -name gt1refclk1 [get_ports "qsfp1_156mhz_clk_p"]
-set phy_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out2     ]]
-set txl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/userclk_out  ]]
-set rxl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/rxuserclk_out]]
-# Ethernet MAC Lite
-set_max_delay -datapath_only -from $sys_clk -to $txl_clk [expr [get_property -min period $sys_clk] * 0.9]
-set_max_delay -datapath_only -from $sys_clk -to $rxl_clk [expr [get_property -min period $sys_clk] * 0.9]
-set_max_delay -datapath_only -from $txl_clk -to $sys_clk [expr [get_property -min period $txl_clk] * 0.9]
-set_max_delay -datapath_only -from $rxl_clk -to $sys_clk [expr [get_property -min period $rxl_clk] * 0.9]
-# 1Gb Ethernet PHY
-set_max_delay -datapath_only -from $phy_clk -to $txl_clk [expr [get_property -min period $phy_clk] * 0.9]
-set_max_delay -datapath_only -from $phy_clk -to $rxl_clk [expr [get_property -min period $phy_clk] * 0.9]
-set_max_delay -datapath_only -from $txl_clk -to $phy_clk [expr [get_property -min period $txl_clk] * 0.9]
-set_max_delay -datapath_only -from $rxl_clk -to $phy_clk [expr [get_property -min period $rxl_clk] * 0.9]
-# both
-set_max_delay -datapath_only -from $txl_clk -to $rxl_clk [expr [get_property -min period $txl_clk] * 0.9]
-set_max_delay -datapath_only -from $rxl_clk -to $txl_clk [expr [get_property -min period $rxl_clk] * 0.9]
-
-
-#--------------------------------------------
 # On-board system clock
-# set_property PACKAGE_PIN BJ44 [ get_ports "sysclk0_clk_n" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_N" - IO_L12N_T1U_N11_GC_A09_D25_65
-# set_property IOSTANDARD  LVDS [ get_ports "sysclk0_clk_n" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_N" - IO_L12N_T1U_N11_GC_A09_D25_65
-# set_property PACKAGE_PIN BJ43 [ get_ports "sysclk0_clk_p" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_P" - IO_L12P_T1U_N10_GC_A08_D24_65
-# set_property IOSTANDARD  LVDS [ get_ports "sysclk0_clk_p" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_P" - IO_L12P_T1U_N10_GC_A08_D24_65
+# set_property PACKAGE_PIN BJ44 [ get_ports "SYS_CLK_clk_n" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_N" - IO_L12N_T1U_N11_GC_A09_D25_65
+# set_property IOSTANDARD  LVDS [ get_ports "SYS_CLK_clk_n" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_N" - IO_L12N_T1U_N11_GC_A09_D25_65
+# set_property PACKAGE_PIN BJ43 [ get_ports "SYS_CLK_clk_p" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_P" - IO_L12P_T1U_N10_GC_A08_D24_65
+# set_property IOSTANDARD  LVDS [ get_ports "SYS_CLK_clk_p" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_P" - IO_L12P_T1U_N10_GC_A08_D24_65
+set_property PACKAGE_PIN BJ6  [ get_ports "SYS_CLK_clk_n" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_N" - IO_L13N_T2L_N1_GC_QBC_69
+set_property IOSTANDARD  LVDS [ get_ports "SYS_CLK_clk_n" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_N" - IO_L13N_T2L_N1_GC_QBC_69
+set_property PACKAGE_PIN BH6  [ get_ports "SYS_CLK_clk_p" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_P" - IO_L13P_T2L_N0_GC_QBC_69
+set_property IOSTANDARD  LVDS [ get_ports "SYS_CLK_clk_p" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_P" - IO_L13P_T2L_N0_GC_QBC_69
+# create_clock -period 10.000 -name SYS_CLK [get_ports "SYS_CLK_clk_p"]
 
 #--------------------------------------------
 ##  CPU_RESET_FPGA Connects to SW1 push button On the top edge of the PCB Assembly, also connects to Satellite Contoller
 ##                 Desinged to be a active low reset input to the FPGA.
 ##
-# set_property PACKAGE_PIN L30      [get_ports "resetn"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
-# set_property IOSTANDARD  LVCMOS18 [get_ports "resetn"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
+set_property PACKAGE_PIN L30      [get_ports "CPU_RESET_FPGA"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
+set_property IOSTANDARD  LVCMOS18 [get_ports "CPU_RESET_FPGA"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
 
 #--------------------------------------------
 # HBM Catastrophic Over temperature Output signal to Satellite Controller
@@ -121,16 +66,19 @@ set_property PULLTYPE    PULLDOWN [get_ports "HBM_CATTRIP"]  ;# Setting HBM_CATT
 ## MGT_SI570_CLOCK0   -> MGT Ref Clock 0 156.25MHz Default (Not User re-programmable)
 # set_property PACKAGE_PIN T43      [get_ports "MGT_SI570_CLOCK0_N"]  ;# Bank 134 - MGTREFCLK0N_134, platform: io_clk_gtyquad_refclk0_00_clk_n
 # set_property PACKAGE_PIN T42      [get_ports "MGT_SI570_CLOCK0_P"]  ;# Bank 134 - MGTREFCLK0P_134, platform: io_clk_gtyquad_refclk0_00_clk_p
+set_property PACKAGE_PIN T43      [get_ports "QSFP1X_CLK_clk_n"]  ;# Bank 134 - MGTREFCLK0N_134, platform: io_clk_gtyquad_refclk0_00_clk_n
+set_property PACKAGE_PIN T42      [get_ports "QSFP1X_CLK_clk_p"]  ;# Bank 134 - MGTREFCLK0P_134, platform: io_clk_gtyquad_refclk0_00_clk_p
+create_clock -period 6.400 -name QSFP1X_CLK [get_ports "QSFP1X_CLK_clk_p"]
 #
 ## QSFP0_CLOCK        -> MGT Ref Clock 1 User selectable by QSFP0_FS=0 161.132812 MHz and QSFP0_FS=1 156.250MHz; QSFP0_OEB must driven low to enable clock output
 # set_property PACKAGE_PIN R41      [get_ports "QSFP0_CLOCK_N"]  ;# Bank 134 - MGTREFCLK1N_134, platform: io_clk_gtyquad_refclk1_00_clk_n
 # set_property PACKAGE_PIN R40      [get_ports "QSFP0_CLOCK_P"]  ;# Bank 134 - MGTREFCLK1P_134, platform: io_clk_gtyquad_refclk1_00_clk_p
 #
 ## QSFP0_CLOCK control signals
-set_property PACKAGE_PIN G32       [get_ports "QSFP0_FS" ]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_FS"   - IO_L9N_T1L_N5_AD12N_75, platform: QSFP0_FS[0:0]
-set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP0_FS" ]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_FS"   - IO_L9N_T1L_N5_AD12N_75
-set_property PACKAGE_PIN H32       [get_ports "QSFP0_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_OEB"  - IO_L9P_T1L_N4_AD12P_75, platform: QSFP0_OEB[0:0]
-set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP0_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_OEB"  - IO_L9P_T1L_N4_AD12P_75
+# set_property PACKAGE_PIN G32       [get_ports "QSFP0_FS" ]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_FS"   - IO_L9N_T1L_N5_AD12N_75, platform: QSFP0_FS[0:0]
+# set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP0_FS" ]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_FS"   - IO_L9N_T1L_N5_AD12N_75
+# set_property PACKAGE_PIN H32       [get_ports "QSFP0_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_OEB"  - IO_L9P_T1L_N4_AD12P_75, platform: QSFP0_OEB[0:0]
+# set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP0_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP0_OEB"  - IO_L9P_T1L_N4_AD12P_75
 #
 ## QSFP0 MGTY Interface
 # set_property PACKAGE_PIN L54       [get_ports "QSFP0_RX1_N"]  ;# Bank 134 - MGTYRXN0_134, platform: io_gt_gtyquad_00[_grx_n[0]]
@@ -156,16 +104,19 @@ set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP0_OEB"]  ;# Bank  75 VCCO - V
 ## MGT_SI570_CLOCK1_N   -> MGT Ref Clock 0 156.25MHz Default (Not User re-programmable)
 # set_property PACKAGE_PIN P43       [get_ports "MGT_SI570_CLOCK1_N"] ;# Bank 135 - MGTREFCLK0N_135, platform: io_clk_gtyquad_refclk0_01_clk_n
 # set_property PACKAGE_PIN P42       [get_ports "MGT_SI570_CLOCK1_P"] ;# Bank 135 - MGTREFCLK0P_135, platform: io_clk_gtyquad_refclk0_01_clk_p
+set_property PACKAGE_PIN P43       [get_ports "QSFP4X_CLK_clk_n"] ;# Bank 135 - MGTREFCLK0N_135, platform: io_clk_gtyquad_refclk0_01_clk_n
+set_property PACKAGE_PIN P42       [get_ports "QSFP4X_CLK_clk_p"] ;# Bank 135 - MGTREFCLK0P_135, platform: io_clk_gtyquad_refclk0_01_clk_p
+# create_clock -period 6.400 -name QSFP4X_CLK [get_ports "QSFP4X_CLK_clk_p"]
 #
 ## QSFP1_CLOCK_N        -> MGT Ref Clock 1 User selectable by QSFP1_FS=0 161.132812 MHz and QSFP1_FS=1 156.250MHz; QSFP1_OEB must be low to enable clock output
 # set_property PACKAGE_PIN M43       [get_ports "QSFP1_CLOCK_N"]  ;# Bank 135 - MGTREFCLK1N_135, platform: io_clk_gtyquad_refclk1_01_clk_n
 # set_property PACKAGE_PIN M42       [get_ports "QSFP1_CLOCK_P"]  ;# Bank 135 - MGTREFCLK1P_135, platform: io_clk_gtyquad_refclk1_01_clk_p
 #
 ## QSFP1_CLOCK control signals
-set_property PACKAGE_PIN H30       [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75     , platform: QSFP1_OEB[0:0]
-set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75
-set_property PACKAGE_PIN G33       [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75, platform: QSFP1_FS[0:0]
-set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75
+# set_property PACKAGE_PIN H30       [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75     , platform: QSFP1_OEB[0:0]
+# set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_OEB"]  ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_OEB"  - IO_L8N_T1L_N3_AD5N_75
+# set_property PACKAGE_PIN G33       [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75, platform: QSFP1_FS[0:0]
+# set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - VCC1V8 Net "QSFP1_FS"   - IO_L7N_T1L_N1_QBC_AD13N_75
 #
 ## QSFP1 MGTY Interface
 # set_property PACKAGE_PIN G54       [get_ports "QSFP1_RX1_N"]  ;# Bank 135 - MGTYRXN0_135, platform: io_gt_gtyquad_01[_grx_n[0]]
@@ -184,3 +135,61 @@ set_property IOSTANDARD  LVCMOS18  [get_ports "QSFP1_FS"]   ;# Bank  75 VCCO - V
 # set_property PACKAGE_PIN E48       [get_ports "QSFP1_TX2_P"]  ;# Bank 135 - MGTYTXP1_135, platform: io_gt_gtyquad_01[_gtx_p[1]]
 # set_property PACKAGE_PIN C48       [get_ports "QSFP1_TX3_P"]  ;# Bank 135 - MGTYTXP2_135, platform: io_gt_gtyquad_01[_gtx_p[2]]
 # set_property PACKAGE_PIN A49       [get_ports "QSFP1_TX4_P"]  ;# Bank 135 - MGTYTXP3_135, platform: io_gt_gtyquad_01[_gtx_p[3]]
+
+#--------------------------------------------
+# Specifying the placement of QSFP clock domain modules into single SLR to facilitate routing
+# https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug912-vivado-properties.pdf#page=386
+set tx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]]
+set rx_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]]
+#As clocks are not applied to memories explicitly in BD, include them separately to SLR placement.
+set eth_txmem [get_cells -hierarchical tx_mem]
+set eth_rxmem [get_cells -hierarchical rx_mem]
+#Setting specific SLR to which QSFP are wired since placer may miss it if just "group_name" is applied
+set_property USER_SLR_ASSIGNMENT SLR2 [get_cells "$tx_clk_units $rx_clk_units $eth_txmem $eth_rxmem"]
+
+#--------------------------------------------
+# Timing constraints for domains crossings, which didn't apply automatically (e.g. for GPIO)
+#
+set sys_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out1 ]]
+set tx_clk  [get_clocks -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]
+set rx_clk  [get_clocks -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]
+# set_false_path -from $xxx_clk -to $yyy_clk
+# controlling resync paths to be less than source clock period
+# (-datapath_only to exclude clock paths)
+set_max_delay -datapath_only -from $sys_clk -to $tx_clk  [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $sys_clk -to $rx_clk  [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $tx_clk  -to $sys_clk [expr [get_property -min period $tx_clk ] * 0.9]
+set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -min period $tx_clk ] * 0.9]
+set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
+set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
+#
+# Timing constraints for domains crossings in Ethernet MAC Lite + 1Gb Ethernet PHY (not all CDC present in BD)
+set phy_clk [get_clocks -of_objects [get_pins -hierarchical sys_clk_gen/clk_out2     ]]
+set txl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/userclk_out  ]]
+set rxl_clk [get_clocks -of_objects [get_pins -hierarchical gig_eth_phy/rxuserclk_out]]
+# Ethernet MAC Lite
+set_max_delay -datapath_only -from $sys_clk -to $txl_clk [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $sys_clk -to $rxl_clk [expr [get_property -min period $sys_clk] * 0.9]
+set_max_delay -datapath_only -from $txl_clk -to $sys_clk [expr [get_property -min period $txl_clk] * 0.9]
+set_max_delay -datapath_only -from $rxl_clk -to $sys_clk [expr [get_property -min period $rxl_clk] * 0.9]
+# 1Gb Ethernet PHY
+set_max_delay -datapath_only -from $phy_clk -to $txl_clk [expr [get_property -min period $phy_clk] * 0.9]
+set_max_delay -datapath_only -from $phy_clk -to $rxl_clk [expr [get_property -min period $phy_clk] * 0.9]
+set_max_delay -datapath_only -from $txl_clk -to $phy_clk [expr [get_property -min period $txl_clk] * 0.9]
+set_max_delay -datapath_only -from $rxl_clk -to $phy_clk [expr [get_property -min period $rxl_clk] * 0.9]
+# both
+set_max_delay -datapath_only -from $txl_clk -to $rxl_clk [expr [get_property -min period $txl_clk] * 0.9]
+set_max_delay -datapath_only -from $rxl_clk -to $txl_clk [expr [get_property -min period $rxl_clk] * 0.9]
+
+# ------------------------------------------------------------------------
+## Bitstream Configuration
+set_property CONFIG_VOLTAGE 1.8                        [current_design]
+set_property BITSTREAM.CONFIG.CONFIGFALLBACK Enable    [current_design]
+set_property BITSTREAM.GENERAL.COMPRESS TRUE           [current_design]
+set_property CONFIG_MODE SPIx4                         [current_design]
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4           [current_design]
+set_property BITSTREAM.CONFIG.CONFIGRATE 85.0          [current_design]
+set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
+set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES        [current_design]
+set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup         [current_design]
+set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
