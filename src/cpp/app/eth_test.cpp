@@ -284,32 +284,121 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = 0;
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
         for (size_t addr = 0; addr < sgMemWords; ++addr) ethSyst.sgMem[addr] = 0;
+
+        uint8_t  volatile* txMem8  = reinterpret_cast<uint8_t  volatile*>(ethSyst.txMem);
+        uint16_t volatile* txMem16 = reinterpret_cast<uint16_t volatile*>(ethSyst.txMem);
+        uint32_t volatile* txMem32 = reinterpret_cast<uint32_t volatile*>(ethSyst.txMem);
+        uint64_t volatile* txMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.txMem);
+        uint8_t  volatile* rxMem8  = reinterpret_cast<uint8_t  volatile*>(ethSyst.rxMem);
+        uint16_t volatile* rxMem16 = reinterpret_cast<uint16_t volatile*>(ethSyst.rxMem);
+        uint32_t volatile* rxMem32 = reinterpret_cast<uint32_t volatile*>(ethSyst.rxMem);
+        uint64_t volatile* rxMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.rxMem);
+        uint8_t  volatile* sgMem8  = reinterpret_cast<uint8_t  volatile*>(ethSyst.sgMem);
+        uint16_t volatile* sgMem16 = reinterpret_cast<uint16_t volatile*>(ethSyst.sgMem);
+        uint32_t volatile* sgMem32 = reinterpret_cast<uint32_t volatile*>(ethSyst.sgMem);
+        uint64_t volatile* sgMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.sgMem);
+        size_t const axiWidth = 512 / 8;
+
+        // filling the memories with random values
         srand(1);
-        for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
-        for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = rand();
-        for (size_t addr = 0; addr < sgMemWords; ++addr) ethSyst.sgMem[addr] = rand();
+        uint64_t val = 0;
+        for (size_t addr = 0; addr < txMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          size_t axiWordIdx = addr/axiWidth;
+          // changing written data type every wide AXI word
+          if (axiWordIdx%4 == 0) txMem8 [addr  ] = val >> 56;
+          if (axiWordIdx%4 == 1) txMem16[addr/2] = val >> 48;
+          if (axiWordIdx%4 == 2) txMem32[addr/4] = val >> 32;
+          if (axiWordIdx%4 == 3) txMem64[addr/8] = val;
+        }
+        for (size_t addr = 0; addr < rxMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          size_t axiWordIdx = addr/axiWidth;
+          // changing written data type every wide AXI word
+          if (axiWordIdx%4 == 0) rxMem8 [addr  ] = val >> 56;
+          if (axiWordIdx%4 == 1) rxMem16[addr/2] = val >> 48;
+          if (axiWordIdx%4 == 2) rxMem32[addr/4] = val >> 32;
+          if (axiWordIdx%4 == 3) rxMem64[addr/8] = val;
+        }
+        for (size_t addr = 0; addr < sgMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          size_t axiWordIdx = addr/axiWidth;
+          // changing written data type every wide AXI word
+          if (axiWordIdx%4 == 0) sgMem8 [addr  ] = val >> 56;
+          if (axiWordIdx%4 == 1) sgMem16[addr/2] = val >> 48;
+          if (axiWordIdx%4 == 2) sgMem32[addr/4] = val >> 32;
+          if (axiWordIdx%4 == 3) sgMem64[addr/8] = val;
+        }
+
+        // checking written values
         srand(1);
-        xil_printf("Checking TX memory at addr 0X%x with size %d \n", size_t(ethSyst.txMem), txMemSize);
-        for (size_t addr = 0; addr < txMemWords; ++addr) {
-          uint32_t expectVal = rand(); 
-          if (ethSyst.txMem[addr] != expectVal) {
-            xil_printf("\nERROR: Incorrect readback of word at addr %0X from Tx Mem: %0lX, expected: %0lX \n", addr, ethSyst.txMem[addr], expectVal);
+        val = 0;
+        xil_printf("Checking TX memory at addr 0x%X with size %d \n", size_t(ethSyst.txMem), txMemSize);
+        for (size_t addr = 0; addr < txMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          // checking readback using different data types
+          if (                 txMem8 [addr  ] != (val >> 56)) {
+            xil_printf("\nERROR: Incorrect readback of Byte at addr %lx from Tx Mem: %x, expected: %lx \n", addr, txMem8[addr], val >> 56);
+            exit(1);
+          }
+          if ((addr%2) == 1 && txMem16[addr/2] != (val >> 48)) {
+            xil_printf("\nERROR: Incorrect readback of Word-16 at addr %lx from Tx Mem: %x, expected: %lx \n", addr, txMem16[addr/2], val >> 48);
+            exit(1);
+          }
+          if ((addr%4) == 3 && txMem32[addr/4] != (val >> 32)) {
+            xil_printf("\nERROR: Incorrect readback of Word-32 at addr %lx from Tx Mem: %x, expected: %lx \n", addr, txMem32[addr/4], val >> 32);
+            exit(1);
+          }
+          if ((addr%8) == 7 && txMem64[addr/8] !=  val)        {
+            xil_printf("\nERROR: Incorrect readback of Word-64 at addr %lx from Tx Mem: %lx, expected: %lx \n", addr, txMem64[addr/8], val);
             exit(1);
           }
         }
-        xil_printf("Checking RX memory at addr 0X%x with size %d \n", size_t(ethSyst.rxMem), rxMemSize);
-        for (size_t addr = 0; addr < rxMemWords; ++addr) {
-          uint32_t expectVal = rand(); 
-          if (ethSyst.rxMem[addr] != expectVal) {
-            xil_printf("\nERROR: Incorrect readback of word at addr %0X from Rx Mem: %0lX, expected: %0lX \n", addr, ethSyst.rxMem[addr], expectVal);
+        xil_printf("Checking RX memory at addr 0x%X with size %d \n", size_t(ethSyst.rxMem), rxMemSize);
+        for (size_t addr = 0; addr < rxMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          // checking readback using different data types
+          if (                 rxMem8 [addr  ] != (val >> 56)) {
+            xil_printf("\nERROR: Incorrect readback of Byte at addr %lx from Rx Mem: %x, expected: %lx \n", addr, rxMem8[addr], val >> 56);
+            exit(1);
+          }
+          if ((addr%2) == 1 && rxMem16[addr/2] != (val >> 48)) {
+            xil_printf("\nERROR: Incorrect readback of Word-16 at addr %lx from Rx Mem: %x, expected: %lx \n", addr, rxMem16[addr/2], val >> 48);
+            exit(1);
+          }
+          if ((addr%4) == 3 && rxMem32[addr/4] != (val >> 32)) {
+            xil_printf("\nERROR: Incorrect readback of Word-32 at addr %lx from Rx Mem: %x, expected: %lx \n", addr, rxMem32[addr/4], val >> 32);
+            exit(1);
+          }
+          if ((addr%8) == 7 && rxMem64[addr/8] !=  val)        {
+            xil_printf("\nERROR: Incorrect readback of Word-64 at addr %lx from Rx Mem: %lx, expected: %lx \n", addr, rxMem64[addr/8], val);
             exit(1);
           }
         }
-        xil_printf("Checking BD memory at addr 0X%x with size %d \n", size_t(ethSyst.sgMem), sgMemSize);
-        for (size_t addr = 0; addr < sgMemWords; ++addr) {
-          uint32_t expectVal = rand(); 
-          if (ethSyst.sgMem[addr] != expectVal) {
-            xil_printf("\nERROR: Incorrect readback of word at addr %0X from SG Mem: %0lX, expected: %0lX \n", addr, ethSyst.sgMem[addr], expectVal);
+        xil_printf("Checking BD memory at addr 0x%X with size %d \n", size_t(ethSyst.sgMem), sgMemSize);
+        for (size_t addr = 0; addr < sgMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          // checking readback using different data types
+          if (                 sgMem8 [addr  ] != (val >> 56)) {
+            xil_printf("\nERROR: Incorrect readback of Byte at addr %lx from BD Mem: %x, expected: %lx \n", addr, sgMem8[addr], val >> 56);
+            exit(1);
+          }
+          if ((addr%2) == 1 && sgMem16[addr/2] != (val >> 48)) {
+            xil_printf("\nERROR: Incorrect readback of Word-16 at addr %lx from BD Mem: %x, expected: %lx \n", addr, sgMem16[addr/2], val >> 48);
+            exit(1);
+          }
+          if ((addr%4) == 3 && sgMem32[addr/4] != (val >> 32)) {
+            xil_printf("\nERROR: Incorrect readback of Word-32 at addr %lx from BD Mem: %x, expected: %lx \n", addr, sgMem32[addr/4], val >> 32);
+            exit(1);
+          }
+          if ((addr%8) == 7 && sgMem64[addr/8] !=  val)        {
+            xil_printf("\nERROR: Incorrect readback of Word-64 at addr %lx from BD Mem: %lx, expected: %lx \n", addr, sgMem64[addr/8], val);
             exit(1);
           }
         }
