@@ -28,9 +28,9 @@ fpga -state
 # ---- Setting CPU as debug target
 targets
 # targets 3
-# loadhw -hw ./project/ethernet_test_wrapper.xsa
 targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
 targets
+# loadhw -hw ./project/ethernet_test_wrapper.xsa
 state
 rst -system
 after 3000
