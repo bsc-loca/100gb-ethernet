@@ -17,6 +17,17 @@ app create -name eth_test -hw ./project/ethernet_test_wrapper.xsa -proc microbla
 #Create project/app
 # app create -name eth_test -platform eth_test_platform -lang c++ -template {Empty Application (C++)}
 
+#Changing SECTION regions in linker script from HBM connected to uBlaze icache/dcache to just static ilmb/dlmb (BRAM)
+set file_orig  [open ./xsct_ws/eth_test/src/lscript.ld       r]
+set file_fixed [open ./xsct_ws/eth_test/src/lscript_fixed.ld w]
+while {[gets $file_orig line] >= 0} {
+    set line [string map {"> hbm_0_HBM_MEM00" "> microblaze_0_local_memory_ilmb_bram_if_cntlr_Mem_microblaze_0_local_memory_dlmb_bram_if_cntlr_Mem" } $line]
+    puts $file_fixed $line
+}
+close $file_orig
+close $file_fixed
+file rename -force ./xsct_ws/eth_test/src/lscript_fixed.ld ./xsct_ws/eth_test/src/lscript.ld
+
 #Report created platform
 platform list
 platform active
