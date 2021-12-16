@@ -248,9 +248,11 @@ class EthSyst {
     RX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR   + TX_SG_MEM_SIZE,
     RX_SG_MEM_SIZE =  XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 - RX_SG_MEM_ADDR
   };
-  uint32_t* txMem = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
-  uint32_t* rxMem = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
-  uint32_t* sgMem = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
+  uint32_t* txMem  = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
+  uint32_t* rxMem  = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
+  uint32_t* sgMem  = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
+  // uint32_t* sysMem = reinterpret_cast<uint32_t*>(0x40000000); // system mem (DDR/HBM) base address
+  uint32_t* sysMem = reinterpret_cast<uint32_t*>(XPAR_HBM_0_BASEADDR); // system mem (DDR/HBM) base address
 
   size_t txBdCount = 0;
   size_t rxBdCount = 0;

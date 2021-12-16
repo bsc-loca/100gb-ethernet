@@ -26,6 +26,7 @@ set_property PACKAGE_PIN BJ44 [ get_ports "MEM_CLK_clk_n" ]  ;# Bank  65 VCCO - 
 set_property IOSTANDARD  LVDS [ get_ports "MEM_CLK_clk_n" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_N" - IO_L12N_T1U_N11_GC_A09_D25_65
 set_property PACKAGE_PIN BJ43 [ get_ports "MEM_CLK_clk_p" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_P" - IO_L12P_T1U_N10_GC_A08_D24_65
 set_property IOSTANDARD  LVDS [ get_ports "MEM_CLK_clk_p" ]  ;# Bank  65 VCCO - VCC1V2 Net "SYSCLK0_P" - IO_L12P_T1U_N10_GC_A08_D24_65
+create_clock -period 10.000 -name MEM_CLK [get_ports "MEM_CLK_clk_p"]
 set_property PACKAGE_PIN BJ6  [ get_ports "SYS_CLK_clk_n" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_N" - IO_L13N_T2L_N1_GC_QBC_69
 set_property IOSTANDARD  LVDS [ get_ports "SYS_CLK_clk_n" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_N" - IO_L13N_T2L_N1_GC_QBC_69
 set_property PACKAGE_PIN BH6  [ get_ports "SYS_CLK_clk_p" ]  ;# Bank  69 VCCO - VCC1V2 Net "SYSCLK1_P" - IO_L13P_T2L_N0_GC_QBC_69
