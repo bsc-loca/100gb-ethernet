@@ -211,12 +211,12 @@ int main(int argc, char *argv[])
                              XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
   size_t const sgMemSize  = (XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 -
                              XPAR_SG_MEM_CPU_S_AXI_BASEADDR);
-  size_t const sysMemSize = sgMemSize * 2; // small size just for testing
+  size_t const extMemSize = sgMemSize * 2; // small size just for testing
   size_t const txrxMemSize = std::min(txMemSize, rxMemSize);
   size_t const txMemWords  = txMemSize  / sizeof(uint32_t);
   size_t const rxMemWords  = rxMemSize  / sizeof(uint32_t);
   size_t const sgMemWords  = sgMemSize  / sizeof(uint32_t);
-  size_t const sysMemWords = sysMemSize / sizeof(uint32_t);
+  size_t const extMemWords = extMemSize / sizeof(uint32_t);
 
   enum {ETH_WORD_SIZE = sizeof(uint32_t) * XPAR_MICROBLAZE_FSL_LINKS,
         DMA_AXI_BURST = ETH_WORD_SIZE * std::max(XPAR_ETH_DMA_MM2S_BURST_SIZE, // the parameter set in Vivado AXI_DMA IP
@@ -282,19 +282,24 @@ int main(int argc, char *argv[])
 
         xil_printf("------- Running SDRAM test -------\n");
         xil_printf("Checking memory with random values from %0X to %0X \n", 0, RAND_MAX);
-        // first clearing previously stored values
-        for (size_t addr = 0; addr < sysMemWords; ++addr) ethSyst.sysMem[addr] = 0;
 
+        uint8_t  volatile* extMem8  = reinterpret_cast<uint8_t  volatile*>(ethSyst.extMem);
+        uint16_t volatile* extMem16 = reinterpret_cast<uint16_t volatile*>(ethSyst.extMem);
+        uint32_t volatile* extMem32 = reinterpret_cast<uint32_t volatile*>(ethSyst.extMem);
+        uint64_t volatile* extMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.extMem);
         uint8_t  volatile* sysMem8  = reinterpret_cast<uint8_t  volatile*>(ethSyst.sysMem);
         uint16_t volatile* sysMem16 = reinterpret_cast<uint16_t volatile*>(ethSyst.sysMem);
         uint32_t volatile* sysMem32 = reinterpret_cast<uint32_t volatile*>(ethSyst.sysMem);
         uint64_t volatile* sysMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.sysMem);
         size_t axiWidth = 256 / 8;
 
+        // first clearing previously stored values in both views of same segment
+        for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.extMem[addr] = 0;
+        for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.sysMem[addr] = 0;
         // filling the memory with random values
         srand(1);
         uint64_t val = 0;
-        for (size_t addr = 0; addr < sysMemSize; ++addr) {
+        for (size_t addr = 0; addr < extMemSize; ++addr) {
           uint64_t rand64 = rand();
           val = (val >> 8) | (rand64 << 56);
           size_t axiWordIdx = addr/axiWidth;
@@ -308,25 +313,68 @@ int main(int argc, char *argv[])
         // checking written values
         srand(1);
         val = 0;
-        xil_printf("Checking SDRAM at addr 0x%X by size %d \n", size_t(ethSyst.sysMem), sysMemSize);
-        for (size_t addr = 0; addr < sysMemSize; ++addr) {
+        xil_printf("Checking cached SDRAM at addr 0x%X by size %d \n", size_t(ethSyst.sysMem), extMemSize);
+        for (size_t addr = 0; addr < extMemSize; ++addr) {
           uint64_t rand64 = rand();
           val = (val >> 8) | (rand64 << 56);
           // checking readback using different data types
           if (                 sysMem8 [addr  ] != (val >> 56)) {
-            xil_printf("\nERROR: Incorrect readback of Byte at addr %lx from SDRAM: %x, expected: %lx \n", addr, sysMem8[addr], val >> 56);
+            xil_printf("\nERROR: Incorrect readback of Byte at addr %lx from cached SDRAM: %x, expected: %lx \n", addr, sysMem8[addr], val >> 56);
             exit(1);
           }
           if ((addr%2) == 1 && sysMem16[addr/2] != (val >> 48)) {
-            xil_printf("\nERROR: Incorrect readback of Word-16 at addr %lx from SDRAM: %x, expected: %lx \n", addr, sysMem16[addr/2], val >> 48);
+            xil_printf("\nERROR: Incorrect readback of Word-16 at addr %lx from cached SDRAM: %x, expected: %lx \n", addr, sysMem16[addr/2], val >> 48);
             exit(1);
           }
           if ((addr%4) == 3 && sysMem32[addr/4] != (val >> 32)) {
-            xil_printf("\nERROR: Incorrect readback of Word-32 at addr %lx from SDRAM: %x, expected: %lx \n", addr, sysMem32[addr/4], val >> 32);
+            xil_printf("\nERROR: Incorrect readback of Word-32 at addr %lx from cached SDRAM: %x, expected: %lx \n", addr, sysMem32[addr/4], val >> 32);
             exit(1);
           }
           if ((addr%8) == 7 && sysMem64[addr/8] !=  val)        {
-            xil_printf("\nERROR: Incorrect readback of Word-64 at addr %lx from SDRAM: %lx, expected: %lx \n", addr, sysMem64[addr/8], val);
+            xil_printf("\nERROR: Incorrect readback of Word-64 at addr %lx from cached SDRAM: %lx, expected: %lx \n", addr, sysMem64[addr/8], val);
+            exit(1);
+          }
+        }
+
+        // first clearing previously stored values in both views of same segment
+        for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.extMem[addr] = 0;
+        for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.sysMem[addr] = 0;
+        // filling the memory with random values
+        srand(1);
+        val = 0;
+        for (size_t addr = 0; addr < extMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          size_t axiWordIdx = addr/axiWidth;
+          // changing written data type every wide AXI word
+          if (axiWordIdx%4 == 0) extMem8 [addr  ] = val >> 56;
+          if (axiWordIdx%4 == 1) extMem16[addr/2] = val >> 48;
+          if (axiWordIdx%4 == 2) extMem32[addr/4] = val >> 32;
+          if (axiWordIdx%4 == 3) extMem64[addr/8] = val;
+        }
+
+        // checking written values
+        srand(1);
+        val = 0;
+        xil_printf("Checking direct SDRAM at addr 0x%X by size %d \n", size_t(ethSyst.extMem), extMemSize);
+        for (size_t addr = 0; addr < extMemSize; ++addr) {
+          uint64_t rand64 = rand();
+          val = (val >> 8) | (rand64 << 56);
+          // checking readback using different data types
+          if (                 extMem8 [addr  ] != (val >> 56)) {
+            xil_printf("\nERROR: Incorrect readback of Byte at addr %lx from direct SDRAM: %x, expected: %lx \n", addr, extMem8[addr], val >> 56);
+            exit(1);
+          }
+          if ((addr%2) == 1 && extMem16[addr/2] != (val >> 48)) {
+            xil_printf("\nERROR: Incorrect readback of Word-16 at addr %lx from direct SDRAM: %x, expected: %lx \n", addr, extMem16[addr/2], val >> 48);
+            exit(1);
+          }
+          if ((addr%4) == 3 && extMem32[addr/4] != (val >> 32)) {
+            xil_printf("\nERROR: Incorrect readback of Word-32 at addr %lx from direct SDRAM: %x, expected: %lx \n", addr, extMem32[addr/4], val >> 32);
+            exit(1);
+          }
+          if ((addr%8) == 7 && extMem64[addr/8] !=  val)        {
+            xil_printf("\nERROR: Incorrect readback of Word-64 at addr %lx from direct SDRAM: %lx, expected: %lx \n", addr, extMem64[addr/8], val);
             exit(1);
           }
         }

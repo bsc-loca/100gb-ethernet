@@ -17,7 +17,7 @@ app create -name eth_test -hw ./project/ethernet_test_wrapper.xsa -proc microbla
 #Create project/app
 # app create -name eth_test -platform eth_test_platform -lang c++ -template {Empty Application (C++)}
 
-#Changing SECTION regions in linker script from HBM connected to uBlaze icache/dcache to just static ilmb/dlmb (BRAM)
+#Changing SECTION regions in linker script from HBM connected to uBlaze icache/dcache ports to just static ilmb/dlmb (BRAM)
 set file_orig  [open ./xsct_ws/eth_test/src/lscript.ld       r]
 set file_fixed [open ./xsct_ws/eth_test/src/lscript_fixed.ld w]
 while {[gets $file_orig line] >= 0} {
