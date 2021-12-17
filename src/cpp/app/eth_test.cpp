@@ -293,6 +293,8 @@ int main(int argc, char *argv[])
         uint64_t volatile* sysMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.sysMem);
         size_t axiWidth = 256 / 8;
 
+        xil_printf("Write to direct SDRAM at addr 0x%X, Read from cached SDRAM at addr 0x%X of %d bytes\n",
+                   size_t(ethSyst.extMem), size_t(ethSyst.sysMem), extMemSize);
         // first clearing previously stored values in both views of same segment
         for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.extMem[addr] = 0;
         for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.sysMem[addr] = 0;
@@ -304,16 +306,15 @@ int main(int argc, char *argv[])
           val = (val >> 8) | (rand64 << 56);
           size_t axiWordIdx = addr/axiWidth;
           // changing written data type every wide AXI word
-          if (axiWordIdx%4 == 0) sysMem8 [addr  ] = val >> 56;
-          if (axiWordIdx%4 == 1) sysMem16[addr/2] = val >> 48;
-          if (axiWordIdx%4 == 2) sysMem32[addr/4] = val >> 32;
-          if (axiWordIdx%4 == 3) sysMem64[addr/8] = val;
+          if (axiWordIdx%4 == 0) extMem8 [addr  ] = val >> 56;
+          if (axiWordIdx%4 == 1) extMem16[addr/2] = val >> 48;
+          if (axiWordIdx%4 == 2) extMem32[addr/4] = val >> 32;
+          if (axiWordIdx%4 == 3) extMem64[addr/8] = val;
         }
 
         // checking written values
         srand(1);
         val = 0;
-        xil_printf("Checking cached SDRAM at addr 0x%X by size %d \n", size_t(ethSyst.sysMem), extMemSize);
         for (size_t addr = 0; addr < extMemSize; ++addr) {
           uint64_t rand64 = rand();
           val = (val >> 8) | (rand64 << 56);
@@ -336,6 +337,8 @@ int main(int argc, char *argv[])
           }
         }
 
+        xil_printf("Write to cached SDRAM at addr 0x%X, Read from direct SDRAM at addr 0x%X of %d bytes\n",
+                   size_t(ethSyst.sysMem), size_t(ethSyst.extMem), extMemSize);
         // first clearing previously stored values in both views of same segment
         for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.extMem[addr] = 0;
         for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.sysMem[addr] = 0;
@@ -347,16 +350,15 @@ int main(int argc, char *argv[])
           val = (val >> 8) | (rand64 << 56);
           size_t axiWordIdx = addr/axiWidth;
           // changing written data type every wide AXI word
-          if (axiWordIdx%4 == 0) extMem8 [addr  ] = val >> 56;
-          if (axiWordIdx%4 == 1) extMem16[addr/2] = val >> 48;
-          if (axiWordIdx%4 == 2) extMem32[addr/4] = val >> 32;
-          if (axiWordIdx%4 == 3) extMem64[addr/8] = val;
+          if (axiWordIdx%4 == 0) sysMem8 [addr  ] = val >> 56;
+          if (axiWordIdx%4 == 1) sysMem16[addr/2] = val >> 48;
+          if (axiWordIdx%4 == 2) sysMem32[addr/4] = val >> 32;
+          if (axiWordIdx%4 == 3) sysMem64[addr/8] = val;
         }
 
         // checking written values
         srand(1);
         val = 0;
-        xil_printf("Checking direct SDRAM at addr 0x%X by size %d \n", size_t(ethSyst.extMem), extMemSize);
         for (size_t addr = 0; addr < extMemSize; ++addr) {
           uint64_t rand64 = rand();
           val = (val >> 8) | (rand64 << 56);
