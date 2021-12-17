@@ -12,7 +12,7 @@ set script_folder [_tcl::get_script_folder]
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-set scripts_vivado_version 2021.1
+set scripts_vivado_version 2021.2
 set current_vivado_version [version -short]
 
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
@@ -47,7 +47,7 @@ if { $list_projs eq "" } {
 }
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "xilinx.com:au280:part0:1.1" -objects $obj
+# set_property -name "board_part" -value "xilinx.com:au280:part0:1.1" -objects $obj
 # set_property -name "board_part" -value "xilinx.com:au55c:part0:1.0" -objects $obj
 
 # CHANGE DESIGN NAME HERE
@@ -130,15 +130,15 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 update_ip_catalog -rebuild
 
 # creating isolated Ethernet subsystem BD for integration with OpenPiton
-source $root_dir/tcl/eth_cmac_syst.tcl
-cr_bd_Eth_CMAC_syst ""
-# creating the IP of isolated Ethernet subsystem
-source $root_dir/tcl/eth_syst_ip.tcl
-# adding bare microBlaze to above BD and exporting BSP with xparameters.h from it
-file copy -force $root_dir/tcl/eth_cmac_syst.tcl $root_dir/bd/Eth_CMAC_syst/
-source $root_dir/tcl/eth_syst_bsp.tcl
-# also just extracting hw parameters from TCL and creating C-header
-source $root_dir/tcl/eth_syst_xparams.tcl
+# source $root_dir/tcl/eth_cmac_syst.tcl
+# cr_bd_Eth_CMAC_syst ""
+# # creating the IP of isolated Ethernet subsystem
+# source $root_dir/tcl/eth_syst_ip.tcl
+# # adding bare microBlaze to above BD and exporting BSP with xparameters.h from it
+# file copy -force $root_dir/tcl/eth_cmac_syst.tcl $root_dir/bd/Eth_CMAC_syst/
+# source $root_dir/tcl/eth_syst_bsp.tcl
+# # also just extracting hw parameters from TCL and creating C-header
+# source $root_dir/tcl/eth_syst_xparams.tcl
 
 
 # creating full Ethernet test BD (with full microBlaze environment)
