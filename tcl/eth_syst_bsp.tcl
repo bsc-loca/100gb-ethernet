@@ -64,9 +64,9 @@ generate_target all [get_files ./bd/Eth_syst_w_uBlaze/Eth_syst_w_uBlaze.bd]
 # HSI reference: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug1138-generating-basic-software-platforms.pdf
 #                https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841693/HSI+debugging+and+optimization+techniques
 
-hsi::open_hw_design ./bd/Eth_syst_w_uBlaze/hw_handoff/Eth_syst_w_uBlaze.hwh
-# following commands stopped working in Vivado-2021.1, so we don't create BSP by such method directly in Vivado
+# following commands stopped working in Vivado-2021.2, so we don't create BSP by such method directly in Vivado
+# hsi::open_hw_design ./bd/Eth_syst_w_uBlaze/hw_handoff/Eth_syst_w_uBlaze.hwh
 # hsi::create_sw_design -proc microblaze_0 baremet_bsp
 # hsi::generate_bsp -dir ./bd/Eth_syst_w_uBlaze/baremet_bsp
 # hsi::close_sw_design [hsi::current_sw_design]
-hsi::close_hw_design [hsi::current_hw_design]
+# hsi::close_hw_design [hsi::current_hw_design]
