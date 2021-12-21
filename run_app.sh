@@ -1,3 +1,3 @@
 
 hw_server -d
-xsct -interactive ./tcl/run_app.tcl
+xsct -interactive ./tcl/run_elf.tcl

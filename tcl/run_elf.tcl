@@ -37,8 +37,13 @@ after 3000
 state
 
 # ---- Loading app
-dow    ./xsct_ws/eth_test/Release/eth_test.elf
-verify ./xsct_ws/eth_test/Release/eth_test.elf
+if {[info exists ::env(ELF_TO_RUN)]} {
+  dow    $::env(ELF_TO_RUN)
+  verify $::env(ELF_TO_RUN)
+} else {
+  dow    ./xsct_ws/eth_test/Release/eth_test.elf
+  verify ./xsct_ws/eth_test/Release/eth_test.elf
+}
 state
 rst
 state
