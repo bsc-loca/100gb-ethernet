@@ -41,6 +41,16 @@ set_property PACKAGE_PIN L30      [get_ports "CPU_RESET_FPGA"]  ;# Bank  75 VCCO
 set_property IOSTANDARD  LVCMOS18 [get_ports "CPU_RESET_FPGA"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
 
 #--------------------------------------------
+# Bank 75  FPGA UART Interface to FTDI FT4232 Port 3 of 4 (User selectable Baud)
+#    USB_UART_RX  Input from FT4232 UART to FPGA
+#    USB_UART_TX  Output from FPGA to FT4232 UART
+#
+set_property PACKAGE_PIN A28      [get_ports "UART_rxd"]  ;# Bank  75 VCCO - VCC1V8   - IO_L24N_T3U_N11_75
+set_property IOSTANDARD  LVCMOS18 [get_ports "UART_rxd"]  ;# Bank  75 VCCO - VCC1V8   - IO_L24N_T3U_N11_75
+set_property PACKAGE_PIN B33      [get_ports "UART_txd"]  ;# Bank  75 VCCO - VCC1V8   - IO_T3U_N12_75
+set_property IOSTANDARD  LVCMOS18 [get_ports "UART_txd"]  ;# Bank  75 VCCO - VCC1V8   - IO_T3U_N12_75
+
+#--------------------------------------------
 # HBM Catastrophic Over temperature Output signal to Satellite Controller
 #    HBM_CATTRIP Active high indicator to Satellite controller to indicate the HBM has exceeded its maximum allowable temperature.
 #                This signal is not a dedicated Ultrascale+ Device output and is a derived signal in RTL. Making the signal Active will shut

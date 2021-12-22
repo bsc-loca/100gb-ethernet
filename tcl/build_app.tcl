@@ -1,6 +1,7 @@
 
 # script to build bare-metal application
 # XSCT reference: http://www.xilinx.com/html_docs/xilinx2020_2/vitis_doc/obi1585821551850.html
+#                 http://docs.xilinx.com/r/en-US/ug1400-vitis-embedded/Vitis-Projects
 # XSCT uses Xvfb and thus "ssh -X" should be used for remote run
 
 #Set Vitis workspace
@@ -75,6 +76,10 @@ bsp config netif_debug true
 bsp config sys_debug   true
 # bsp config tcp_debug   true
 # bsp config udp_debug   true
+
+# redirecting std in/out to JTAG instead of axi_uartlite_0
+bsp config stdout mdm_1
+bsp config stdin  mdm_1
 
 bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG \
                                          -I../../../../../../../../../src/cpp/syst_hw \
