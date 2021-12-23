@@ -29,7 +29,8 @@ variable stepImpl
 variable stepBits
 
 puts "Do you want to launch the ${designStep} process now? (Y/n)"
-set option [gets stdin]
+# set option [gets stdin]
+set option y
 puts "\n"
 puts "Selected Option: $option"
 	switch -regexp $option {
