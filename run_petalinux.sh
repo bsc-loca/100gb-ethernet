@@ -12,3 +12,5 @@ xsct -interactive ./tcl/run_elf.tcl
 #In booted Petalinux to check Eth driver:
 # dmesg | grep eth
 # find /proc/device-tree/ -type f -exec head {} + | grep eth
+# ifconfig
+# ip link
