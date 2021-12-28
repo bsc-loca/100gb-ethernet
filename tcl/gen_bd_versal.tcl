@@ -856,20 +856,33 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   set versal_cips_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:versal_cips:3.1 versal_cips_0 ]
   set_property -dict [ list \
    CONFIG.BOOT_MODE {Custom} \
+   CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
    CONFIG.DDR_MEMORY_MODE {Custom} \
    CONFIG.DESIGN_MODE {0} \
    CONFIG.PS_PMC_CONFIG {\
-     PS_USE_PMCPL_CLK0 {0}\
+     CLOCK_MODE {REF CLK 33.33 MHz}\
+     DESIGN_MODE {0}\
+     PMC_ALT_REF_CLK_FREQMHZ {33.333}\
+     PMC_CRP_EFUSE_REF_CTRL_SRCSEL {IRO_CLK/4}\
+     PMC_CRP_HSM0_REF_CTRL_FREQMHZ {33.333}\
+     PMC_CRP_HSM1_REF_CTRL_FREQMHZ {133.333}\
+     PMC_CRP_LSBUS_REF_CTRL_FREQMHZ {100}\
+     PMC_CRP_NOC_REF_CTRL_FREQMHZ {960}\
+     PMC_CRP_PL0_REF_CTRL_FREQMHZ {100}\
+     PMC_CRP_PL5_REF_CTRL_FREQMHZ {400}\
+     PMC_PL_ALT_REF_CLK_FREQMHZ {33.333}\
+     PS_BOARD_INTERFACE {Custom}\
+     PS_NUM_FABRIC_RESETS {0}\
+     PS_USE_PMCPL_CLK0 {1}\
      PS_USE_PMCPL_CLK1 {0}\
      PS_USE_PMCPL_CLK2 {0}\
      PS_USE_PMCPL_CLK3 {0}\
-     PS_NUM_FABRIC_RESETS {0}\
+     PS_USE_PMCPL_IRO_CLK {1}\
      SMON_ALARMS {Set_Alarms_On}\
      SMON_ENABLE_TEMP_AVERAGING {0}\
      SMON_TEMP_AVERAGING_SAMPLES {0}\
-     PS_BOARD_INTERFACE {Custom}\
-     DESIGN_MODE {0}\
    } \
+   CONFIG.PS_PMC_CONFIG_APPLIED {1} \
  ] $versal_cips_0
 
   # Create interface connections
