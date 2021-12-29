@@ -13,10 +13,10 @@ set_property IOSTANDARD  DIFF_SSTL12 [ get_ports "SYS_CLK_clk_p" ]
 # create_clock -period 10.000 -name SYS_CLK [get_ports "SYS_CLK_clk_p"]
 set_property PACKAGE_PIN AC6         [ get_ports "ETH_CLK_clk_n" ]
 set_property PACKAGE_PIN AC7         [ get_ports "ETH_CLK_clk_p" ]
-# create_clock -period 6.400 -name ETH_CLK [get_ports "ETH_CLK_clk_p"]
+create_clock -period 6.400 -name ETH_CLK [get_ports "ETH_CLK_clk_p"]
 set_property PACKAGE_PIN AD8         [ get_ports "GIG_CLK_clk_n" ]
 set_property PACKAGE_PIN AD9         [ get_ports "GIG_CLK_clk_p" ]
-# create_clock -period 6.400 -name GIG_CLK [get_ports "GIG_CLK_clk_p"]
+create_clock -period 6.400 -name GIG_CLK [get_ports "GIG_CLK_clk_p"]
 
 #--------------------------------------------
 ##  CPU_RESET_FPGA Connects to SW1 push button On the top edge of the PCB Assembly, also connects to Satellite Contoller
