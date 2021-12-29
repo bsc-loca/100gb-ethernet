@@ -1,3 +1,82 @@
+
+#--------------------------------------------
+# On-board system clock
+set_property PACKAGE_PIN AR15        [ get_ports "MEM_CLK_clk_n" ] 
+set_property IOSTANDARD  DIFF_SSTL12 [ get_ports "MEM_CLK_clk_n" ]
+set_property PACKAGE_PIN AP14        [ get_ports "MEM_CLK_clk_p" ]
+set_property IOSTANDARD  DIFF_SSTL12 [ get_ports "MEM_CLK_clk_p" ]
+# create_clock -period 10.000 -name MEM_CLK [get_ports "MEM_CLK_clk_p"]
+set_property PACKAGE_PIN AR8         [ get_ports "SYS_CLK_clk_n" ]
+set_property IOSTANDARD  DIFF_SSTL12 [ get_ports "SYS_CLK_clk_n" ]
+set_property PACKAGE_PIN AP9         [ get_ports "SYS_CLK_clk_p" ]
+set_property IOSTANDARD  DIFF_SSTL12 [ get_ports "SYS_CLK_clk_p" ]
+# create_clock -period 10.000 -name SYS_CLK [get_ports "SYS_CLK_clk_p"]
+set_property PACKAGE_PIN AC6         [ get_ports "ETH_CLK_clk_n" ]
+set_property PACKAGE_PIN AC7         [ get_ports "ETH_CLK_clk_p" ]
+# create_clock -period 6.400 -name ETH_CLK [get_ports "ETH_CLK_clk_p"]
+set_property PACKAGE_PIN AD8         [ get_ports "GIG_CLK_clk_n" ]
+set_property PACKAGE_PIN AD9         [ get_ports "GIG_CLK_clk_p" ]
+# create_clock -period 6.400 -name GIG_CLK [get_ports "GIG_CLK_clk_p"]
+
+#--------------------------------------------
+##  CPU_RESET_FPGA Connects to SW1 push button On the top edge of the PCB Assembly, also connects to Satellite Contoller
+##                 Desinged to be a active low reset input to the FPGA.
+##
+set_property PACKAGE_PIN AP7      [get_ports "SYS_RSTN"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
+set_property IOSTANDARD  LVCMOS12 [get_ports "SYS_RSTN"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
+
+#--------------------------------------------
+# Bank 75  FPGA UART Interface to FTDI FT4232 Port 3 of 4 (User selectable Baud)
+#    USB_UART_RX  Input from FT4232 UART to FPGA
+#    USB_UART_TX  Output from FPGA to FT4232 UART
+#
+set_property PACKAGE_PIN AP10     [get_ports "UART_rxd"]  ;# Bank  75 VCCO - VCC1V8   - IO_L24N_T3U_N11_75
+set_property IOSTANDARD  LVCMOS12 [get_ports "UART_rxd"]  ;# Bank  75 VCCO - VCC1V8   - IO_L24N_T3U_N11_75
+set_property PACKAGE_PIN AR9      [get_ports "UART_txd"]  ;# Bank  75 VCCO - VCC1V8   - IO_T3U_N12_75
+set_property IOSTANDARD  LVCMOS12 [get_ports "UART_txd"]  ;# Bank  75 VCCO - VCC1V8   - IO_T3U_N12_75
+
+#--------------------------------------------
+## GT Interface
+set_property PACKAGE_PIN M5    [get_ports "ETH_GT_gtx_p[3]"]
+set_property PACKAGE_PIN P5    [get_ports "ETH_GT_gtx_p[2]"]
+set_property PACKAGE_PIN T5    [get_ports "ETH_GT_gtx_p[1]"]
+set_property PACKAGE_PIN V5    [get_ports "ETH_GT_gtx_p[0]"]
+set_property PACKAGE_PIN M4    [get_ports "ETH_GT_gtx_n[3]"]
+set_property PACKAGE_PIN P4    [get_ports "ETH_GT_gtx_n[2]"]
+set_property PACKAGE_PIN T4    [get_ports "ETH_GT_gtx_n[1]"]
+set_property PACKAGE_PIN V4    [get_ports "ETH_GT_gtx_n[0]"]
+
+set_property PACKAGE_PIN N2    [get_ports "ETH_GT_grx_p[3]"]
+set_property PACKAGE_PIN R2    [get_ports "ETH_GT_grx_p[2]"]
+set_property PACKAGE_PIN U2    [get_ports "ETH_GT_grx_p[1]"]
+set_property PACKAGE_PIN W2    [get_ports "ETH_GT_grx_p[0]"]
+set_property PACKAGE_PIN N1    [get_ports "ETH_GT_grx_n[3]"]
+set_property PACKAGE_PIN R1    [get_ports "ETH_GT_grx_n[2]"]
+set_property PACKAGE_PIN U1    [get_ports "ETH_GT_grx_n[1]"]
+set_property PACKAGE_PIN W1    [get_ports "ETH_GT_grx_n[0]"]
+
+set_property PACKAGE_PIN Y5    [get_ports "GIG_GT_gtx_p[3]"]
+set_property PACKAGE_PIN AB5   [get_ports "GIG_GT_gtx_p[2]"]
+set_property PACKAGE_PIN AD5   [get_ports "GIG_GT_gtx_p[1]"]
+set_property PACKAGE_PIN AF5   [get_ports "GIG_GT_gtx_p[0]"]
+set_property PACKAGE_PIN Y4    [get_ports "GIG_GT_gtx_n[3]"]
+set_property PACKAGE_PIN AB4   [get_ports "GIG_GT_gtx_n[2]"]
+set_property PACKAGE_PIN AD4   [get_ports "GIG_GT_gtx_n[1]"]
+set_property PACKAGE_PIN AF4   [get_ports "GIG_GT_gtx_n[0]"]
+
+set_property PACKAGE_PIN AA2   [get_ports "GIG_GT_grx_p[3]"]
+set_property PACKAGE_PIN AC2   [get_ports "GIG_GT_grx_p[2]"]
+set_property PACKAGE_PIN AE2   [get_ports "GIG_GT_grx_p[1]"]
+set_property PACKAGE_PIN AG2   [get_ports "GIG_GT_grx_p[0]"]
+set_property PACKAGE_PIN AA1   [get_ports "GIG_GT_grx_n[3]"]
+set_property PACKAGE_PIN AC1   [get_ports "GIG_GT_grx_n[2]"]
+set_property PACKAGE_PIN AE1   [get_ports "GIG_GT_grx_n[1]"]
+set_property PACKAGE_PIN AG1   [get_ports "GIG_GT_grx_n[0]"]
+
+
+#--------------------------------------------
+## DDR4 Controller
+#
 set_property IOSTANDARD DIFF_POD12 [get_ports {DDR4_dqs_c[0]}]
 set_property IOSTANDARD DIFF_POD12 [get_ports {DDR4_dqs_c[1]}]
 set_property IOSTANDARD DIFF_POD12 [get_ports {DDR4_dqs_c[2]}]
