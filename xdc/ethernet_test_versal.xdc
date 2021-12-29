@@ -22,8 +22,8 @@ create_clock -period 6.400 -name GIG_CLK [get_ports "GIG_CLK_clk_p"]
 ##  CPU_RESET_FPGA Connects to SW1 push button On the top edge of the PCB Assembly, also connects to Satellite Contoller
 ##                 Desinged to be a active low reset input to the FPGA.
 ##
-set_property PACKAGE_PIN AP7      [get_ports "SYS_RSTN"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
-set_property IOSTANDARD  LVCMOS12 [get_ports "SYS_RSTN"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
+# set_property PACKAGE_PIN AP7      [get_ports "SYS_RSTN"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
+# set_property IOSTANDARD  LVCMOS12 [get_ports "SYS_RSTN"]  ;# Bank  75 VCCO - VCC1V8   - IO_L2N_T0L_N3_75
 
 #--------------------------------------------
 # Bank 75  FPGA UART Interface to FTDI FT4232 Port 3 of 4 (User selectable Baud)
