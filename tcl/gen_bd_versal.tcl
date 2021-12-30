@@ -250,12 +250,6 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_PORTS {4} \
  ] $concat_gt_txclk
 
-  # Create instance: concat_intc, and set properties
-  set concat_intc [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_intc ]
-  set_property -dict [ list \
-   CONFIG.NUM_PORTS {6} \
- ] $concat_intc
-
   # Create instance: concat_sys_rst, and set properties
   set concat_sys_rst [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_sys_rst ]
   set_property -dict [ list \
@@ -300,13 +294,6 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.CONST_VAL {1} \
  ] $const_vcc
-
-  # Create instance: const_vccx64, and set properties
-  set const_vccx64 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_vccx64 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0xFFFFFFFFFFFFFFFF} \
-   CONFIG.CONST_WIDTH {64} \
- ] $const_vccx64
 
   # Create instance: ddr4_pl_0, and set properties
   set ddr4_pl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4_pl:1.0 ddr4_pl_0 ]
@@ -663,6 +650,9 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
      PMC_SD0_PERIPHERAL {{ENABLE 0} {IO {PMC_MIO 13 .. 25}}}\
      PMC_SD0_SLOT_TYPE {SD 2.0}\
      PMC_SMAP_PERIPHERAL {{ENABLE 0} {IO {32 Bit}}}\
+     PS_IRQ_USAGE {{CH0 1} {CH1 1} {CH10 0} {CH11 0} {CH12 0} {CH13 0} {CH14 0} {CH15\
+0} {CH2 1} {CH3 1} {CH4 1} {CH5 1} {CH6 1} {CH7 0} {CH8 0} {CH9 0}}\
+     PS_M_AXI_FPD_DATA_WIDTH {32}\
      PS_NUM_FABRIC_RESETS {1}\
      PS_PL_CONNECTIVITY_MODE {Custom}\
      PS_USE_M_AXI_FPD {1}\
@@ -732,9 +722,9 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_intf_net -intf_net versal_cips_0_M_AXI_FPD [get_bd_intf_pins periph_connect/S00_AXI] [get_bd_intf_pins versal_cips_0/M_AXI_FPD]
 
   # Create port connections
-  connect_bd_net -net axi_ethernetlite_0_ip2intc_irpt [get_bd_pins concat_intc/In2] [get_bd_pins ethmac_lite/ip2intc_irpt]
-  connect_bd_net -net axi_timer_0_interrupt [get_bd_pins axi_timer_0/interrupt] [get_bd_pins concat_intc/In1]
-  connect_bd_net -net axi_uartlite_0_interrupt [get_bd_pins axi_uartlite_0/interrupt] [get_bd_pins concat_intc/In5]
+  connect_bd_net -net axi_ethernetlite_0_ip2intc_irpt [get_bd_pins ethmac_lite/ip2intc_irpt] [get_bd_pins versal_cips_0/pl_ps_irq2]
+  connect_bd_net -net axi_timer_0_interrupt [get_bd_pins axi_timer_0/interrupt] [get_bd_pins versal_cips_0/pl_ps_irq1]
+  connect_bd_net -net axi_uartlite_0_interrupt [get_bd_pins axi_uartlite_0/interrupt] [get_bd_pins versal_cips_0/pl_ps_irq5]
   connect_bd_net -net bufg_gt_0_usrclk [get_bd_pins bufg_gt_txck/usrclk] [get_bd_pins gig_eth_phy/userclk] [get_bd_pins gigeth_gt_quad/ch0_txusrclk]
   connect_bd_net -net bufg_gt_rxck_0_usrclk [get_bd_pins axis_combiner_1/aclk] [get_bd_pins bufg_gt_rxck_0/usrclk] [get_bd_pins concat_gt_rxclk/In0] [get_bd_pins eth100_gt_quad/ch0_rxusrclk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins mrmac_0/rx_axi_clk] [get_bd_pins rx_mem_dma/s_axi_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
   connect_bd_net -net bufg_gt_rxck_1_usrclk [get_bd_pins bufg_gt_rxck_1/usrclk] [get_bd_pins concat_gt_rxclk/In1] [get_bd_pins eth100_gt_quad/ch1_rxusrclk]
@@ -757,11 +747,12 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_net -net const_gndx5_dout [get_bd_pins const_gndx5/dout] [get_bd_pins gig_eth_phy/configuration_vector] [get_bd_pins gig_eth_phy/phyaddr]
   connect_bd_net -net const_vcc_dout [get_bd_pins bufg_gt_rxck/gt_bufgtce] [get_bd_pins bufg_gt_rxck/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_0/gt_bufgtce] [get_bd_pins bufg_gt_rxck_0/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_0/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_1/gt_bufgtce] [get_bd_pins bufg_gt_rxck_1/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_1/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_2/gt_bufgtce] [get_bd_pins bufg_gt_rxck_2/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_2/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_3/gt_bufgtce] [get_bd_pins bufg_gt_rxck_3/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_3/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck/gt_bufgtce] [get_bd_pins bufg_gt_txck/gt_bufgtcemask] [get_bd_pins bufg_gt_txck/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_0/gt_bufgtce] [get_bd_pins bufg_gt_txck_0/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_0/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_1/gt_bufgtce] [get_bd_pins bufg_gt_txck_1/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_1/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_2/gt_bufgtce] [get_bd_pins bufg_gt_txck_2/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_2/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_3/gt_bufgtce] [get_bd_pins bufg_gt_txck_3/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_3/gt_bufgtclrmask] [get_bd_pins const_vcc/dout] [get_bd_pins ddr_rst_gen/dcm_locked] [get_bd_pins gig_eth_phy/signal_detect]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ddr4_pl_0/ddr4_ui_clk] [get_bd_pins ddr_rst_gen/slowest_sync_clk] [get_bd_pins periph_connect/aclk1]
+  connect_bd_net -net ddr4_pl_0_ddr4_interrupt [get_bd_pins ddr4_pl_0/ddr4_interrupt] [get_bd_pins versal_cips_0/pl_ps_irq6]
   connect_bd_net -net eth100_gt_quad_ch0_rxoutclk [get_bd_pins bufg_gt_rxck_0/outclk] [get_bd_pins eth100_gt_quad/ch0_rxoutclk]
   connect_bd_net -net eth100_gt_quad_ch0_txoutclk [get_bd_pins bufg_gt_txck_0/outclk] [get_bd_pins eth100_gt_quad/ch0_txoutclk]
-  connect_bd_net -net eth_dma_mm2s_introut [get_bd_pins concat_intc/In3] [get_bd_pins eth_dma/mm2s_introut]
+  connect_bd_net -net eth_dma_mm2s_introut [get_bd_pins eth_dma/mm2s_introut] [get_bd_pins versal_cips_0/pl_ps_irq3]
   connect_bd_net -net eth_dma_mm2s_prmry_reset_out_n [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins tx_mem_dma/s_axi_aresetn]
-  connect_bd_net -net eth_dma_s2mm_introut [get_bd_pins concat_intc/In4] [get_bd_pins eth_dma/s2mm_introut]
+  connect_bd_net -net eth_dma_s2mm_introut [get_bd_pins eth_dma/s2mm_introut] [get_bd_pins versal_cips_0/pl_ps_irq4]
   connect_bd_net -net eth_dma_s2mm_prmry_reset_out_n [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins rx_mem_dma/s_axi_aresetn]
   connect_bd_net -net eth_lite_dum4lwip_phy_tx_data [get_bd_pins ethmac_lite/phy_tx_data] [get_bd_pins gig_eth_phy_txd/In0]
   connect_bd_net -net eth_lite_dum4lwip_phy_tx_en [get_bd_pins ethmac_lite/phy_tx_en] [get_bd_pins gig_eth_phy/gmii_tx_en]
@@ -782,7 +773,7 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_net -net gt_quad_base_ch3_rxoutclk [get_bd_pins bufg_gt_rxck_3/outclk] [get_bd_pins eth100_gt_quad/ch3_rxoutclk]
   connect_bd_net -net gt_quad_base_ch3_txoutclk [get_bd_pins bufg_gt_txck_3/outclk] [get_bd_pins eth100_gt_quad/ch3_txoutclk]
   connect_bd_net -net gt_quad_base_gtpowergood [get_bd_pins eth100_gt_quad/gtpowergood] [get_bd_pins mrmac_0/gtpowergood_in] [get_bd_pins rx_rst_gen/dcm_locked] [get_bd_pins tx_rst_gen/dcm_locked]
-  connect_bd_net -net mdm_1_Interrupt [get_bd_pins concat_intc/In0] [get_bd_pins mdm_1/Interrupt]
+  connect_bd_net -net mdm_1_Interrupt [get_bd_pins mdm_1/Interrupt] [get_bd_pins versal_cips_0/pl_ps_irq0]
   connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins ddr_rst_gen/mb_debug_sys_rst] [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rx_rst_gen/mb_debug_sys_rst] [get_bd_pins sys_rst_gen/mb_debug_sys_rst] [get_bd_pins tx_rst_gen/mb_debug_sys_rst]
   connect_bd_net -net mem_rst_gen_peripheral_aresetn [get_bd_pins ddr4_pl_0/ddr4_aresetn] [get_bd_pins ddr_rst_gen/peripheral_aresetn]
   connect_bd_net -net microblaze_0_Clk [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins axi_uartlite_0/s_axi_aclk] [get_bd_pins clk_wizard_0/clk_out1] [get_bd_pins eth100_gt_quad/s_axi_lite_clk] [get_bd_pins eth_dma/m_axi_sg_aclk] [get_bd_pins eth_dma/s_axi_lite_aclk] [get_bd_pins ethmac_lite/s_axi_aclk] [get_bd_pins gigeth_gt_quad/s_axi_lite_clk] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins mrmac_0/s_axi_aclk] [get_bd_pins periph_connect/aclk] [get_bd_pins rx_mem_cpu/s_axi_aclk] [get_bd_pins sg_mem_cpu/s_axi_aclk] [get_bd_pins sg_mem_dma/s_axi_aclk] [get_bd_pins sys_rst_gen/slowest_sync_clk] [get_bd_pins tx_mem_cpu/s_axi_aclk] [get_bd_pins versal_cips_0/m_axi_fpd_aclk]
