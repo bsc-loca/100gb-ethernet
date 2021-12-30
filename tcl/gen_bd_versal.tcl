@@ -61,7 +61,6 @@ xilinx.com:ip:axi_ethernetlite:3.0\
 xilinx.com:ip:util_vector_logic:2.0\
 xilinx.com:ip:gig_ethernet_pcs_pma:16.2\
 xilinx.com:ip:xlslice:1.0\
-xilinx.com:ip:mdm:3.2\
 xilinx.com:ip:mrmac:1.5\
 xilinx.com:ip:smartconnect:1.0\
 xilinx.com:ip:emb_mem_gen:1.0\
@@ -461,16 +460,6 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
    CONFIG.REG_CONF_INTF {AXI_LITE} \
  ] $gigeth_gt_quad
 
-  # Create instance: mdm_1, and set properties
-  set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
-  set_property -dict [ list \
-   CONFIG.C_ADDR_SIZE {32} \
-   CONFIG.C_BSCANID {76547328} \
-   CONFIG.C_M_AXI_ADDR_WIDTH {32} \
-   CONFIG.C_USE_BSCAN {4} \
-   CONFIG.C_USE_UART {1} \
- ] $mdm_1
-
   # Create instance: mrmac_0, and set properties
   set mrmac_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mrmac:1.5 mrmac_0 ]
   set_property -dict [ list \
@@ -493,7 +482,7 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   set periph_connect [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 periph_connect ]
   set_property -dict [ list \
    CONFIG.NUM_CLKS {2} \
-   CONFIG.NUM_MI {12} \
+   CONFIG.NUM_MI {11} \
    CONFIG.NUM_SI {1} \
  ] $periph_connect
 
@@ -654,23 +643,25 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
 25}}}\
      PMC_SD0_PERIPHERAL {{ENABLE 0} {IO {PMC_MIO 13 .. 25}}}\
      PMC_SD0_SLOT_TYPE {SD 2.0}\
+     PMC_SD1_PERIPHERAL {{ENABLE 1} {IO {PMC_MIO 26 .. 36}}}\
+     PMC_SD1_SLOT_TYPE {SD 2.0}\
      PMC_SMAP_PERIPHERAL {{ENABLE 0} {IO {32 Bit}}}\
      PS_ENET0_MDIO {{ENABLE 0} {IO {PMC_MIO 50 .. 51}}}\
-     PS_ENET0_PERIPHERAL {{ENABLE 1} {IO {PMC_MIO 26 .. 37}}}\
+     PS_ENET0_PERIPHERAL {{ENABLE 1} {IO {PS_MIO 0 .. 11}}}\
      PS_IRQ_USAGE {{CH0 1} {CH1 1} {CH10 0} {CH11 0} {CH12 0} {CH13 0} {CH14 0} {CH15\
-0} {CH2 1} {CH3 1} {CH4 1} {CH5 1} {CH6 1} {CH7 0} {CH8 0} {CH9 0}}\
+0} {CH2 1} {CH3 1} {CH4 1} {CH5 1} {CH6 0} {CH7 0} {CH8 0} {CH9 0}}\
      PS_M_AXI_FPD_DATA_WIDTH {64}\
-     PS_M_AXI_LPD_DATA_WIDTH {128}\
+     PS_M_AXI_LPD_DATA_WIDTH {64}\
      PS_NUM_FABRIC_RESETS {1}\
      PS_PL_CONNECTIVITY_MODE {Custom}\
-     PS_UART0_PERIPHERAL {{ENABLE 1} {IO {PS_MIO 0 .. 1}}}\
+     PS_UART0_PERIPHERAL {{ENABLE 1} {IO {PS_MIO 16 .. 17}}}\
      PS_UART1_PERIPHERAL {{ENABLE 0} {IO {PMC_MIO 4 .. 5}}}\
-     PS_USE_BSCAN_USER1 {1}\
-     PS_USE_BSCAN_USER2 {1}\
+     PS_USE_BSCAN_USER1 {0}\
+     PS_USE_BSCAN_USER2 {0}\
      PS_USE_BSCAN_USER3 {0}\
      PS_USE_FIFO_ENET0 {0}\
-     PS_USE_M_AXI_FPD {1}\
-     PS_USE_M_AXI_LPD {0}\
+     PS_USE_M_AXI_FPD {0}\
+     PS_USE_M_AXI_LPD {1}\
      PS_USE_PMCPL_CLK0 {1}\
      PS_USE_PMCPL_CLK1 {0}\
      PS_USE_PMCPL_CLK2 {0}\
@@ -717,16 +708,15 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_intf_net -intf_net mrmac_0_gt_tx_serdes_interface_2 [get_bd_intf_pins eth100_gt_quad/TX2_GT_IP_Interface] [get_bd_intf_pins mrmac_0/gt_tx_serdes_interface_2]
   connect_bd_intf_net -intf_net mrmac_0_gt_tx_serdes_interface_3 [get_bd_intf_pins eth100_gt_quad/TX3_GT_IP_Interface] [get_bd_intf_pins mrmac_0/gt_tx_serdes_interface_3]
   connect_bd_intf_net -intf_net periph_connect_M00_AXI [get_bd_intf_pins ddr4_pl_0/DDR4_S_AXI] [get_bd_intf_pins periph_connect/M00_AXI]
+  connect_bd_intf_net -intf_net periph_connect_M01_AXI [get_bd_intf_pins axi_uartlite_0/S_AXI] [get_bd_intf_pins periph_connect/M01_AXI]
   connect_bd_intf_net -intf_net periph_connect_M02_AXI [get_bd_intf_pins mrmac_0/s_axi] [get_bd_intf_pins periph_connect/M02_AXI]
   connect_bd_intf_net -intf_net periph_connect_M03_AXI [get_bd_intf_pins eth100_gt_quad/AXI_LITE] [get_bd_intf_pins periph_connect/M03_AXI]
   connect_bd_intf_net -intf_net periph_connect_M04_AXI [get_bd_intf_pins gigeth_gt_quad/AXI_LITE] [get_bd_intf_pins periph_connect/M04_AXI]
   connect_bd_intf_net -intf_net periph_connect_M05_AXI [get_bd_intf_pins periph_connect/M05_AXI] [get_bd_intf_pins sg_mem_cpu/S_AXI]
-  connect_bd_intf_net -intf_net periph_connect_M11_AXI [get_bd_intf_pins axi_uartlite_0/S_AXI] [get_bd_intf_pins periph_connect/M11_AXI]
   connect_bd_intf_net -intf_net rx_mem_cpu_BRAM_PORTA [get_bd_intf_pins rx_mem/BRAM_PORTA] [get_bd_intf_pins rx_mem_cpu/BRAM_PORTA]
   connect_bd_intf_net -intf_net rx_mem_dma_BRAM_PORTA [get_bd_intf_pins rx_mem/BRAM_PORTB] [get_bd_intf_pins rx_mem_dma/BRAM_PORTA]
   connect_bd_intf_net -intf_net sg_mem_cpu_BRAM_PORTA [get_bd_intf_pins sg_mem/BRAM_PORTA] [get_bd_intf_pins sg_mem_cpu/BRAM_PORTA]
   connect_bd_intf_net -intf_net sg_mem_dma_BRAM_PORTA [get_bd_intf_pins sg_mem/BRAM_PORTB] [get_bd_intf_pins sg_mem_dma/BRAM_PORTA]
-  connect_bd_intf_net -intf_net smartconnect_0_M01_AXI [get_bd_intf_pins mdm_1/S_AXI] [get_bd_intf_pins periph_connect/M01_AXI]
   connect_bd_intf_net -intf_net smartconnect_0_M06_AXI [get_bd_intf_pins axi_timer_0/S_AXI] [get_bd_intf_pins periph_connect/M06_AXI]
   connect_bd_intf_net -intf_net smartconnect_0_M07_AXI [get_bd_intf_pins ethmac_lite/S_AXI] [get_bd_intf_pins periph_connect/M07_AXI]
   connect_bd_intf_net -intf_net smartconnect_0_M08_AXI [get_bd_intf_pins periph_connect/M08_AXI] [get_bd_intf_pins tx_mem_cpu/S_AXI]
@@ -734,7 +724,7 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_intf_net -intf_net smartconnect_0_M10_AXI [get_bd_intf_pins eth_dma/S_AXI_LITE] [get_bd_intf_pins periph_connect/M10_AXI]
   connect_bd_intf_net -intf_net tx_mem_cpu_BRAM_PORTA [get_bd_intf_pins tx_mem/BRAM_PORTA] [get_bd_intf_pins tx_mem_cpu/BRAM_PORTA]
   connect_bd_intf_net -intf_net tx_mem_dma_BRAM_PORTA [get_bd_intf_pins tx_mem/BRAM_PORTB] [get_bd_intf_pins tx_mem_dma/BRAM_PORTA]
-  connect_bd_intf_net -intf_net versal_cips_0_M_AXI_FPD [get_bd_intf_pins periph_connect/S00_AXI] [get_bd_intf_pins versal_cips_0/M_AXI_FPD]
+  connect_bd_intf_net -intf_net versal_cips_0_M_AXI_LPD [get_bd_intf_pins periph_connect/S00_AXI] [get_bd_intf_pins versal_cips_0/M_AXI_LPD]
 
   # Create port connections
   connect_bd_net -net axi_ethernetlite_0_ip2intc_irpt [get_bd_pins ethmac_lite/ip2intc_irpt] [get_bd_pins versal_cips_0/pl_ps_irq2]
@@ -756,13 +746,13 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_net -net concat_gt_rxclk_dout [get_bd_pins concat_gt_rxclk/dout] [get_bd_pins mrmac_0/rx_alt_serdes_clk] [get_bd_pins mrmac_0/rx_core_clk] [get_bd_pins mrmac_0/rx_serdes_clk]
   connect_bd_net -net concat_gt_txclk_dout [get_bd_pins concat_gt_txclk/dout] [get_bd_pins mrmac_0/tx_alt_serdes_clk] [get_bd_pins mrmac_0/tx_core_clk]
   connect_bd_net -net concat_sys_rst_dout [get_bd_pins concat_sys_rst/dout] [get_bd_pins mrmac_0/gt_reset_all_in] [get_bd_pins mrmac_0/gt_reset_rx_datapath_in] [get_bd_pins mrmac_0/gt_reset_tx_datapath_in] [get_bd_pins mrmac_0/rx_core_reset] [get_bd_pins mrmac_0/rx_serdes_reset] [get_bd_pins mrmac_0/tx_core_reset] [get_bd_pins mrmac_0/tx_serdes_reset]
-  connect_bd_net -net const_gnd_dout [get_bd_pins axi_timer_0/capturetrig0] [get_bd_pins axi_timer_0/capturetrig1] [get_bd_pins axi_timer_0/freeze] [get_bd_pins bufg_gt_rxck/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_0/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_1/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_2/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_3/gt_bufgtclr] [get_bd_pins bufg_gt_txck/gt_bufgtclr] [get_bd_pins bufg_gt_txck_0/gt_bufgtclr] [get_bd_pins bufg_gt_txck_1/gt_bufgtclr] [get_bd_pins bufg_gt_txck_2/gt_bufgtclr] [get_bd_pins bufg_gt_txck_3/gt_bufgtclr] [get_bd_pins const_gnd/dout] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_arvalid] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_awvalid] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_bready] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_rready] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_wvalid] [get_bd_pins ethmac_lite/phy_col] [get_bd_pins ethmac_lite/phy_crs] [get_bd_pins gig_eth_phy/configuration_valid] [get_bd_pins gig_eth_phy/gmii_tx_er] [get_bd_pins gig_eth_phy/userclk2]
+  connect_bd_net -net const_gnd_dout [get_bd_pins axi_timer_0/capturetrig0] [get_bd_pins axi_timer_0/capturetrig1] [get_bd_pins axi_timer_0/freeze] [get_bd_pins bufg_gt_rxck/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_0/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_1/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_2/gt_bufgtclr] [get_bd_pins bufg_gt_rxck_3/gt_bufgtclr] [get_bd_pins bufg_gt_txck/gt_bufgtclr] [get_bd_pins bufg_gt_txck_0/gt_bufgtclr] [get_bd_pins bufg_gt_txck_1/gt_bufgtclr] [get_bd_pins bufg_gt_txck_2/gt_bufgtclr] [get_bd_pins bufg_gt_txck_3/gt_bufgtclr] [get_bd_pins const_gnd/dout] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_arvalid] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_awvalid] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_bready] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_rready] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_wvalid] [get_bd_pins ddr_rst_gen/mb_debug_sys_rst] [get_bd_pins ethmac_lite/phy_col] [get_bd_pins ethmac_lite/phy_crs] [get_bd_pins gig_eth_phy/configuration_valid] [get_bd_pins gig_eth_phy/gmii_tx_er] [get_bd_pins gig_eth_phy/userclk2] [get_bd_pins rx_rst_gen/mb_debug_sys_rst] [get_bd_pins sys_rst_gen/mb_debug_sys_rst] [get_bd_pins tx_rst_gen/mb_debug_sys_rst]
   connect_bd_net -net const_gndx32_dout [get_bd_pins const_gndx32/dout] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_araddr] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_awaddr] [get_bd_pins ddr4_pl_0/ddr4_s_axi_ctrl_wdata]
   connect_bd_net -net const_gndx4_dout [get_bd_pins const_gndx4/dout] [get_bd_pins gig_eth_phy_txd/In1] [get_bd_pins mrmac_0/rx_flexif_clk] [get_bd_pins mrmac_0/rx_ts_clk] [get_bd_pins mrmac_0/tx_flexif_clk] [get_bd_pins mrmac_0/tx_ts_clk]
   connect_bd_net -net const_gndx5_dout [get_bd_pins const_gndx5/dout] [get_bd_pins gig_eth_phy/configuration_vector] [get_bd_pins gig_eth_phy/phyaddr]
   connect_bd_net -net const_vcc_dout [get_bd_pins bufg_gt_rxck/gt_bufgtce] [get_bd_pins bufg_gt_rxck/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_0/gt_bufgtce] [get_bd_pins bufg_gt_rxck_0/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_0/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_1/gt_bufgtce] [get_bd_pins bufg_gt_rxck_1/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_1/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_2/gt_bufgtce] [get_bd_pins bufg_gt_rxck_2/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_2/gt_bufgtclrmask] [get_bd_pins bufg_gt_rxck_3/gt_bufgtce] [get_bd_pins bufg_gt_rxck_3/gt_bufgtcemask] [get_bd_pins bufg_gt_rxck_3/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck/gt_bufgtce] [get_bd_pins bufg_gt_txck/gt_bufgtcemask] [get_bd_pins bufg_gt_txck/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_0/gt_bufgtce] [get_bd_pins bufg_gt_txck_0/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_0/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_1/gt_bufgtce] [get_bd_pins bufg_gt_txck_1/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_1/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_2/gt_bufgtce] [get_bd_pins bufg_gt_txck_2/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_2/gt_bufgtclrmask] [get_bd_pins bufg_gt_txck_3/gt_bufgtce] [get_bd_pins bufg_gt_txck_3/gt_bufgtcemask] [get_bd_pins bufg_gt_txck_3/gt_bufgtclrmask] [get_bd_pins const_vcc/dout] [get_bd_pins ddr_rst_gen/dcm_locked] [get_bd_pins gig_eth_phy/signal_detect]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ddr4_pl_0/ddr4_ui_clk] [get_bd_pins ddr_rst_gen/slowest_sync_clk] [get_bd_pins periph_connect/aclk1]
-  connect_bd_net -net ddr4_pl_0_ddr4_interrupt [get_bd_pins ddr4_pl_0/ddr4_interrupt] [get_bd_pins versal_cips_0/pl_ps_irq6]
+  connect_bd_net -net ddr4_pl_0_ddr4_interrupt [get_bd_pins ddr4_pl_0/ddr4_interrupt] [get_bd_pins versal_cips_0/pl_ps_irq0]
   connect_bd_net -net eth100_gt_quad_ch0_rxoutclk [get_bd_pins bufg_gt_rxck_0/outclk] [get_bd_pins eth100_gt_quad/ch0_rxoutclk]
   connect_bd_net -net eth100_gt_quad_ch0_txoutclk [get_bd_pins bufg_gt_txck_0/outclk] [get_bd_pins eth100_gt_quad/ch0_txoutclk]
   connect_bd_net -net eth_dma_mm2s_introut [get_bd_pins eth_dma/mm2s_introut] [get_bd_pins versal_cips_0/pl_ps_irq3]
@@ -788,13 +778,11 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_net -net gt_quad_base_ch3_rxoutclk [get_bd_pins bufg_gt_rxck_3/outclk] [get_bd_pins eth100_gt_quad/ch3_rxoutclk]
   connect_bd_net -net gt_quad_base_ch3_txoutclk [get_bd_pins bufg_gt_txck_3/outclk] [get_bd_pins eth100_gt_quad/ch3_txoutclk]
   connect_bd_net -net gt_quad_base_gtpowergood [get_bd_pins eth100_gt_quad/gtpowergood] [get_bd_pins mrmac_0/gtpowergood_in] [get_bd_pins rx_rst_gen/dcm_locked] [get_bd_pins tx_rst_gen/dcm_locked]
-  connect_bd_net -net mdm_1_Interrupt [get_bd_pins mdm_1/Interrupt] [get_bd_pins versal_cips_0/pl_ps_irq0]
-  connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins ddr_rst_gen/mb_debug_sys_rst] [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rx_rst_gen/mb_debug_sys_rst] [get_bd_pins sys_rst_gen/mb_debug_sys_rst] [get_bd_pins tx_rst_gen/mb_debug_sys_rst]
   connect_bd_net -net mem_rst_gen_peripheral_aresetn [get_bd_pins ddr4_pl_0/ddr4_aresetn] [get_bd_pins ddr_rst_gen/peripheral_aresetn]
-  connect_bd_net -net microblaze_0_Clk [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins axi_uartlite_0/s_axi_aclk] [get_bd_pins clk_wizard_0/clk_out1] [get_bd_pins eth100_gt_quad/s_axi_lite_clk] [get_bd_pins eth_dma/m_axi_sg_aclk] [get_bd_pins eth_dma/s_axi_lite_aclk] [get_bd_pins ethmac_lite/s_axi_aclk] [get_bd_pins gigeth_gt_quad/s_axi_lite_clk] [get_bd_pins mdm_1/S_AXI_ACLK] [get_bd_pins mrmac_0/s_axi_aclk] [get_bd_pins periph_connect/aclk] [get_bd_pins rx_mem_cpu/s_axi_aclk] [get_bd_pins sg_mem_cpu/s_axi_aclk] [get_bd_pins sg_mem_dma/s_axi_aclk] [get_bd_pins sys_rst_gen/slowest_sync_clk] [get_bd_pins tx_mem_cpu/s_axi_aclk] [get_bd_pins versal_cips_0/m_axi_fpd_aclk]
+  connect_bd_net -net microblaze_0_Clk [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins axi_uartlite_0/s_axi_aclk] [get_bd_pins clk_wizard_0/clk_out1] [get_bd_pins eth100_gt_quad/s_axi_lite_clk] [get_bd_pins eth_dma/m_axi_sg_aclk] [get_bd_pins eth_dma/s_axi_lite_aclk] [get_bd_pins ethmac_lite/s_axi_aclk] [get_bd_pins gigeth_gt_quad/s_axi_lite_clk] [get_bd_pins mrmac_0/s_axi_aclk] [get_bd_pins periph_connect/aclk] [get_bd_pins rx_mem_cpu/s_axi_aclk] [get_bd_pins sg_mem_cpu/s_axi_aclk] [get_bd_pins sg_mem_dma/s_axi_aclk] [get_bd_pins sys_rst_gen/slowest_sync_clk] [get_bd_pins tx_mem_cpu/s_axi_aclk] [get_bd_pins versal_cips_0/m_axi_lpd_aclk]
   connect_bd_net -net resetn_1 [get_bd_pins ddr_rst_gen/ext_reset_in] [get_bd_pins ext_rstn_inv/Op1] [get_bd_pins rx_rst_gen/ext_reset_in] [get_bd_pins sys_rst_gen/ext_reset_in] [get_bd_pins tx_rst_gen/ext_reset_in] [get_bd_pins versal_cips_0/pl0_resetn]
   connect_bd_net -net resetn_inv_0_Res [get_bd_pins clk_wizard_0/reset] [get_bd_pins ddr4_pl_0/sys_rst] [get_bd_pins ext_rstn_inv/Res]
-  connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins axi_uartlite_0/s_axi_aresetn] [get_bd_pins eth100_gt_quad/s_axi_lite_resetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ethmac_lite/s_axi_aresetn] [get_bd_pins gigeth_gt_quad/s_axi_lite_resetn] [get_bd_pins mdm_1/S_AXI_ARESETN] [get_bd_pins mrmac_0/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_dma/s_axi_aresetn] [get_bd_pins sys_rst_gen/peripheral_aresetn] [get_bd_pins tx_mem_cpu/s_axi_aresetn]
+  connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins axi_uartlite_0/s_axi_aresetn] [get_bd_pins eth100_gt_quad/s_axi_lite_resetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ethmac_lite/s_axi_aresetn] [get_bd_pins gigeth_gt_quad/s_axi_lite_resetn] [get_bd_pins mrmac_0/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_dma/s_axi_aresetn] [get_bd_pins sys_rst_gen/peripheral_aresetn] [get_bd_pins tx_mem_cpu/s_axi_aresetn]
   connect_bd_net -net rst_clk_wiz_1_100M_peripheral_reset [get_bd_pins concat_sys_rst/In0] [get_bd_pins concat_sys_rst/In1] [get_bd_pins concat_sys_rst/In2] [get_bd_pins concat_sys_rst/In3] [get_bd_pins gig_eth_phy/pma_reset] [get_bd_pins gig_eth_phy/reset] [get_bd_pins sys_rst_gen/peripheral_reset]
   connect_bd_net -net rx_rst_gen_peripheral_aresetn [get_bd_pins axis_combiner_1/aresetn] [get_bd_pins rx_rst_gen/peripheral_aresetn]
   connect_bd_net -net tx_rst_gen_peripheral_aresetn [get_bd_pins axis_broadcaster_1/aresetn] [get_bd_pins tx_rst_gen/peripheral_aresetn]
@@ -803,21 +791,20 @@ ethernet_test_gig_eth_phy_0_0.IP_CH0,undef,undef,undef MSTRCLK\
   connect_bd_net -net xlconstant_dout [get_bd_pins bufg_gt_rxck/gt_bufgtdiv] [get_bd_pins bufg_gt_rxck_0/gt_bufgtdiv] [get_bd_pins bufg_gt_rxck_1/gt_bufgtdiv] [get_bd_pins bufg_gt_rxck_2/gt_bufgtdiv] [get_bd_pins bufg_gt_rxck_3/gt_bufgtdiv] [get_bd_pins bufg_gt_txck/gt_bufgtdiv] [get_bd_pins bufg_gt_txck_0/gt_bufgtdiv] [get_bd_pins bufg_gt_txck_1/gt_bufgtdiv] [get_bd_pins bufg_gt_txck_2/gt_bufgtdiv] [get_bd_pins bufg_gt_txck_3/gt_bufgtdiv] [get_bd_pins const_3b001/dout]
 
   # Create address segments
-  assign_bd_address -offset 0xA6000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces eth_dma/Data_S2MM] [get_bd_addr_segs rx_mem_dma/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA7000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces eth_dma/Data_SG] [get_bd_addr_segs sg_mem_dma/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA5000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces eth_dma/Data_MM2S] [get_bd_addr_segs tx_mem_dma/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA4000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs axi_timer_0/S_AXI/Reg] -force
-  assign_bd_address -offset 0xA4010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs axi_uartlite_0/S_AXI/Reg] -force
-  assign_bd_address -offset 0x000400000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs ddr4_pl_0/DDR4_MEMORY_MAP/DDR4_ADDRESS_BLOCK] -force
-  assign_bd_address -offset 0xA4020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs eth100_gt_quad/AXI_LITE/Reg] -force
-  assign_bd_address -offset 0xA4030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs eth_dma/S_AXI_LITE/Reg] -force
-  assign_bd_address -offset 0xA4040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs ethmac_lite/S_AXI/Reg] -force
-  assign_bd_address -offset 0xA4050000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs gigeth_gt_quad/AXI_LITE/Reg] -force
-  assign_bd_address -offset 0xA4060000 -range 0x00001000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs mdm_1/S_AXI/Reg] -force
-  assign_bd_address -offset 0xA4070000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs mrmac_0/s_axi/Reg] -force
-  assign_bd_address -offset 0xA6000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs rx_mem_cpu/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA7000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs sg_mem_cpu/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA5000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_FPD] [get_bd_addr_segs tx_mem_cpu/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x80200000 -range 0x00100000 -target_address_space [get_bd_addr_spaces eth_dma/Data_S2MM] [get_bd_addr_segs rx_mem_dma/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x80300000 -range 0x00100000 -target_address_space [get_bd_addr_spaces eth_dma/Data_SG] [get_bd_addr_segs sg_mem_dma/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x80100000 -range 0x00100000 -target_address_space [get_bd_addr_spaces eth_dma/Data_MM2S] [get_bd_addr_segs tx_mem_dma/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x80000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs axi_timer_0/S_AXI/Reg] -force
+  assign_bd_address -offset 0x80010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs axi_uartlite_0/S_AXI/Reg] -force
+  assign_bd_address -offset 0x90000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs ddr4_pl_0/DDR4_MEMORY_MAP/DDR4_ADDRESS_BLOCK] -force
+  assign_bd_address -offset 0x80020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs eth100_gt_quad/AXI_LITE/Reg] -force
+  assign_bd_address -offset 0x80030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs eth_dma/S_AXI_LITE/Reg] -force
+  assign_bd_address -offset 0x80040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs ethmac_lite/S_AXI/Reg] -force
+  assign_bd_address -offset 0x80050000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs gigeth_gt_quad/AXI_LITE/Reg] -force
+  assign_bd_address -offset 0x80060000 -range 0x00010000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs mrmac_0/s_axi/Reg] -force
+  assign_bd_address -offset 0x80200000 -range 0x00100000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs rx_mem_cpu/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x80300000 -range 0x00100000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs sg_mem_cpu/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x80100000 -range 0x00100000 -target_address_space [get_bd_addr_spaces versal_cips_0/M_AXI_LPD] [get_bd_addr_segs tx_mem_cpu/S_AXI/Mem0] -force
 
 
   # Restore current instance
