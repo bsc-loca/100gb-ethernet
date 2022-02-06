@@ -320,46 +320,9 @@ current_bd_design $design_name
  ] $dma_loopback_fifo
 
   # Create instance: eth100gb, and set properties
-  set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
-  set_property -dict [ list \
-   CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
-   CONFIG.CMAC_CAUI4_MODE {1} \
-   CONFIG.CMAC_CORE_SELECT {CMACE4_X0Y6} \
-   CONFIG.DIFFCLK_BOARD_INTERFACE {Custom} \
-   CONFIG.ENABLE_AXI_INTERFACE {1} \
-   CONFIG.ENABLE_PIPELINE_REG {0} \
-   CONFIG.ENABLE_TIME_STAMPING {0} \
-   CONFIG.ETHERNET_BOARD_INTERFACE {Custom} \
-   CONFIG.GT_GROUP_SELECT {X0Y44~X0Y47} \
-   CONFIG.GT_REF_CLK_FREQ {156.25} \
-   CONFIG.GT_RX_BUFFER_BYPASS {0} \
-   CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {0} \
-   CONFIG.INCLUDE_RS_FEC {1} \
-   CONFIG.INCLUDE_STATISTICS_COUNTERS {1} \
-   CONFIG.LANE10_GT_LOC {NA} \
-   CONFIG.LANE1_GT_LOC {X0Y44} \
-   CONFIG.LANE2_GT_LOC {X0Y45} \
-   CONFIG.LANE3_GT_LOC {X0Y46} \
-   CONFIG.LANE4_GT_LOC {X0Y47} \
-   CONFIG.LANE5_GT_LOC {NA} \
-   CONFIG.LANE6_GT_LOC {NA} \
-   CONFIG.LANE7_GT_LOC {NA} \
-   CONFIG.LANE8_GT_LOC {NA} \
-   CONFIG.LANE9_GT_LOC {NA} \
-   CONFIG.NUM_LANES {4x25} \
-   CONFIG.PLL_TYPE {QPLL0} \
-   CONFIG.RX_CHECK_ACK {1} \
-   CONFIG.RX_EQ_MODE {AUTO} \
-   CONFIG.RX_FLOW_CONTROL {0} \
-   CONFIG.RX_FORWARD_CONTROL_FRAMES {0} \
-   CONFIG.RX_GT_BUFFER {1} \
-   CONFIG.RX_MAX_PACKET_LEN {9600} \
-   CONFIG.RX_MIN_PACKET_LEN {64} \
-   CONFIG.TX_FLOW_CONTROL {0} \
-   CONFIG.TX_OTN_INTERFACE {0} \
-   CONFIG.USER_INTERFACE {AXIS} \
-   CONFIG.USE_BOARD_FLOW {true} \
- ] $eth100gb
+
+  source $root_dir/tcl/eth100gb_${g_board_part}.tcl
+
   set_property USER_COMMENTS.comment_3 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=26" [get_bd_intf_pins /eth100gb/axis_rx]
   set_property USER_COMMENTS.comment_2 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=23" [get_bd_intf_pins /eth100gb/axis_tx]
   set_property USER_COMMENTS.comment_1 "http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=117
