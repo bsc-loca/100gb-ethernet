@@ -23,6 +23,9 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 }
 
 
+puts "The environment tcl will be sourced from ${script_folder}"
+source $script_folder/environment.tcl
+
 # Redefine the FPGA part in case the script is called with arguments
 # It defaults to u280
 if { $::argc > 0 } {
@@ -31,6 +34,8 @@ if { $::argc > 0 } {
         set g_fpga_part "xc${g_board_part}-fsvh2892-2L-e"
 
 }
+
+set root_dir $g_root_dir
 
 ################################################################
 # START
@@ -43,17 +48,13 @@ if { $::argc > 0 } {
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
 
-set g_project_name ethernet_test
-set projec_dir ./project
+set g_project_name $g_project_name
+set projec_dir $root_dir/project
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
     # two options to name the chip
-    create_project $g_project_name $projec_dir -force -part xcu280-fsvh2892-2L-e
-    # create_project $g_project_name $projec_dir -force -part xcvu37p-fsvh2892-2L-e
-
-    # create_project $g_project_name $projec_dir -force -part xcu55c-fsvh2892-2L-e
-    # create_project $g_project_name $projec_dir -force -part xcvu47p-fsvh2892-2L-e
+    create_project $g_project_name $projec_dir -force -part $g_fpga_part
 
     #Versal chip:
     # create_project $g_project_name $projec_dir -force -part xcvc1802-viva1596-2LP-e-S
@@ -66,7 +67,6 @@ set obj [current_project]
 # CHANGE DESIGN NAME HERE
 variable design_name
 set design_name $g_project_name
-set root_dir [ pwd ]
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
