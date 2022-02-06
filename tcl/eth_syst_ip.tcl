@@ -1,18 +1,48 @@
 
 # Script to generate IP core of isolated Ethernet subsystem
+#
+#
 
-ipx::package_project -root_dir $root_dir/ip -vendor bsc.es -library user -taxonomy /UserIP -module Eth_CMAC_syst -import_files
-set_property name         Eth_syst          [ipx::find_open_core bsc.es:user:Eth_CMAC_syst:1.0]
-set_property display_name Eth_syst          [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-set_property description  Eth_syst          [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-set_property vendor_display_name bsc.es     [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-set_property core_revision 1                [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-ipx::create_xgui_files                      [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-ipx::update_checksums                       [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-ipx::save_core                              [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-ipx::check_integrity -quiet                 [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-ipx::archive_core $root_dir/ip/Eth_syst.zip [ipx::find_open_core bsc.es:user:Eth_syst:1.0]
-ipx::unload_core $root_dir/ip/component.xml
+source $root_dir/tcl/environment.tcl
+source $g_root_dir/tcl/project_options.tcl
 
-set_property ip_repo_paths  "${root_dir}/ip" [current_project]
-update_ip_catalog -rebuild
+
+set ip_properties [ list \
+    vendor "meep-project.eu" \
+    library "MEEP" \
+    name "MEEP_100Gb_Ethernet" \
+    version "$g_ip_version" \
+    taxonomy "/MEEP_IP" \
+    display_name "MEEP 100Gb Ethernet" \
+    description "100Gb Ethernet standalone design" \
+        core_revision 1 \
+    vendor_display_name "bsc.es" \
+    company_url "https://meep-project.eu/" \
+    ]
+
+set family_lifecycle { \
+  virtexuplusHBM Production \
+}
+
+
+ipx::package_project -root_dir $g_root_dir/ip -module Eth_CMAC_syst -import_files
+
+set ip_core [ipx::current_core]
+set_property -dict ${ip_properties} ${ip_core}
+set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
+
+## Relative path to IP root directory
+ipx::create_xgui_files ${ip_core} -logo_file "misc/BSC-Logo.png"
+set_property type LOGO [ipx::get_files "misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]
+ipx::update_checksums ${ip_core}
+
+# Save IP and close project
+ipx::check_integrity ${ip_core}
+ipx::save_core ${ip_core}
+
+ipx::archive_core $g_root_dir/${g_design_name}.zip
+ipx::unload_core $g_root_dir/component.xml
+
+puts "IP succesfully packaged "
+
+

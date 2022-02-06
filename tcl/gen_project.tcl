@@ -22,6 +22,16 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
     return 1
 }
 
+
+# Redefine the FPGA part in case the script is called with arguments
+# It defaults to u280
+if { $::argc > 0 } {
+
+        set g_board_part [lindex $argv 0]
+        set g_fpga_part "xc${g_board_part}-fsvh2892-2L-e"
+
+}
+
 ################################################################
 # START
 ################################################################
@@ -176,4 +186,4 @@ add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_a
 
 puts "Project generation ended successfully"
 
-source $root_dir/tcl/gen_bitstream.tcl
+#source $root_dir/tcl/gen_bitstream.tcl
