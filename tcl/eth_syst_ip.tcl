@@ -3,7 +3,7 @@
 #
 #
 
-source $root_dir/tcl/environment.tcl
+#source $root_dir/tcl/environment.tcl
 source $g_root_dir/tcl/project_options.tcl
 
 

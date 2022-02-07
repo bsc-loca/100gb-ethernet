@@ -1,6 +1,8 @@
 # Proc to create BD Eth_CMAC_syst
 proc cr_bd_Eth_CMAC_syst { parentCell } {
 
+  global g_root_dir
+  global g_board_part
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
@@ -139,13 +141,18 @@ current_bd_design $design_name
   # Set parent object as current
   current_bd_instance $parentObj
 
+  source $g_root_dir/tcl/eth100gb_${g_board_part}.tcl
+
+  set g_refport_freq [format {%0.0f} [expr {$g_eth100gb_freq*1000000}] ]
+
+  puts "PORT FREQUENCY: $g_refport_freq"
 
   # Create interface ports
   set qsfp_4x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp_4x ]
 
   set qsfp_refck [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp_refck ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {156250000} \
+   CONFIG.FREQ_HZ $g_refport_freq \
    ] $qsfp_refck
 
   set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
@@ -320,8 +327,6 @@ current_bd_design $design_name
  ] $dma_loopback_fifo
 
   # Create instance: eth100gb, and set properties
-
-  source $root_dir/tcl/eth100gb_${g_board_part}.tcl
 
   set_property USER_COMMENTS.comment_3 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=26" [get_bd_intf_pins /eth100gb/axis_rx]
   set_property USER_COMMENTS.comment_2 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=23" [get_bd_intf_pins /eth100gb/axis_tx]

@@ -1,4 +1,7 @@
-  set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
+  
+set g_eth100gb_freq "156.250000"
+
+set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
   set_property -dict [ list \
    CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
    CONFIG.CMAC_CAUI4_MODE {1} \
@@ -9,7 +12,7 @@
    CONFIG.ENABLE_TIME_STAMPING {0} \
    CONFIG.ETHERNET_BOARD_INTERFACE {Custom} \
    CONFIG.GT_GROUP_SELECT {X0Y44~X0Y47} \
-   CONFIG.GT_REF_CLK_FREQ {156.25} \
+   CONFIG.GT_REF_CLK_FREQ $g_eth100gb_freq \
    CONFIG.GT_RX_BUFFER_BYPASS {0} \
    CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {0} \
    CONFIG.INCLUDE_RS_FEC {1} \
