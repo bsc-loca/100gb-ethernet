@@ -1,5 +1,5 @@
   
-set g_eth100gb_freq "156.250000"
+set g_eth100gb_freq "156.25"
 
 set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
   set_property -dict [ list \
