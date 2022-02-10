@@ -1,8 +1,8 @@
 
 # Script to generate C-header containing hardware definitions for Ethernet core
 
-set bd_tcl [open ./bd/Eth_CMAC_syst/eth_cmac_syst.tcl r]
-set bd_hdr [open ./bd/Eth_CMAC_syst/xparameters.h     w]
+set bd_tcl [open $g_root_dir/bd/Eth_CMAC_syst/eth_cmac_syst.tcl r]
+set bd_hdr [open $g_root_dir/bd/Eth_CMAC_syst/xparameters.h     w]
 
 puts $bd_hdr "#ifndef XPARAMETERS_H  // prevent circular inclusions"
 puts $bd_hdr "#define XPARAMETERS_H  // by using protection macros"

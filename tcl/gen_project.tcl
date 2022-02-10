@@ -22,6 +22,23 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
     return 1
 }
 
+
+puts "The environment tcl will be sourced from ${script_folder}"
+source $script_folder/environment.tcl
+
+# Redefine the FPGA part in case the script is called with arguments
+# It defaults to u280
+if { $::argc > 0 } {
+
+        set g_board_part [lindex $argv 0]
+        set g_fpga_part "xc${g_board_part}-fsvh2892-2L-e"
+        if { ${g_board_part} eq "versal" } {
+        set g_fpga_part "xcvc1802-viva1596-2LP-e-S"
+        }
+}
+
+set root_dir $g_root_dir
+
 ################################################################
 # START
 ################################################################
@@ -33,13 +50,15 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
 
-set g_project_name ethernet_test
-set projec_dir ./project
+set g_project_name $g_project_name
+set projec_dir $root_dir/project
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-    # two options to name the chip
-    create_project $g_project_name $projec_dir -force -part xcu280-fsvh2892-2L-e
+    create_project $g_project_name $projec_dir -force -part $g_fpga_part
+
+    # two options to name Alveo chip
+    # create_project $g_project_name $projec_dir -force -part xcu280-fsvh2892-2L-e
     # create_project $g_project_name $projec_dir -force -part xcvu37p-fsvh2892-2L-e
 
     # create_project $g_project_name $projec_dir -force -part xcu55c-fsvh2892-2L-e
@@ -56,7 +75,6 @@ set obj [current_project]
 # CHANGE DESIGN NAME HERE
 variable design_name
 set design_name $g_project_name
-set root_dir [ pwd ]
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -132,6 +150,7 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 
 update_ip_catalog -rebuild
 
+if { ${g_board_part} ne "versal" } {
 # creating isolated Ethernet subsystem BD for integration with OpenPiton
 source $root_dir/tcl/eth_cmac_syst.tcl
 cr_bd_Eth_CMAC_syst ""
@@ -142,10 +161,12 @@ file copy -force $root_dir/tcl/eth_cmac_syst.tcl $root_dir/bd/Eth_CMAC_syst/
 source $root_dir/tcl/eth_syst_bsp.tcl
 # also just extracting hw parameters from TCL and creating C-header
 source $root_dir/tcl/eth_syst_xparams.tcl
+}
 
 
 # creating full Ethernet test BD (with full microBlaze environment)
-source $root_dir/tcl/gen_bd.tcl
+source $root_dir/tcl/gen_bd_${g_board_part}.tcl
+# source $root_dir/tcl/gen_bd_u280.tcl
 # source $root_dir/tcl/gen_bd_u55c.tcl
 # source $root_dir/tcl/gen_bd_versal.tcl
 create_root_design ""
@@ -160,16 +181,12 @@ add_files -norecurse           $root_dir/bd/${g_project_name}/hdl/${g_project_na
 # MAIN FLOW
 ##################################################################
 
-# set g_top_name ethernet_test_top
-# set top_module "$root_dir/src/${g_top_name}.sv"
-# add_files ${top_module}
-
 # Add Constraint files to project
 # add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_pinout.xdc"
 # add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_timing.xdc"
 # add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_ila.xdc"
 
-add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_alveo280.xdc"
+add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_${g_board_part}.xdc"
 # set_property PROCESSING_ORDER LATE [get_files "$root_dir/xdc/${g_project_name}_alveo280.xdc"]
 # add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_alveo55c.xdc"
 # add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_versal.xdc"

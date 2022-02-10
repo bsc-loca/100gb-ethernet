@@ -1,8 +1,12 @@
 # Proc to create BD Eth_CMAC_syst
 proc cr_bd_Eth_CMAC_syst { parentCell } {
 
+  global g_root_dir
+  global g_board_part
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
+
+  puts "ROOT DIR: $g_root_dir"
 
 # This script was generated for a remote BD. To create a non-remote design,
 # change the variable <run_remote_bd_flow> to <0>.
@@ -11,7 +15,7 @@ set run_remote_bd_flow 1
 if { $run_remote_bd_flow == 1 } {
   # Set the reference directory for source file relative paths (by default 
   # the value is script directory path)
-  set origin_dir ./bd
+  set origin_dir $g_root_dir/bd
 
   # Use origin directory path location variable, if specified in the tcl shell
   if { [info exists ::origin_dir_loc] } {
@@ -139,13 +143,18 @@ current_bd_design $design_name
   # Set parent object as current
   current_bd_instance $parentObj
 
+  source $g_root_dir/tcl/eth100gb_${g_board_part}.tcl
+
+  set g_refport_freq [format {%0.0f} [expr {$g_eth100gb_freq*1000000}] ]
+
+  puts "PORT FREQUENCY: $g_refport_freq"
 
   # Create interface ports
   set qsfp_4x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp_4x ]
 
   set qsfp_refck [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp_refck ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {156250000} \
+   CONFIG.FREQ_HZ $g_refport_freq \
    ] $qsfp_refck
 
   set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
@@ -320,46 +329,7 @@ current_bd_design $design_name
  ] $dma_loopback_fifo
 
   # Create instance: eth100gb, and set properties
-  set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
-  set_property -dict [ list \
-   CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
-   CONFIG.CMAC_CAUI4_MODE {1} \
-   CONFIG.CMAC_CORE_SELECT {CMACE4_X0Y6} \
-   CONFIG.DIFFCLK_BOARD_INTERFACE {Custom} \
-   CONFIG.ENABLE_AXI_INTERFACE {1} \
-   CONFIG.ENABLE_PIPELINE_REG {0} \
-   CONFIG.ENABLE_TIME_STAMPING {0} \
-   CONFIG.ETHERNET_BOARD_INTERFACE {Custom} \
-   CONFIG.GT_GROUP_SELECT {X0Y44~X0Y47} \
-   CONFIG.GT_REF_CLK_FREQ {156.25} \
-   CONFIG.GT_RX_BUFFER_BYPASS {0} \
-   CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {0} \
-   CONFIG.INCLUDE_RS_FEC {1} \
-   CONFIG.INCLUDE_STATISTICS_COUNTERS {1} \
-   CONFIG.LANE10_GT_LOC {NA} \
-   CONFIG.LANE1_GT_LOC {X0Y44} \
-   CONFIG.LANE2_GT_LOC {X0Y45} \
-   CONFIG.LANE3_GT_LOC {X0Y46} \
-   CONFIG.LANE4_GT_LOC {X0Y47} \
-   CONFIG.LANE5_GT_LOC {NA} \
-   CONFIG.LANE6_GT_LOC {NA} \
-   CONFIG.LANE7_GT_LOC {NA} \
-   CONFIG.LANE8_GT_LOC {NA} \
-   CONFIG.LANE9_GT_LOC {NA} \
-   CONFIG.NUM_LANES {4x25} \
-   CONFIG.PLL_TYPE {QPLL0} \
-   CONFIG.RX_CHECK_ACK {1} \
-   CONFIG.RX_EQ_MODE {AUTO} \
-   CONFIG.RX_FLOW_CONTROL {0} \
-   CONFIG.RX_FORWARD_CONTROL_FRAMES {0} \
-   CONFIG.RX_GT_BUFFER {1} \
-   CONFIG.RX_MAX_PACKET_LEN {9600} \
-   CONFIG.RX_MIN_PACKET_LEN {64} \
-   CONFIG.TX_FLOW_CONTROL {0} \
-   CONFIG.TX_OTN_INTERFACE {0} \
-   CONFIG.USER_INTERFACE {AXIS} \
-   CONFIG.USE_BOARD_FLOW {true} \
- ] $eth100gb
+
   set_property USER_COMMENTS.comment_3 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=26" [get_bd_intf_pins /eth100gb/axis_rx]
   set_property USER_COMMENTS.comment_2 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=23" [get_bd_intf_pins /eth100gb/axis_tx]
   set_property USER_COMMENTS.comment_1 "http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=117

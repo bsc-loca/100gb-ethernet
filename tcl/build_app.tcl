@@ -9,12 +9,12 @@ setws ./xsct_ws
 #Checking available apps as templates
 repo -apps
 #Create application project (combined creation of platform, domain/bsp, project/app)
-app create -name eth_test -hw ./project/ethernet_test_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone -lang c++ -template {Empty Application (C++)}
+app create -name eth_test -hw ./project/ethernet_system_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone -lang c++ -template {Empty Application (C++)}
 # -os freertos10_xilinx                # tested option to create app under simple OS
 # -lang c -template {lwIP Echo Server} # tested option to create simple lwIP-based app (further importsources command should be commented)
 
 #Create platform and domain/bsp
-# platform create -name eth_test_platform -hw ./project/ethernet_test_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone
+# platform create -name eth_test_platform -hw ./project/ethernet_system_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone
 #Create project/app
 # app create -name eth_test -platform eth_test_platform -lang c++ -template {Empty Application (C++)}
 
@@ -194,7 +194,7 @@ app report eth_test
 #config the app
 importsources -name eth_test -path ./src/cpp/ 
 app config -name eth_test -set build-config release
-set lwip_xil_path "./xsct_ws/ethernet_test_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/"
+set lwip_xil_path "./xsct_ws/ethernet_system_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_2/src/contrib/ports/xilinx/"
 app config -name eth_test -add compiler-misc "-std=c++17 -fpermissive -Wall -Og \
                                               -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA \
                                               -I../../../project \

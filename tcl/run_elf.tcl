@@ -20,7 +20,7 @@ fpga -config-status
 fpga -state
 
 # ---- Programming FPGA
-fpga -file ./project/ethernet_test_wrapper.bit
+fpga -file ./project/ethernet_system_wrapper.bit
 fpga -boot-status
 fpga -config-status
 fpga -state
@@ -30,7 +30,7 @@ targets
 # targets 3
 targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
 targets
-# loadhw -hw ./project/ethernet_test_wrapper.xsa
+# loadhw -hw ./project/ethernet_system_wrapper.xsa
 state
 rst -system
 after 3000

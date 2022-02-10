@@ -104,8 +104,10 @@ if { $stepImpl == 1} {
 	    wait_on_run impl_1
 
 		# creating platform for sw development
-        write_hw_platform -fixed -include_bit -force -file ./project/ethernet_test_wrapper.xsa
-		file copy -force ./bd/ethernet_test/ip/ethernet_test_eth100gb_0/ethernet_test_eth100gb_0/header_files/ethernet_test_eth100gb_0_axi4_lite_registers.h ./project/
+        write_hw_platform -fixed -include_bit -force -file ./project/ethernet_system_wrapper.xsa
+        if { ${g_board_part} ne "versal" } {
+          file copy -force ./bd/ethernet_system/ip/ethernet_system_eth100gb_0/ethernet_system_eth100gb_0/header_files/ethernet_system_eth100gb_0_axi4_lite_registers.h ./project/
+        }
 
 		# programming FPGA
         # open_hw_manager
@@ -114,7 +116,7 @@ if { $stepImpl == 1} {
         # open_hw_target -jtag_mode off
         # current_hw_device [get_hw_devices xcu280_0]
         # refresh_hw_device
-        # set_property PROGRAM.FILE {./project/ethernet_test.runs/impl_1/ethernet_test_wrapper.bit} [get_hw_devices xcu280_0]
+        # set_property PROGRAM.FILE {./project/ethernet_system.runs/impl_1/ethernet_system_wrapper.bit} [get_hw_devices xcu280_0]
         # program_hw_devices
         # refresh_hw_device
         # close_hw_target

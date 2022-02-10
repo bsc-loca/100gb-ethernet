@@ -1,9 +1,9 @@
 
 # Script to generate BSP containing address definitions for Ethernet core
 
-set tcl_orig   [open ./bd/Eth_CMAC_syst/eth_cmac_syst.tcl         r]
-file mkdir           ./bd/Eth_syst_w_uBlaze/
-set tcl_uBlaze [open ./bd/Eth_syst_w_uBlaze/eth_syst_w_uBlaze.tcl w]
+set tcl_orig   [open $g_root_dir/bd/Eth_CMAC_syst/eth_cmac_syst.tcl         r]
+file mkdir           $g_root_dir/bd/Eth_syst_w_uBlaze/
+set tcl_uBlaze [open $g_root_dir/bd/Eth_syst_w_uBlaze/eth_syst_w_uBlaze.tcl w]
 
 while {[gets $tcl_orig line] >= 0} {
   # renaming the Block Design
@@ -56,9 +56,9 @@ close $tcl_orig
 close $tcl_uBlaze
 
 # creation of BD with MicroBlaze inside
-source ./bd/Eth_syst_w_uBlaze/eth_syst_w_uBlaze.tcl
+source $g_root_dir/bd/Eth_syst_w_uBlaze/eth_syst_w_uBlaze.tcl
 cr_bd_Eth_syst_w_uBlaze ""
-generate_target all [get_files ./bd/Eth_syst_w_uBlaze/Eth_syst_w_uBlaze.bd]
+generate_target all [get_files $g_root_dir/bd/Eth_syst_w_uBlaze/Eth_syst_w_uBlaze.bd]
 
 # generating BSP on base of above BD using HSI tool
 # HSI reference: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug1138-generating-basic-software-platforms.pdf

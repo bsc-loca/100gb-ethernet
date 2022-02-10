@@ -1,6 +1,6 @@
 
 ################################################################
-# This is a generated script based on design: ethernet_test
+# This is a generated script based on design: ethernet_system
 #
 # Though there are limitations about the generated script,
 # the main purpose of this utility is to make learning
@@ -35,7 +35,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source ethernet_test_script.tcl
+# source ethernet_system_script.tcl
 
 set bCheckIPsPassed 1
 ##################################################################
