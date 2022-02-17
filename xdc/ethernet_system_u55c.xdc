@@ -141,17 +141,25 @@
 # create_clock -period 10.000 -name PCIEREFCLK0     [get_ports "PCIE_REFCLK0_P"]
 # create_clock -period 10.000 -name PCIESYSCLK0     [get_ports "PCIE_SYSCLK0_P"]
 
-set_property PACKAGE_PIN BL10              [get_ports "SYSCLK2_clk_n"] ;# Bank  68 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_68
-set_property IOSTANDARD  LVDS 	           [get_ports "SYSCLK2_clk_n"] ;# Bank  68 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_68
-set_property PACKAGE_PIN BK10              [get_ports "SYSCLK2_clk_p"] ;# Bank  68 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_68
-set_property IOSTANDARD  LVDS 	           [get_ports "SYSCLK2_clk_p"] ;# Bank  68 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_68
-# create_clock -period 10.000 -name SYSCLK2  [get_ports "SYSCLK2_clk_p"]
-set_property PACKAGE_PIN AD43              [get_ports "SYNCE_CLK0_clk_n"] ;# Bank 130 - MGTREFCLK0N_130
-set_property PACKAGE_PIN AD42              [get_ports "SYNCE_CLK0_clk_p"] ;# Bank 130 - MGTREFCLK0P_130
-# create_clock -period 6.206 -name SYNCECLK0 [get_ports "SYNCE_CLK0_clk_p"]
-set_property PACKAGE_PIN AB43              [get_ports "SYNCE_CLK1_clk_n"] ;# Bank 131 - MGTREFCLK0N_131
-set_property PACKAGE_PIN AB42              [get_ports "SYNCE_CLK1_clk_p"] ;# Bank 131 - MGTREFCLK0P_131
-create_clock -period 6.206 -name SYNCECLK1 [get_ports "SYNCE_CLK1_clk_p"]
+set_property PACKAGE_PIN BL10               [get_ports "SYS_CLK_clk_n"] ;# Bank  68 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_68
+set_property IOSTANDARD  LVDS               [get_ports "SYS_CLK_clk_n"] ;# Bank  68 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_68
+set_property PACKAGE_PIN BK10               [get_ports "SYS_CLK_clk_p"] ;# Bank  68 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_68
+set_property IOSTANDARD  LVDS               [get_ports "SYS_CLK_clk_p"] ;# Bank  68 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_68
+# create_clock -period 10.000 -name SYS_CLK [get_ports "SYS_CLK_clk_p"]
+
+set_property PACKAGE_PIN BK44               [get_ports "MEM_CLK_clk_n"] ;# Bank  65 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_A11_D27_65
+set_property IOSTANDARD  LVDS               [get_ports "MEM_CLK_clk_n"] ;# Bank  65 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_A11_D27_65
+set_property PACKAGE_PIN BK43               [get_ports "MEM_CLK_clk_p"] ;# Bank  65 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_A10_D26_65
+set_property IOSTANDARD  LVDS               [get_ports "MEM_CLK_clk_p"] ;# Bank  65 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_A10_D26_65
+# create_clock -period 10.000 -name MEM_CLK [get_ports "MEM_CLK_clk_p"]
+
+set_property PACKAGE_PIN AD43                 [get_ports "QSFP4X_CLK_clk_n"] ;# Bank 130 - MGTREFCLK0N_130
+set_property PACKAGE_PIN AD42                 [get_ports "QSFP4X_CLK_clk_p"] ;# Bank 130 - MGTREFCLK0P_130
+# create_clock -period 6.206 -name QSFP4X_CLK [get_ports "QSFP4X_CLK_clk_p"]
+
+set_property PACKAGE_PIN AB43               [get_ports "QSFP1X_CLK_clk_n"] ;# Bank 131 - MGTREFCLK0N_131
+set_property PACKAGE_PIN AB42               [get_ports "QSFP1X_CLK_clk_p"] ;# Bank 131 - MGTREFCLK0P_131
+create_clock -period 6.206 -name QSFP1X_CLK [get_ports "QSFP1X_CLK_clk_p"]
 
 
 ##################################################################################################################################################################
@@ -188,9 +196,11 @@ create_clock -period 6.206 -name SYNCECLK1 [get_ports "SYNCE_CLK1_clk_p"]
 ##	PEX_PWRBRKN_FPGA_R	Active low input from PCIe Connector Signaling PCIe card to shut down card power in Server failing condition.Not used in U55 Board
 ##
 ##################################################################################################################################################################
-set_property PACKAGE_PIN BE45     [get_ports "HBM_CATTRIP_LS"] ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
-set_property IOSTANDARD  LVCMOS18 [get_ports "HBM_CATTRIP_LS"] ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
-set_property PULLTYPE    PULLDOWN [get_ports "HBM_CATTRIP_LS"] ;# Setting HBM_CATTRIP to low by default to avoid the SC shutting down the card
+# set_property PACKAGE_PIN BE45     [get_ports "HBM_CATTRIP_LS"] ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
+# set_property IOSTANDARD  LVCMOS18 [get_ports "HBM_CATTRIP_LS"] ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
+set_property PACKAGE_PIN BE45     [get_ports "HBM_CATTRIP"] ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
+set_property IOSTANDARD  LVCMOS18 [get_ports "HBM_CATTRIP"] ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
+set_property PULLTYPE    PULLDOWN [get_ports "HBM_CATTRIP"] ;# Setting HBM_CATTRIP to low by default to avoid the SC shutting down the card
 # set_property PACKAGE_PIN BF41     [get_ports "PCIE_PERST_LS_65"] ;# Bank  65 VCCO - VCC1V8   - IO_T3U_N12_PERSTN0_65
 # set_property IOSTANDARD  LVCMOS18 [get_ports "PCIE_PERST_LS_65"] ;# Bank  65 VCCO - VCC1V8   - IO_T3U_N12_PERSTN0_65
 # set_property PACKAGE_PIN BG43     [get_ports "PEX_PWRBRKN_FPGA_65"] ;# Bank  65 VCCO - VCC1V8   - IO_L17N_T2U_N9_AD10N_D15_65
@@ -228,6 +238,10 @@ set_property IOSTANDARD  LVCMOS18 [get_ports "CPU_RESET_FPGA"] ;# Bank  65 VCCO 
 # set_property IOSTANDARD  LVCMOS18 [get_ports "FPGA_UART1_RXD"] ;# Bank  65 VCCO - VCC1V8   - IO_L2N_T0L_N3_FWE_FCS2_B_65
 # set_property PACKAGE_PIN BN47     [get_ports "FPGA_UART1_TXD"] ;# Bank  65 VCCO - VCC1V8   - IO_L2P_T0L_N2_FOE_B_65
 # set_property IOSTANDARD  LVCMOS18 [get_ports "FPGA_UART1_TXD"] ;# Bank  65 VCCO - VCC1V8   - IO_L2P_T0L_N2_FOE_B_65
+set_property PACKAGE_PIN BK41     [get_ports "UART_txd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15N_T2L_N5_AD11N_A03_D19_65
+set_property IOSTANDARD  LVCMOS18 [get_ports "UART_txd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15N_T2L_N5_AD11N_A03_D19_65
+set_property PACKAGE_PIN BJ41     [get_ports "UART_rxd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15P_T2L_N4_AD11P_A02_D18_65
+set_property IOSTANDARD  LVCMOS18 [get_ports "UART_rxd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15P_T2L_N4_AD11P_A02_D18_65
 ##################################################################################################################################################################
 ##
 ## 	  Bank 94 FPGA to Sattelite Controller CMS UART Interface (115200, No parity, 8 bits, 1 stop bit)

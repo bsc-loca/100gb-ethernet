@@ -251,9 +251,9 @@ class EthSyst {
   uint32_t* txMem  = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
   uint32_t* rxMem  = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
   uint32_t* sgMem  = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
-  uint32_t* ddrMem = reinterpret_cast<uint32_t*>(XPAR_DDR4_0_BASEADDR + (XPAR_DDR4_0_HIGHADDR+1-XPAR_DDR4_0_BASEADDR)*3/4); // a segment of external DDR connected via cache
-  uint32_t* sysMem = reinterpret_cast<uint32_t*>(XPAR_HBM_0_BASEADDR); // a segment of external HBM connected via cache
-  uint32_t* extMem = reinterpret_cast<uint32_t*>(0x70000000);          // same segment of external HBM but connected directly
+  uint32_t* ddrMem = reinterpret_cast<uint32_t*>(0xA0000000); // a segment of external DDR connected via cache (HBM for U55C)
+  uint32_t* sysMem = reinterpret_cast<uint32_t*>(0xF0000000); // a segment of external HBM connected via cache
+  uint32_t* extMem = reinterpret_cast<uint32_t*>(0x70000000); // same segment of external HBM but connected directly
 
   size_t txBdCount = 0;
   size_t rxBdCount = 0;

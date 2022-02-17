@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
                              XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
   size_t const sgMemSize  = (XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 -
                              XPAR_SG_MEM_CPU_S_AXI_BASEADDR);
-  size_t const extMemSize = sgMemSize; // small size just for testing
+  size_t const extMemSize = sgMemSize/8; // small size just for testing
   size_t const txrxMemSize = std::min(txMemSize, rxMemSize);
   size_t const txMemWords  = txMemSize  / sizeof(uint32_t);
   size_t const rxMemWords  = rxMemSize  / sizeof(uint32_t);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
         uint64_t volatile* sysMem64 = reinterpret_cast<uint64_t volatile*>(ethSyst.sysMem);
         size_t axiWidth = 256 / 8;
 
-        xil_printf("Write to direct HBM at addr 0x%X, Read from cached HBM at addr 0x%X of %d bytes\n",
+        xil_printf("Write to direct HBM at addr 0x%X, Read from cached HBM at addr 0x%X with %d bytes\n",
                    size_t(ethSyst.extMem), size_t(ethSyst.sysMem), extMemSize);
         // first clearing previously stored values in both views of same segment
         for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.extMem[addr] = 0;
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
           }
         }
 
-        xil_printf("Write to cached HBM at addr 0x%X, Read from direct HBM at addr 0x%X of %d bytes\n",
+        xil_printf("Write to cached HBM at addr 0x%X, Read from direct HBM at addr 0x%X with %d bytes\n",
                    size_t(ethSyst.sysMem), size_t(ethSyst.extMem), extMemSize);
         // first clearing previously stored values in both views of same segment
         for (size_t addr = 0; addr < extMemWords; ++addr) ethSyst.extMem[addr] = 0;
