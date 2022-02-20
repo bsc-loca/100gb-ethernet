@@ -6,4 +6,8 @@
 #  the user must ensure to use the following commands within an opened vivado block design:"
 
 #  cd [get_property DIRECTORY [current_project]]"
-write_bd_tcl -force -hier_blks [get_bd_cells /] ./tcl/gen_bd_${g_board_part}.tcl
+if { ${g_board_part} eq "versal" } {
+write_bd_tcl -force -hier_blks [get_bd_cells /] ./tcl/gen_bd_versal.tcl
+} else {
+write_bd_tcl -force -hier_blks [get_bd_cells /] ./tcl/gen_bd_alveo.tcl
+}

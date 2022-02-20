@@ -164,11 +164,12 @@ source $root_dir/tcl/eth_syst_xparams.tcl
 }
 
 
-# creating full Ethernet test BD (with full microBlaze environment)
-source $root_dir/tcl/gen_bd_${g_board_part}.tcl
-# source $root_dir/tcl/gen_bd_u280.tcl
-# source $root_dir/tcl/gen_bd_u55c.tcl
-# source $root_dir/tcl/gen_bd_versal.tcl
+# creating full Ethernet system BD
+if { ${g_board_part} eq "versal" } {
+source $root_dir/tcl/gen_bd_versal.tcl
+} else {
+source $root_dir/tcl/gen_bd_alveo.tcl
+}
 create_root_design ""
 
 validate_bd_design
@@ -187,9 +188,7 @@ add_files -norecurse           $root_dir/bd/${g_project_name}/hdl/${g_project_na
 # add_files -fileset [get_filesets constrs_1] "$root_dir/xdc/${g_project_name}_ila.xdc"
 
 add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_${g_board_part}.xdc"
-# set_property PROCESSING_ORDER LATE [get_files "$root_dir/xdc/${g_project_name}_alveo280.xdc"]
-# add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_alveo55c.xdc"
-# add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_versal.xdc"
+# set_property PROCESSING_ORDER LATE [get_files "$root_dir/xdc/${g_project_name}_${g_board_part}.xdc"]
 
 puts "Project generation ended successfully"
 
