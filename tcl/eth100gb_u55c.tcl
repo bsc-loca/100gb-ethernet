@@ -1,8 +1,7 @@
 
 set g_eth100gb_freq "161.1328125"
 
-
-set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
+  set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
   set_property -dict [ list \
    CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
    CONFIG.CMAC_CAUI4_MODE {1} \
@@ -42,4 +41,3 @@ set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth10
    CONFIG.USER_INTERFACE {AXIS} \
    CONFIG.USE_BOARD_FLOW {true} \
  ] $eth100gb
-

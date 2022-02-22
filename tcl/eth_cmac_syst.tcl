@@ -143,19 +143,9 @@ current_bd_design $design_name
   # Set parent object as current
   current_bd_instance $parentObj
 
-  source $g_root_dir/tcl/eth100gb_${g_board_part}.tcl
-
-  set g_refport_freq [format {%0.0f} [expr {$g_eth100gb_freq*1000000}] ]
-
-  puts "PORT FREQUENCY: $g_refport_freq"
 
   # Create interface ports
   set qsfp_4x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp_4x ]
-
-  set qsfp_refck [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp_refck ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ $g_refport_freq \
-   ] $qsfp_refck
 
   set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
   set_property -dict [ list \
@@ -329,12 +319,19 @@ current_bd_design $design_name
  ] $dma_loopback_fifo
 
   # Create instance: eth100gb, and set properties
-
+  source $g_root_dir/tcl/eth100gb_${g_board_part}.tcl
   set_property USER_COMMENTS.comment_3 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=26" [get_bd_intf_pins /eth100gb/axis_rx]
   set_property USER_COMMENTS.comment_2 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=23" [get_bd_intf_pins /eth100gb/axis_tx]
   set_property USER_COMMENTS.comment_1 "http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=117
 http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88" [get_bd_pins /eth100gb/gt_loopback_in]
   set_property USER_COMMENTS.comment_4 "https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88" [get_bd_pins /eth100gb/gt_loopback_in]
+
+  set g_refport_freq [format {%0.0f} [expr {$g_eth100gb_freq*1000000}] ]
+  puts "PORT FREQUENCY: $g_refport_freq"
+  set qsfp_refck [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp_refck ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ $g_refport_freq \
+   ] $qsfp_refck
 
   # Create instance: eth_dma, and set properties
   set eth_dma [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 eth_dma ]
@@ -508,7 +505,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   # Create instance: sg_mem_dma, and set properties
   set sg_mem_dma [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 sg_mem_dma ]
   set_property -dict [ list \
-   CONFIG.ECC_TYPE {Hamming} \
+   CONFIG.ECC_TYPE {0} \
    CONFIG.PROTOCOL {AXI4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $sg_mem_dma

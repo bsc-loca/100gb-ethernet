@@ -14,3 +14,4 @@ xsct -interactive ./tcl/run_elf.tcl
 # find /proc/device-tree/ -type f -exec head {} + | grep eth
 # ifconfig
 # ip link
+# gunzip </proc/config.gz | grep XILINX
