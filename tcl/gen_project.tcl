@@ -192,4 +192,4 @@ add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_$
 
 puts "Project generation ended successfully"
 
-source $root_dir/tcl/gen_bitstream.tcl
+#source $root_dir/tcl/gen_bitstream.tcl

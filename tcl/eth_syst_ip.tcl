@@ -32,8 +32,8 @@ set_property -dict ${ip_properties} ${ip_core}
 set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 
 ## Relative path to IP root directory
-ipx::create_xgui_files ${ip_core} -logo_file "misc/BSC-Logo.png"
-set_property type LOGO [ipx::get_files "misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]
+ipx::create_xgui_files ${ip_core} -logo_file "$g_root_dir/misc/BSC-Logo.png"
+set_property type LOGO [ipx::get_files "$g_root_dir/misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]
 ipx::update_checksums ${ip_core}
 
 # Save IP and close project
