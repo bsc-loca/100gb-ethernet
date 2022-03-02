@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 - 2019 Xilinx, Inc.
+ * Copyright (C) 2017 - 2021 Xilinx, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -73,7 +73,7 @@ int IicPhyReset(void);
 
 netif udp_client_netif;
 
-static void print_ip(const char* msg, ip_addr_t *ip)
+static void print_ip(char *msg, ip_addr_t *ip)
 {
 	print(msg);
 	xil_printf("%d.%d.%d.%d\r\n", ip4_addr1(ip), ip4_addr2(ip),

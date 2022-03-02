@@ -3,7 +3,7 @@
 *
 * @file Initially started from original Xilinx xaxiethernet.h
 *
-* @addtogroup axiethernet_v5_11
+* @addtogroup axiethernet_v5_13
 * @{
 * @details
 *

@@ -1,9 +1,9 @@
 /*****************************************************************************/
 /**
 *
-* @file Initially started from original Xilinx xaxiemacif_dma.c
+* @file Initially started from original Xilinx xaxiemacif_dma.c (from lwip211_v1_6 lib)
 *
- * Copyright (C) 2010 - 2019 Xilinx, Inc.
+ * Copyright (C) 2010 - 2021 Xilinx, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -296,6 +296,7 @@ static void setup_rx_bds(XAxiDma_BdRing *rxring)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
+			// printf("unable to alloc pbuf in recv_handler\r\n");
 			xil_printf("setup_rx_bds(): unable to alloc pbuf\r\n");
 			return;
 		}
@@ -408,6 +409,7 @@ static void axidma_recv_handler(void *arg)
               xil_printf("Recv handler: Rx PBUF: payload addr=%x, len=%d, tot_len=%d, ref=%d, next=%x \n", p->payload, p->len, p->tot_len, p->ref, p->next);
             }
 
+			// pbuf_realloc(p, rx_bytes);
 			pbuf_realloc(p, rx_act_len);
 
 #ifdef USE_JUMBO_FRAMES
@@ -665,7 +667,8 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 		return ERR_IF;
 	}
 	/* initialize DMA */
-    // dmaconfig = XAxiDma_LookupConfig(XPAR_ETH_DMA_DEVICE_ID);
+	// baseaddr = xaxiemacif->axi_ethernet.Config.AxiDevBaseAddress;
+	// dmaconfig = XAxiDma_LookupConfigBaseAddr(baseaddr);
 	dmaconfig = XAxiDma_LookupConfigBaseAddr(XPAR_ETH_DMA_BASEADDR);
     if (!dmaconfig || dmaconfig->BaseAddr != XPAR_ETH_DMA_BASEADDR) {
       xil_printf("\nERROR: No config found for XAxiDma %d at addr %x \n", XPAR_ETH_DMA_DEVICE_ID, XPAR_ETH_DMA_BASEADDR);
@@ -739,6 +742,7 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 			lwip_stats.link.memerr++;
 			lwip_stats.link.drop++;
 #endif
+			// LWIP_DEBUGF(NETIF_DEBUG, ("unable to alloc pbuf in recv_handler\r\n"));
 			xil_printf("init_axi_dma(): unable to alloc pbuf\r\n");
 			return ERR_IF;
 		}
@@ -808,12 +812,14 @@ XStatus init_axi_dma(struct xemac_s *xemac)
     xil_printf("Registering Send handler at intr %d in Interrupt Controller at addr 0x%x \n",
                XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID, xtopologyp->intc_baseaddr);
 	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+			// xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
                XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_sendfast_handler);
 
     xil_printf("Registering Recv handler at intr %d in Interrupt Controller at addr 0x%x \n",
                XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID, xtopologyp->intc_baseaddr);
 	XIntc_RegisterFastHandler(xtopologyp->intc_baseaddr,
+			// xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
 	           XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XFastInterruptHandler)axidma_recvfast_handler);
 #else
@@ -825,10 +831,12 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 
 	/* connect & enable DMA interrupts */
 	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
+			// xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr,
              XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID,
 			(XInterruptHandler)axidma_send_handler,
 				xemac);
 	XIntc_RegisterHandler(xtopologyp->intc_baseaddr,
+			// xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr,
              XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID,
 			(XInterruptHandler)axidma_recv_handler,
 				xemac);
@@ -842,9 +850,11 @@ XStatus init_axi_dma(struct xemac_s *xemac)
 
 		/* form new mask enabling AXIDMA & axiethernet interrupts */
 		cur_mask = cur_mask
+			// | (1 << xaxiemacif->axi_ethernet.Config.AxiDmaTxIntr)
+			// | (1 << xaxiemacif->axi_ethernet.Config.AxiDmaRxIntr)
+			// | (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
 			| (1 << XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID)
 			| (1 << XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID);
-			// | (1 << xaxiemacif->axi_ethernet.Config.TemacIntr);
 
 		/* set new mask */
 		XIntc_EnableIntr(xtopologyp->intc_baseaddr, cur_mask);
