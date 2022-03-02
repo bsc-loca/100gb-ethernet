@@ -141,6 +141,7 @@ if { $nRet != 0 } {
     return $nRet
 }
 
+file mkdir $root_dir/ip
 
 set ip_dir_list [list \
      $root_dir/ip]
