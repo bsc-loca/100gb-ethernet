@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 - 2019 Xilinx, Inc.
+ * Copyright (C) 2017 - 2021 Xilinx, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -131,7 +131,7 @@ static void reset_stats(void)
 {
 	client.client_id++;
 	/* Print connection statistics */
-	// print_udp_conn_stats();
+	if (0) print_udp_conn_stats();
 	/* Save start time for final report */
 	client.start_time = get_time_ms();
 	client.total_bytes = 0;
@@ -160,7 +160,7 @@ static void udp_packet_send(u8_t finished)
 			xil_printf("error allocating pbuf to send\r\n");
 			return;
 		} else {
-			memcpy(packet->payload, send_buf, UDP_SEND_BUFSIZE);
+			pbuf_take(packet, send_buf, UDP_SEND_BUFSIZE);
 		}
 
 		/* always increment the id */
@@ -174,7 +174,11 @@ static void udp_packet_send(u8_t finished)
 		payload[0] = htonl(packet_id);
 
 		while (retries) {
+#if LWIP_UDP_OPT_BLOCK_TX_TILL_COMPLETE
+			err = udp_send_blocking(pcb[i], packet);
+#else
 			err = udp_send(pcb[i], packet);
+#endif
 			if (err != ERR_OK) {
 				xil_printf("Error on udp_send: %d\r\n", err);
 				retries--;
@@ -207,12 +211,13 @@ static void udp_packet_send(u8_t finished)
 		 * To avoid this, added delay of 2us between each
 		 * packets.
 		 */
+#if !LWIP_UDP_OPT_BLOCK_TX_TILL_COMPLETE
 #if defined (__aarch64__) && defined (XLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA)
 		usleep(2);
 #endif /* __aarch64__ */
         // the same story is for 100Gb Eth core working with MicroBlaze: getting memory underflow without this pause
 		usleep(250);
-
+#endif
 	}
 	packet_id++;
 }

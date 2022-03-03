@@ -71,9 +71,9 @@ int IicPhyReset(void);
 #endif
 #endif
 
-struct netif udp_server_netif;
+netif udp_server_netif;
 
-static void print_ip(const char* msg, ip_addr_t *ip)
+static void print_ip(char *msg, ip_addr_t *ip)
 {
 	print(msg);
 	xil_printf("%d.%d.%d.%d\r\n", ip4_addr1(ip), ip4_addr2(ip),

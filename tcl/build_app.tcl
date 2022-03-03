@@ -1,3 +1,22 @@
+# Copyright 2022 Barcelona Supercomputing Center-Centro Nacional de Supercomputación
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Author: Alexander Kropotov, BSC-CNS
+# Date: 22.02.2022
+# Description: 
+
+
 
 # script to build bare-metal application
 # XSCT reference: http://www.xilinx.com/html_docs/xilinx2020_2/vitis_doc/obi1585821551850.html
@@ -65,6 +84,11 @@ bsp config tcp_wnd 65535
 #for TCP client/server and UDP client only
 #  n_tx_descriptors value is not passed to the code and should be manually set as XLWIP_CONFIG_N_TX_DESC
 # bsp config n_tx_descriptors 512
+#for UDP client only
+#  needed to exclude empirical delay between UDP packets in udp_perf_client, but is not applied because of set LWIP_NETIF_TX_SINGLE_PBUF=1
+#  in lwip_extra_defs.h (to exclude TCP packet cutting among few memory allocations for DMA+100GbEth cores proper functioning), and thus leading to error:
+#  "Once LWIP_NETIF_TX_SINGLE_PBUF is set blocking UDP Tx looses its relevance. Please disable LWIP_UDP_OPT_BLOCK_TX_TILL_COMPLETE"
+# bsp config udp_tx_blocking true
 
 #enabling lwip debug messages
 # bsp config icmp_debug  true # causes compile error in icmp.c:253: undefined reference to `lwip_strerr'
@@ -181,6 +205,7 @@ bsp listparams -lib lwip211
 # udp_options                     true       Is UDP required ?
 #   lwip_udp                      true       Is UDP required ?
 #   udp_ttl                       255        UDP TTL value
+#   udp_tx_blocking               false
 # use_axieth_on_zynq              1          Option if set to 1 ensures axiethernet adapter being used in Zynq. Valid only for Zynq
 # use_emaclite_on_zynq            1          Option if set to 1 ensures emaclite adapter being used in Zynq. Valid only for Zynq
 
