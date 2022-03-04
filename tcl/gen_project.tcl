@@ -1,3 +1,22 @@
+# Copyright 2022 Barcelona Supercomputing Center-Centro Nacional de Supercomputación
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Author: Alexander Kropotov, BSC-CNS
+# Date: 22.02.2022
+# Description: 
+
+
 
 namespace eval _tcl {
 proc get_script_folder {} {
@@ -141,6 +160,7 @@ if { $nRet != 0 } {
     return $nRet
 }
 
+file mkdir $root_dir/ip
 
 set ip_dir_list [list \
      $root_dir/ip]
@@ -192,4 +212,4 @@ add_files -fileset [get_filesets constrs_1]   "$root_dir/xdc/${g_project_name}_$
 
 puts "Project generation ended successfully"
 
-source $root_dir/tcl/gen_bitstream.tcl
+#source $root_dir/tcl/gen_bitstream.tcl
