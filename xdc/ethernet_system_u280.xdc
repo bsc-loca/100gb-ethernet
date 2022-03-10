@@ -403,9 +403,10 @@ set_property IOSTANDARD DIFF_POD12_DCI     [ get_ports  {C0_DDR4_dqs_t[1]} ]    
 ## MGT_SI570_CLOCK0   -> MGT Ref Clock 0 156.25MHz Default (Not User re-programmable)
 # set_property PACKAGE_PIN T43      [get_ports "MGT_SI570_CLOCK0_N"]  ;# Bank 134 - MGTREFCLK0N_134, platform: io_clk_gtyquad_refclk0_00_clk_n
 # set_property PACKAGE_PIN T42      [get_ports "MGT_SI570_CLOCK0_P"]  ;# Bank 134 - MGTREFCLK0P_134, platform: io_clk_gtyquad_refclk0_00_clk_p
-set_property PACKAGE_PIN T43      [get_ports "QSFP1X_CLK_clk_n"]  ;# Bank 134 - MGTREFCLK0N_134, platform: io_clk_gtyquad_refclk0_00_clk_n
-set_property PACKAGE_PIN T42      [get_ports "QSFP1X_CLK_clk_p"]  ;# Bank 134 - MGTREFCLK0P_134, platform: io_clk_gtyquad_refclk0_00_clk_p
-create_clock -period 6.400 -name QSFP1X_CLK [get_ports "QSFP1X_CLK_clk_p"]
+set_property PACKAGE_PIN T43      [get_ports "QSFP0_CLK_clk_n"]  ;# Bank 134 - MGTREFCLK0N_134, platform: io_clk_gtyquad_refclk0_00_clk_n
+set_property PACKAGE_PIN T42      [get_ports "QSFP0_CLK_clk_p"]  ;# Bank 134 - MGTREFCLK0P_134, platform: io_clk_gtyquad_refclk0_00_clk_p
+#create_clock is not needed in case of connecting QSFP clock to 100Gb CMAC, but needed for 1Gb PHY (gig_ethernet_pcs_pma)
+create_clock -period 6.400 -name QSFP0_CLK [get_ports "QSFP0_CLK_clk_p"]
 #
 ## QSFP0_CLOCK        -> MGT Ref Clock 1 User selectable by QSFP0_FS=0 161.132812 MHz and QSFP0_FS=1 156.250MHz; QSFP0_OEB must driven low to enable clock output
 # set_property PACKAGE_PIN R41      [get_ports "QSFP0_CLOCK_N"]  ;# Bank 134 - MGTREFCLK1N_134, platform: io_clk_gtyquad_refclk1_00_clk_n
@@ -441,9 +442,10 @@ create_clock -period 6.400 -name QSFP1X_CLK [get_ports "QSFP1X_CLK_clk_p"]
 ## MGT_SI570_CLOCK1_N   -> MGT Ref Clock 0 156.25MHz Default (Not User re-programmable)
 # set_property PACKAGE_PIN P43       [get_ports "MGT_SI570_CLOCK1_N"] ;# Bank 135 - MGTREFCLK0N_135, platform: io_clk_gtyquad_refclk0_01_clk_n
 # set_property PACKAGE_PIN P42       [get_ports "MGT_SI570_CLOCK1_P"] ;# Bank 135 - MGTREFCLK0P_135, platform: io_clk_gtyquad_refclk0_01_clk_p
-set_property PACKAGE_PIN P43       [get_ports "QSFP4X_CLK_clk_n"] ;# Bank 135 - MGTREFCLK0N_135, platform: io_clk_gtyquad_refclk0_01_clk_n
-set_property PACKAGE_PIN P42       [get_ports "QSFP4X_CLK_clk_p"] ;# Bank 135 - MGTREFCLK0P_135, platform: io_clk_gtyquad_refclk0_01_clk_p
-# create_clock -period 6.400 -name QSFP4X_CLK [get_ports "QSFP4X_CLK_clk_p"]
+set_property PACKAGE_PIN P43       [get_ports "QSFP1_CLK_clk_n"] ;# Bank 135 - MGTREFCLK0N_135, platform: io_clk_gtyquad_refclk0_01_clk_n
+set_property PACKAGE_PIN P42       [get_ports "QSFP1_CLK_clk_p"] ;# Bank 135 - MGTREFCLK0P_135, platform: io_clk_gtyquad_refclk0_01_clk_p
+#create_clock is not needed in case of connecting QSFP clock to 100Gb CMAC, but needed for 1Gb PHY (gig_ethernet_pcs_pma)
+create_clock -period 6.400 -name QSFP1_CLK [get_ports "QSFP1_CLK_clk_p"]
 #
 ## QSFP1_CLOCK_N        -> MGT Ref Clock 1 User selectable by QSFP1_FS=0 161.132812 MHz and QSFP1_FS=1 156.250MHz; QSFP1_OEB must be low to enable clock output
 # set_property PACKAGE_PIN M43       [get_ports "QSFP1_CLOCK_N"]  ;# Bank 135 - MGTREFCLK1N_135, platform: io_clk_gtyquad_refclk1_01_clk_n

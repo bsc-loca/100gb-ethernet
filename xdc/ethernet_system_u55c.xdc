@@ -153,14 +153,13 @@ set_property PACKAGE_PIN BK43               [get_ports "MEM_CLK_clk_p"] ;# Bank 
 set_property IOSTANDARD  LVDS               [get_ports "MEM_CLK_clk_p"] ;# Bank  65 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_A10_D26_65
 # create_clock -period 10.000 -name MEM_CLK [get_ports "MEM_CLK_clk_p"]
 
-set_property PACKAGE_PIN AD43                 [get_ports "QSFP4X_CLK_clk_n"] ;# Bank 130 - MGTREFCLK0N_130
-set_property PACKAGE_PIN AD42                 [get_ports "QSFP4X_CLK_clk_p"] ;# Bank 130 - MGTREFCLK0P_130
-# create_clock -period 6.206 -name QSFP4X_CLK [get_ports "QSFP4X_CLK_clk_p"]
-
-set_property PACKAGE_PIN AB43               [get_ports "QSFP1X_CLK_clk_n"] ;# Bank 131 - MGTREFCLK0N_131
-set_property PACKAGE_PIN AB42               [get_ports "QSFP1X_CLK_clk_p"] ;# Bank 131 - MGTREFCLK0P_131
-create_clock -period 6.206 -name QSFP1X_CLK [get_ports "QSFP1X_CLK_clk_p"]
-
+#create_clock is not needed in case of connecting QSFP clock to 100Gb CMAC, but needed for 1Gb PHY (gig_ethernet_pcs_pma)
+set_property PACKAGE_PIN AD43              [get_ports "QSFP0_CLK_clk_n"] ;# Bank 130 - MGTREFCLK0N_130
+set_property PACKAGE_PIN AD42              [get_ports "QSFP0_CLK_clk_p"] ;# Bank 130 - MGTREFCLK0P_130
+create_clock -period 6.206 -name QSFP0_CLK [get_ports "QSFP0_CLK_clk_p"]
+set_property PACKAGE_PIN AB43              [get_ports "QSFP1_CLK_clk_n"] ;# Bank 131 - MGTREFCLK0N_131
+set_property PACKAGE_PIN AB42              [get_ports "QSFP1_CLK_clk_p"] ;# Bank 131 - MGTREFCLK0P_131
+create_clock -period 6.206 -name QSFP1_CLK [get_ports "QSFP1_CLK_clk_p"]
 
 ##################################################################################################################################################################
 ##

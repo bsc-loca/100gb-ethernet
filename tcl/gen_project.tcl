@@ -54,6 +54,9 @@ if { $::argc > 0 } {
         if { ${g_board_part} eq "versal" } {
         set g_fpga_part "xcvc1802-viva1596-2LP-e-S"
         }
+        if { $::argc > 1 } {
+          set g_eth_port [lindex $argv 1]
+        }
 }
 
 set root_dir $g_root_dir

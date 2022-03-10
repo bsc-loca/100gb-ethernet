@@ -218,6 +218,7 @@ proc create_root_design { parentCell } {
 
   global g_root_dir
   global g_board_part
+  global g_eth_port
 
   variable script_folder
 
@@ -253,14 +254,9 @@ if { ${g_board_part} eq "u280" } {
 
   set MEM_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 MEM_CLK ]
 
-  set QSFP1X [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:sfp_rtl:1.0 QSFP1X ]
+  set QSFP_X1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:sfp_rtl:1.0 QSFP_X1 ]
 
-  set QSFP1X_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 QSFP1X_CLK ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {156250000} \
-   ] $QSFP1X_CLK
-
-  set QSFP4X [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 QSFP4X ]
+  set QSFP_X4 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 QSFP_X4 ]
 
   set SYS_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 SYS_CLK ]
   set_property -dict [ list \
@@ -360,7 +356,8 @@ if { ${g_board_part} eq "u280" } {
    CONFIG.CONST_VAL {01} \
    CONFIG.CONST_WIDTH {2} \
  ] $const_2b01
-} else {
+}
+if { ${g_board_part} eq "u55c" } {
   # Create instance: const_3b001, and set properties
   set const_3b001 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 const_3b001 ]
   set_property -dict [ list \
@@ -520,8 +517,87 @@ if { ${g_board_part} eq "u280" } {
  ] $ddr_rst_gen
 }
 
-  # Create instance: eth100gb, and set properties
-  source $g_root_dir/tcl/eth100gb_${g_board_part}.tcl
+# Create instance: eth100gb, and set properties
+if { ${g_board_part} eq "u280" } {
+  set g_eth100gb_freq "156.25"
+  if { ${g_eth_port} eq "qsfp0" } {
+    set g_cmac_loc      "CMACE4_X0Y6"
+    set g_gt_grp_loc    "X0Y40~X0Y43"
+    set g_lane1_loc     "X0Y40"
+    set g_lane2_loc     "X0Y41"
+    set g_lane3_loc     "X0Y42"
+    set g_lane4_loc     "X0Y43"
+  }
+  if { ${g_eth_port} eq "qsfp1" } {
+    # set g_cmac_loc      "CMACE4_X0Y7"
+    # using non defualt for QSFP1 CMAC provides better timing
+    set g_cmac_loc      "CMACE4_X0Y6"
+    set g_gt_grp_loc    "X0Y44~X0Y47"
+    set g_lane1_loc     "X0Y44"
+    set g_lane2_loc     "X0Y45"
+    set g_lane3_loc     "X0Y46"
+    set g_lane4_loc     "X0Y47"
+  }
+}
+if { ${g_board_part} eq "u55c" } {
+  set g_eth100gb_freq "161.1328125"
+  if { ${g_eth_port} eq "qsfp0" } {
+    set g_cmac_loc      "CMACE4_X0Y3"
+    set g_gt_grp_loc    "X0Y24~X0Y27"
+    set g_lane1_loc     "X0Y24"
+    set g_lane2_loc     "X0Y25"
+    set g_lane3_loc     "X0Y26"
+    set g_lane4_loc     "X0Y27"
+  }
+  if { ${g_eth_port} eq "qsfp1" } {
+    set g_cmac_loc      "CMACE4_X0Y4"
+    set g_gt_grp_loc    "X0Y28~X0Y31"
+    set g_lane1_loc     "X0Y28"
+    set g_lane2_loc     "X0Y29"
+    set g_lane3_loc     "X0Y30"
+    set g_lane4_loc     "X0Y31"
+  }
+}
+  set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
+  set_property -dict [ list \
+   CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
+   CONFIG.CMAC_CAUI4_MODE {1} \
+   CONFIG.CMAC_CORE_SELECT $g_cmac_loc \
+   CONFIG.DIFFCLK_BOARD_INTERFACE {Custom} \
+   CONFIG.ENABLE_AXI_INTERFACE {1} \
+   CONFIG.ENABLE_PIPELINE_REG {0} \
+   CONFIG.ENABLE_TIME_STAMPING {0} \
+   CONFIG.ETHERNET_BOARD_INTERFACE {Custom} \
+   CONFIG.GT_GROUP_SELECT $g_gt_grp_loc \
+   CONFIG.GT_REF_CLK_FREQ $g_eth100gb_freq \
+   CONFIG.GT_RX_BUFFER_BYPASS {0} \
+   CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {0} \
+   CONFIG.INCLUDE_RS_FEC {1} \
+   CONFIG.INCLUDE_STATISTICS_COUNTERS {1} \
+   CONFIG.LANE10_GT_LOC {NA} \
+   CONFIG.LANE1_GT_LOC $g_lane1_loc \
+   CONFIG.LANE2_GT_LOC $g_lane2_loc \
+   CONFIG.LANE3_GT_LOC $g_lane3_loc \
+   CONFIG.LANE4_GT_LOC $g_lane4_loc \
+   CONFIG.LANE5_GT_LOC {NA} \
+   CONFIG.LANE6_GT_LOC {NA} \
+   CONFIG.LANE7_GT_LOC {NA} \
+   CONFIG.LANE8_GT_LOC {NA} \
+   CONFIG.LANE9_GT_LOC {NA} \
+   CONFIG.NUM_LANES {4x25} \
+   CONFIG.PLL_TYPE {QPLL0} \
+   CONFIG.RX_CHECK_ACK {1} \
+   CONFIG.RX_EQ_MODE {AUTO} \
+   CONFIG.RX_FLOW_CONTROL {0} \
+   CONFIG.RX_FORWARD_CONTROL_FRAMES {0} \
+   CONFIG.RX_GT_BUFFER {1} \
+   CONFIG.RX_MAX_PACKET_LEN {9600} \
+   CONFIG.RX_MIN_PACKET_LEN {64} \
+   CONFIG.TX_FLOW_CONTROL {0} \
+   CONFIG.TX_OTN_INTERFACE {0} \
+   CONFIG.USER_INTERFACE {AXIS} \
+   CONFIG.USE_BOARD_FLOW {true} \
+ ] $eth100gb
   set_property USER_COMMENTS.comment_3 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=26" [get_bd_intf_pins /eth100gb/axis_rx]
   set_property USER_COMMENTS.comment_2 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=23" [get_bd_intf_pins /eth100gb/axis_tx]
   set_property USER_COMMENTS.comment_1 "http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=117
@@ -529,10 +605,14 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   set_property USER_COMMENTS.comment_4 "https://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88" [get_bd_pins /eth100gb/gt_loopback_in]
 
   set g_refport_freq [format {%0.0f} [expr {$g_eth100gb_freq*1000000}] ]
-  set QSFP4X_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 QSFP4X_CLK ]
+  set QSFP0_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 QSFP0_CLK ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ $g_refport_freq \
-   ] $QSFP4X_CLK
+   ] $QSFP0_CLK
+  set QSFP1_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 QSFP1_CLK ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ $g_refport_freq \
+   ] $QSFP1_CLK
 
   # Create instance: eth_dma, and set properties
   set eth_dma [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 eth_dma ]
@@ -567,9 +647,20 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
 
   # Create instance: gig_eth_phy, and set properties
   if { ${g_board_part} eq "u280" } {
-    set g_gig_phy_loc "X0Y40"
-  } else {
-    set g_gig_phy_loc "X0Y28"
+    if { ${g_eth_port} eq "qsfp0" } {
+      set g_gig_phy_loc "X0Y44"
+    }
+    if { ${g_eth_port} eq "qsfp1" } {
+      set g_gig_phy_loc "X0Y40"
+    }
+  }
+  if { ${g_board_part} eq "u55c" } {
+    if { ${g_eth_port} eq "qsfp0" } {
+      set g_gig_phy_loc "X0Y28"
+    }
+    if { ${g_eth_port} eq "qsfp1" } {
+      set g_gig_phy_loc "X0Y24"
+    }
   }
   set gig_eth_phy [ create_bd_cell -type ip -vlnv xilinx.com:ip:gig_ethernet_pcs_pma:16.2 gig_eth_phy ]
   set_property -dict [ list \
@@ -662,7 +753,8 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   if { ${g_board_part} eq "u280" } {
     set g_hbm_density "4GB"
     set g_hbm_display "4096"
-  } else {
+  }
+  if { ${g_board_part} eq "u55c" } {
     set g_hbm_density "8GB"
     set g_hbm_display "8192"
   }
@@ -773,7 +865,8 @@ if { ${g_board_part} eq "u280" } {
    CONFIG.NUM_MI {2} \
    CONFIG.NUM_SI {2} \
  ] $mem_connect
-} else {
+}
+if { ${g_board_part} eq "u55c" } {
   set_property -dict [ list \
    CONFIG.NUM_CLKS {1} \
    CONFIG.NUM_MI {1} \
@@ -1055,12 +1148,12 @@ if { ${g_board_part} eq "u55c" } {
   connect_bd_intf_net -intf_net axis_broadcaster_0_M15_AXIS [get_bd_intf_pins axis_broadcaster_0/M15_AXIS] [get_bd_intf_pins microblaze_0/S15_AXIS]
   connect_bd_intf_net -intf_net axis_combiner_0_M_AXIS [get_bd_intf_pins axis_combiner_0/M_AXIS] [get_bd_intf_pins tx_fifo/S_AXIS]
   connect_bd_intf_net -intf_net cmac_usplus_0_axis_rx [get_bd_intf_pins eth100gb/axis_rx] [get_bd_intf_pins rx_axis_switch/S01_AXIS]
-  connect_bd_intf_net -intf_net cmac_usplus_0_gt_serial_port [get_bd_intf_ports QSFP4X] [get_bd_intf_pins eth100gb/gt_serial_port]
+  connect_bd_intf_net -intf_net cmac_usplus_0_gt_serial_port [get_bd_intf_ports QSFP_X4] [get_bd_intf_pins eth100gb/gt_serial_port]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_MM2S [get_bd_intf_pins eth_dma/M_AXI_MM2S] [get_bd_intf_pins tx_mem_dma/S_AXI]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_S2MM [get_bd_intf_pins eth_dma/M_AXI_S2MM] [get_bd_intf_pins rx_mem_dma/S_AXI]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_SG [get_bd_intf_pins eth_dma/M_AXI_SG] [get_bd_intf_pins sg_mem_dma/S_AXI]
   connect_bd_intf_net -intf_net eth_lite_dum4lwip_MDIO [get_bd_intf_pins ethmac_lite/MDIO] [get_bd_intf_pins gig_eth_phy/mdio_pcs_pma]
-  connect_bd_intf_net -intf_net gig_ethernet_pcs_pma_0_sfp [get_bd_intf_ports QSFP1X] [get_bd_intf_pins gig_eth_phy/sfp]
+  connect_bd_intf_net -intf_net gig_ethernet_pcs_pma_0_sfp [get_bd_intf_ports QSFP_X1] [get_bd_intf_pins gig_eth_phy/sfp]
   connect_bd_intf_net -intf_net loopback_fifo_M_AXIS [get_bd_intf_pins loopback_fifo/M_AXIS] [get_bd_intf_pins rx_axis_switch/S00_AXIS]
   connect_bd_intf_net -intf_net microblaze_0_M0_AXIS [get_bd_intf_pins axis_combiner_0/S00_AXIS] [get_bd_intf_pins microblaze_0/M0_AXIS]
   connect_bd_intf_net -intf_net microblaze_0_M10_AXIS [get_bd_intf_pins axis_combiner_0/S10_AXIS] [get_bd_intf_pins microblaze_0/M10_AXIS]
@@ -1086,7 +1179,6 @@ if { ${g_board_part} eq "u55c" } {
   connect_bd_intf_net -intf_net microblaze_0_ilmb_1 [get_bd_intf_pins microblaze_0/ILMB] [get_bd_intf_pins microblaze_0_local_memory/ILMB]
   connect_bd_intf_net -intf_net microblaze_0_interrupt [get_bd_intf_pins microblaze_0/INTERRUPT] [get_bd_intf_pins microblaze_0_axi_intc/interrupt]
   connect_bd_intf_net -intf_net periph_connect_M14_AXI [get_bd_intf_pins axi_uartlite_0/S_AXI] [get_bd_intf_pins periph_connect/M14_AXI]
-  connect_bd_intf_net -intf_net qsfp1_156mhz_1 [get_bd_intf_ports QSFP1X_CLK] [get_bd_intf_pins gig_eth_phy/gtrefclk_in]
   connect_bd_intf_net -intf_net rx_axis_switch_M01_AXIS [get_bd_intf_pins eth_dma/S_AXIS_S2MM] [get_bd_intf_pins rx_axis_switch/M01_AXIS]
   connect_bd_intf_net -intf_net rx_fifo_M_AXIS [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins rx_fifo/M_AXIS]
   connect_bd_intf_net -intf_net rx_mem_ctr_BRAM_PORTA [get_bd_intf_pins rx_mem/BRAM_PORTA] [get_bd_intf_pins rx_mem_cpu/BRAM_PORTA]
@@ -1117,12 +1209,19 @@ if { ${g_board_part} eq "u280" } {
   connect_bd_intf_net -intf_net ddr_connect_M00_AXI [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI] [get_bd_intf_pins mem_connect/M00_AXI]
   connect_bd_intf_net -intf_net ddr_connect_M01_AXI [get_bd_intf_pins hbm_0/SAXI_00] [get_bd_intf_pins mem_connect/M01_AXI]
   connect_bd_intf_net -intf_net periph_connect_M13_AXI [get_bd_intf_pins hbm_0/SAXI_01] [get_bd_intf_pins periph_connect/M13_AXI]
-  connect_bd_intf_net -intf_net qsfp0_156mhz_1 [get_bd_intf_ports QSFP4X_CLK] [get_bd_intf_pins eth100gb/gt_ref_clk]
-} else {
+}
+if { ${g_board_part} eq "u55c" } {
   connect_bd_intf_net -intf_net MEM_CLK_1 [get_bd_intf_ports MEM_CLK] [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
-  connect_bd_intf_net -intf_net gt_ref_clk_0_1 [get_bd_intf_ports QSFP4X_CLK] [get_bd_intf_pins eth100gb/gt_ref_clk]
   connect_bd_intf_net -intf_net mem_connect_M00_AXI [get_bd_intf_pins hbm_0/SAXI_00_8HI] [get_bd_intf_pins mem_connect/M00_AXI]
   connect_bd_intf_net -intf_net periph_connect_M13_AXI [get_bd_intf_pins hbm_0/SAXI_01_8HI] [get_bd_intf_pins periph_connect/M13_AXI]
+}
+if { ${g_eth_port} eq "qsfp0" } {
+  connect_bd_intf_net -intf_net gt_ref_clk_0_1 [get_bd_intf_ports QSFP0_CLK] [get_bd_intf_pins eth100gb/gt_ref_clk]
+  connect_bd_intf_net -intf_net qsfp1_156mhz_1 [get_bd_intf_ports QSFP1_CLK] [get_bd_intf_pins gig_eth_phy/gtrefclk_in]
+}
+if { ${g_eth_port} eq "qsfp1" } {
+  connect_bd_intf_net -intf_net gt_ref_clk_0_1 [get_bd_intf_ports QSFP1_CLK] [get_bd_intf_pins eth100gb/gt_ref_clk]
+  connect_bd_intf_net -intf_net qsfp1_156mhz_1 [get_bd_intf_ports QSFP0_CLK] [get_bd_intf_pins gig_eth_phy/gtrefclk_in]
 }
 
   # Create port connections
@@ -1212,7 +1311,8 @@ if { ${g_board_part} eq "u280" } {
   connect_bd_net -net resetn_inv_0_Res [get_bd_pins ddr4_0/sys_rst] [get_bd_pins eth100gb/gtwiz_reset_rx_datapath] [get_bd_pins eth100gb/gtwiz_reset_tx_datapath] [get_bd_pins eth100gb/sys_reset] [get_bd_pins ext_rstn_inv/Res] [get_bd_pins sys_clk_gen/reset]
   connect_bd_net -net rst_clk_wiz_1_100M_peripheral_aresetn [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins axi_uartlite_0/s_axi_aresetn] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_combiner_0/aresetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ethmac_lite/s_axi_aresetn] [get_bd_pins gt_ctl/s_axi_aresetn] [get_bd_pins hbm_0/AXI_01_ARESET_N] [get_bd_pins mdm_1/S_AXI_ARESETN] [get_bd_pins mem_connect/aresetn] [get_bd_pins microblaze_0_axi_intc/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins rx_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_dma/s_axi_aresetn] [get_bd_pins sys_rst_gen/peripheral_aresetn] [get_bd_pins tx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins tx_fifo/s_axis_aresetn] [get_bd_pins tx_mem_cpu/s_axi_aresetn] [get_bd_pins tx_rx_ctl_stat/s_axi_aresetn]
   connect_bd_net -net util_ds_buf_0_IBUF_OUT [get_bd_pins ddr4_0/addn_ui_clkout1] [get_bd_pins hbm_0/HBM_REF_CLK_0]
-} else {
+}
+if { ${g_board_part} eq "u55c" } {
   connect_bd_net -net calib_comb_Res [get_bd_pins hbm_0/apb_complete_0] [get_bd_pins rx_rst_gen/aux_reset_in] [get_bd_pins sys_rst_gen/aux_reset_in] [get_bd_pins tx_rst_gen/aux_reset_in]
   connect_bd_net -net const_gnd_dout [get_bd_pins axi_timer_0/capturetrig0] [get_bd_pins axi_timer_0/capturetrig1] [get_bd_pins axi_timer_0/freeze] [get_bd_pins const_gnd/dout] [get_bd_pins eth100gb/drp_en] [get_bd_pins eth100gb/drp_we] [get_bd_pins eth100gb/pm_tick] [get_bd_pins eth100gb/tx_axis_tuser] [get_bd_pins ethmac_lite/phy_col] [get_bd_pins ethmac_lite/phy_crs] [get_bd_pins gig_eth_phy/configuration_valid] [get_bd_pins gig_eth_phy/gmii_tx_er]
   connect_bd_net -net const_gndx2_dout [get_bd_pins const_3b001/dout] [get_bd_pins mem_raddr_con/In1] [get_bd_pins mem_waddr_con/In1]
@@ -1261,7 +1361,8 @@ if { ${g_board_part} eq "u280" } {
   assign_bd_address -offset 0xE0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs hbm_0/SAXI_00/HBM_MEM14] -force
   assign_bd_address -offset 0xF0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces microblaze_0/Instruction] [get_bd_addr_segs hbm_0/SAXI_00/HBM_MEM15] -force
   assign_bd_address -offset 0xF0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs hbm_0/SAXI_00/HBM_MEM15] -force
-} else {
+}
+if { ${g_board_part} eq "u55c" } {
   assign_bd_address -offset 0x40000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs hbm_0/SAXI_01_8HI/HBM_MEM00] -force
   assign_bd_address -offset 0x60000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs hbm_0/SAXI_01_8HI/HBM_MEM01] -force
   assign_bd_address -offset 0x80000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces microblaze_0/Data] [get_bd_addr_segs hbm_0/SAXI_00_8HI/HBM_MEM04] -force
