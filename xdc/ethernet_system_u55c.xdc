@@ -151,7 +151,8 @@ set_property PACKAGE_PIN BK44               [get_ports "MEM_CLK_clk_n"] ;# Bank 
 set_property IOSTANDARD  LVDS               [get_ports "MEM_CLK_clk_n"] ;# Bank  65 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_A11_D27_65
 set_property PACKAGE_PIN BK43               [get_ports "MEM_CLK_clk_p"] ;# Bank  65 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_A10_D26_65
 set_property IOSTANDARD  LVDS               [get_ports "MEM_CLK_clk_p"] ;# Bank  65 VCCO - VCC1V8   - IO_L11P_T1U_N8_GC_A10_D26_65
-# create_clock -period 10.000 -name MEM_CLK [get_ports "MEM_CLK_clk_p"]
+#create_clock is needed because of passing MEM_CLK through diff buffer
+create_clock -period 10.000 -name MEM_CLK   [get_ports "MEM_CLK_clk_p"]
 
 #create_clock is not needed in case of connecting QSFP clock to 100Gb CMAC, but needed for 1Gb PHY (gig_ethernet_pcs_pma)
 set_property PACKAGE_PIN AD43              [get_ports "QSFP0_CLK_clk_n"] ;# Bank 130 - MGTREFCLK0N_130
