@@ -7,7 +7,7 @@ VIVADO_OPT  := -mode batch -nolog -nojournal -notrace -source
 FPGA_BOARD  ?= "u280"
 
 
-#Generate the Aurora DMA IP
+#Generate the 100Gb Ethernet IP
 
 generate_ip: clean
 		@(echo "Generate 100Gb Ethernet IP"); mkdir -p $(ROOT_DIR)/ip
@@ -15,9 +15,7 @@ generate_ip: clean
 
 
 clean:
-#	git clean -f
-	@(cd ip; find . -type f ! -name "*.tcl" -exec rm -r {} \;)
-	rm -rf xgui project bd
+	git clean -f -x -d 
 
 
 
