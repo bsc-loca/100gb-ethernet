@@ -50,6 +50,24 @@ set ip_core [ipx::current_core]
 set_property -dict ${ip_properties} ${ip_core}
 set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 
+ipx::add_user_parameter Board                                                    $ip_core
+set board_param [ipx::get_user_parameters Board -of_objects                      $ip_core]
+set_property value_resolve_type user                             $board_param
+ipgui::add_param -name {Board} -component                                        $ip_core
+set_property widget {comboBox} [ipgui::get_guiparamspec -name "Board" -component $ip_core]
+set_property value $g_board_part                                 $board_param
+set_property value_validation_type list                          $board_param
+set_property value_validation_list "$g_board_part $g_board_part" $board_param
+
+ipx::add_user_parameter QSFP_Port                                                    $ip_core
+set port_param [ipx::get_user_parameters QSFP_Port -of_objects                       $ip_core]
+set_property value_resolve_type user                         $port_param
+ipgui::add_param -name {QSFP_Port} -component                                        $ip_core
+set_property widget {comboBox} [ipgui::get_guiparamspec -name "QSFP_Port" -component $ip_core]
+set_property value ${g_eth_port}                             $port_param
+set_property value_validation_type list                      $port_param
+set_property value_validation_list "$g_eth_port $g_eth_port" $port_param
+
 ## Relative path to IP root directory
 ipx::create_xgui_files ${ip_core} -logo_file "$g_root_dir/misc/BSC-Logo.png"
 set_property type LOGO [ipx::get_files "$g_root_dir/misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]

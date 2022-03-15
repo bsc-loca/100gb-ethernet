@@ -22,6 +22,7 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
 
   global g_root_dir
   global g_board_part
+  global g_eth_port
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
@@ -338,7 +339,86 @@ current_bd_design $design_name
  ] $dma_loopback_fifo
 
   # Create instance: eth100gb, and set properties
-  source $g_root_dir/tcl/eth100gb_${g_board_part}.tcl
+  if { ${g_board_part} eq "u280" } {
+    set g_eth100gb_freq "156.25"
+    if { ${g_eth_port} eq "qsfp0" } {
+      set g_cmac_loc      "CMACE4_X0Y6"
+      set g_gt_grp_loc    "X0Y40~X0Y43"
+      set g_lane1_loc     "X0Y40"
+      set g_lane2_loc     "X0Y41"
+      set g_lane3_loc     "X0Y42"
+      set g_lane4_loc     "X0Y43"
+    }
+    if { ${g_eth_port} eq "qsfp1" } {
+      # set g_cmac_loc      "CMACE4_X0Y7"
+      # using non defualt for QSFP1 CMAC provides better timing
+      set g_cmac_loc      "CMACE4_X0Y6"
+      set g_gt_grp_loc    "X0Y44~X0Y47"
+      set g_lane1_loc     "X0Y44"
+      set g_lane2_loc     "X0Y45"
+      set g_lane3_loc     "X0Y46"
+      set g_lane4_loc     "X0Y47"
+    }
+  }
+  if { ${g_board_part} eq "u55c" } {
+    set g_eth100gb_freq "161.1328125"
+    if { ${g_eth_port} eq "qsfp0" } {
+      set g_cmac_loc      "CMACE4_X0Y3"
+      set g_gt_grp_loc    "X0Y24~X0Y27"
+      set g_lane1_loc     "X0Y24"
+      set g_lane2_loc     "X0Y25"
+      set g_lane3_loc     "X0Y26"
+      set g_lane4_loc     "X0Y27"
+    }
+    if { ${g_eth_port} eq "qsfp1" } {
+      set g_cmac_loc      "CMACE4_X0Y4"
+      set g_gt_grp_loc    "X0Y28~X0Y31"
+      set g_lane1_loc     "X0Y28"
+      set g_lane2_loc     "X0Y29"
+      set g_lane3_loc     "X0Y30"
+      set g_lane4_loc     "X0Y31"
+    }
+  }
+  set eth100gb [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus:3.1 eth100gb ]
+  set_property -dict [ list \
+   CONFIG.ADD_GT_CNRL_STS_PORTS {0} \
+   CONFIG.CMAC_CAUI4_MODE {1} \
+   CONFIG.CMAC_CORE_SELECT $g_cmac_loc \
+   CONFIG.DIFFCLK_BOARD_INTERFACE {Custom} \
+   CONFIG.ENABLE_AXI_INTERFACE {1} \
+   CONFIG.ENABLE_PIPELINE_REG {0} \
+   CONFIG.ENABLE_TIME_STAMPING {0} \
+   CONFIG.ETHERNET_BOARD_INTERFACE {Custom} \
+   CONFIG.GT_GROUP_SELECT $g_gt_grp_loc \
+   CONFIG.GT_REF_CLK_FREQ $g_eth100gb_freq \
+   CONFIG.GT_RX_BUFFER_BYPASS {0} \
+   CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {0} \
+   CONFIG.INCLUDE_RS_FEC {1} \
+   CONFIG.INCLUDE_STATISTICS_COUNTERS {1} \
+   CONFIG.LANE10_GT_LOC {NA} \
+   CONFIG.LANE1_GT_LOC $g_lane1_loc \
+   CONFIG.LANE2_GT_LOC $g_lane2_loc \
+   CONFIG.LANE3_GT_LOC $g_lane3_loc \
+   CONFIG.LANE4_GT_LOC $g_lane4_loc \
+   CONFIG.LANE5_GT_LOC {NA} \
+   CONFIG.LANE6_GT_LOC {NA} \
+   CONFIG.LANE7_GT_LOC {NA} \
+   CONFIG.LANE8_GT_LOC {NA} \
+   CONFIG.LANE9_GT_LOC {NA} \
+   CONFIG.NUM_LANES {4x25} \
+   CONFIG.PLL_TYPE {QPLL0} \
+   CONFIG.RX_CHECK_ACK {1} \
+   CONFIG.RX_EQ_MODE {AUTO} \
+   CONFIG.RX_FLOW_CONTROL {0} \
+   CONFIG.RX_FORWARD_CONTROL_FRAMES {0} \
+   CONFIG.RX_GT_BUFFER {1} \
+   CONFIG.RX_MAX_PACKET_LEN {9600} \
+   CONFIG.RX_MIN_PACKET_LEN {64} \
+   CONFIG.TX_FLOW_CONTROL {0} \
+   CONFIG.TX_OTN_INTERFACE {0} \
+   CONFIG.USER_INTERFACE {AXIS} \
+   CONFIG.USE_BOARD_FLOW {true} \
+ ] $eth100gb
   set_property USER_COMMENTS.comment_3 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=26" [get_bd_intf_pins /eth100gb/axis_rx]
   set_property USER_COMMENTS.comment_2 "https://www.xilinx.com/support/documentation/ip_documentation/l_ethernet/v3_1/pg211-50g-ethernet.pdf#page=23" [get_bd_intf_pins /eth100gb/axis_tx]
   set_property USER_COMMENTS.comment_1 "http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=117
