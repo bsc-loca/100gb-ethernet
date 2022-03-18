@@ -26,8 +26,6 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
-  puts "ROOT DIR: $g_root_dir"
-
 # This script was generated for a remote BD. To create a non-remote design,
 # change the variable <run_remote_bd_flow> to <0>.
 
