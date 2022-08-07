@@ -19,4 +19,4 @@
 
 
 
-vivado -mode batch -nolog -nojournal -notrace -source ./tcl/gen_project.tcl -tclargs $1 $2
+vivado -mode gui -nolog -nojournal -notrace -source ./tcl/gen_project.tcl -tclargs $1 $2 $3

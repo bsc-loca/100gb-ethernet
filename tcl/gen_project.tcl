@@ -57,6 +57,9 @@ if { $::argc > 0 } {
         if { $::argc > 1 } {
           set g_eth_port [lindex $argv 1]
         }
+        if { $::argc > 2 } {
+          set g_dma_mem  [lindex $argv 2]
+        }
 }
 
 set root_dir $g_root_dir

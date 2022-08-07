@@ -6,13 +6,14 @@ VIVADO_XLNX := $(VIVADO_PATH)/vivado
 VIVADO_OPT  := -mode batch -nolog -nojournal -notrace -source
 FPGA_BOARD  ?= "u280"
 QSFP_PORT   ?= "qsfp0"
+DMA_MEM     ?= "sram"
 
 
 #Generate the 100Gb Ethernet IP
 
 generate_ip: clean
 		@(echo "Generate 100Gb Ethernet IP"); mkdir -p $(ROOT_DIR)/ip
-		$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD) $(QSFP_PORT)
+		$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD) $(QSFP_PORT) $(DMA_MEM)
 
 
 clean:
