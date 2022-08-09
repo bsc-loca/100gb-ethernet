@@ -24,6 +24,7 @@
 
 //----- Replacement of built-in LwIP memory allocation with one based on dedicated Tx/Rx DMA memories
 #include "xparameters.h"
+#include "eth_defs.h"
 //We want DMA+100GbEth cores compliant memory alignment like for ETH_MEMPACK_SIZE in eth_test.cpp,
 //so for packet size below 2KB ((XAE_MAX_FRAME_SIZE-18) in xaxiemacif_dma.cpp) the alignment should be at least 2KB:
 #define ETH_WORD_SIZE 64
@@ -33,12 +34,12 @@
 #define LWIP_MEM_ALIGN_SIZE(size) (((size) + MEMPACK_ALIGN_SIZE-1) / MEMPACK_ALIGN_SIZE * MEMPACK_ALIGN_SIZE)
 
 // Buffers distribution table grabbed from LwIP execution
-#define ADDR_memp_memory_PBUF_POOL_base      XPAR_RX_MEM_CPU_S_AXI_BASEADDR
+#define ADDR_memp_memory_PBUF_POOL_base      RX_MEM_BASEADDR
 #define SIZE_memp_memory_PBUF_POOL_base      (4096*256)    // originally (1792 x pbuf_pool_size) for pbuf_pool_bufsize=1700 in LwIP config
 #define ADDR_RX_MEM_UNALLOC                  (ADDR_memp_memory_PBUF_POOL_base + \
                                               SIZE_memp_memory_PBUF_POOL_base)
 
-#define ADDR_ram_heap                        XPAR_TX_MEM_CPU_S_AXI_BASEADDR
+#define ADDR_ram_heap                        TX_MEM_BASEADDR
 #define SIZE_ram_heap                        (31*2048+4096)  // originally (mem_size + 128)
 #define ADDR_memp_memory_UDP_PCB_base        (ADDR_ram_heap + \
                                               SIZE_ram_heap)
@@ -86,5 +87,5 @@
 //Actual allocation function, sizes and memory fit violations are detected at compile time by zero division
 #define LWIP_DECLARE_MEMORY_ALIGNED(var_name, size) \
   uint8_t* const var_name = (uint8_t*)(ADDR_##var_name / (size == SIZE_##var_name && \
-                                                         (ADDR_RX_MEM_UNALLOC <= XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1) && \
-                                                         (ADDR_TX_MEM_UNALLOC <= XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1)))
+                                                         (ADDR_RX_MEM_UNALLOC <= RX_MEM_HIGHADDR+1) && \
+                                                         (ADDR_TX_MEM_UNALLOC <= TX_MEM_HIGHADDR+1)))

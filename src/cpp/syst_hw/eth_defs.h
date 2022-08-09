@@ -86,4 +86,28 @@
     ICMP_KNOWN_DATA_LEN     = 16  // ICMP known data length
   };
 
+#ifndef XPAR_SG_MEM_CPU_S_AXI_BASEADDR
+  // dummy SG memory definitions for simple DMA design
+  #define XPAR_SG_MEM_CPU_S_AXI_BASEADDR 0
+  #define XPAR_SG_MEM_CPU_S_AXI_HIGHADDR 0
+#endif
+
+#ifdef DMA_MEM_HBM
+  #define TX_MEM_BASEADDR 0xC0000000
+  #define RX_MEM_BASEADDR 0xD0000000
+  #define SG_MEM_BASEADDR 0xE0000000
+  // 2 MB per DMA mem cluster
+  #define TX_MEM_HIGHADDR 0xC01FFFFF
+  #define RX_MEM_HIGHADDR 0xD01FFFFF
+  #define SG_MEM_HIGHADDR 0xE01FFFFF
+#else
+  #define TX_MEM_BASEADDR XPAR_TX_MEM_CPU_S_AXI_BASEADDR
+  #define RX_MEM_BASEADDR XPAR_RX_MEM_CPU_S_AXI_BASEADDR
+  #define SG_MEM_BASEADDR XPAR_SG_MEM_CPU_S_AXI_BASEADDR
+
+  #define TX_MEM_HIGHADDR XPAR_TX_MEM_CPU_S_AXI_HIGHADDR
+  #define RX_MEM_HIGHADDR XPAR_RX_MEM_CPU_S_AXI_HIGHADDR
+  #define SG_MEM_HIGHADDR XPAR_SG_MEM_CPU_S_AXI_HIGHADDR
+#endif
+
 #endif // end of protection macro

@@ -205,12 +205,12 @@ int main(int argc, char *argv[])
 {
   EthSyst ethSyst; // Instance of the Ethernet System driver
   // Tx/Rx memories 
-  size_t const txMemSize  = (XPAR_TX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_TX_MEM_CPU_S_AXI_BASEADDR);
-  size_t const rxMemSize  = (XPAR_RX_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_RX_MEM_CPU_S_AXI_BASEADDR);
-  size_t const sgMemSize  = (XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 -
-                             XPAR_SG_MEM_CPU_S_AXI_BASEADDR);
+  size_t const txMemSize  = (TX_MEM_HIGHADDR+1 -
+                             TX_MEM_BASEADDR);
+  size_t const rxMemSize  = (RX_MEM_HIGHADDR+1 -
+                             RX_MEM_BASEADDR);
+  size_t const sgMemSize  = (SG_MEM_HIGHADDR+1 -
+                             SG_MEM_BASEADDR);
   size_t const extMemSize = sgMemSize/8; // small size just for testing
   size_t const txrxMemSize = std::min(txMemSize, rxMemSize);
   size_t const txMemWords  = txMemSize  / sizeof(uint32_t);
@@ -431,7 +431,11 @@ int main(int argc, char *argv[])
         xil_printf("------- SDRAM test PASSED -------\n\n");
 
 
-        xil_printf("------- Running DMA Tx/Rx/SG memory test -------\n");
+        #ifdef DMA_MEM_HBM
+        xil_printf("------- Running DMA Tx/Rx/SG memory test (HBM-based) -------\n");
+        #else
+        xil_printf("------- Running DMA Tx/Rx/SG memory test (SRAM-based) -------\n");
+        #endif
         xil_printf("Checking memories with random values from %0X to %0X \n", 0, RAND_MAX);
         // first clearing previously stored values
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = 0;

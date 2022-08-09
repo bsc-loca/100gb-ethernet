@@ -198,6 +198,7 @@
 #include "ethernet_system_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
 #include "xgpio.h"
 #include "xaxis_switch.h"
+#include "eth_defs.h"
 
 
 /**************************** Type Definitions *******************************/
@@ -233,24 +234,19 @@ class EthSyst {
   XIntc   intrCtrl; // Instance of Interrupt Controller
   XTmrCtr timerCnt; // Instance of Timer counter
   XAxiDma axiDma;   // AXI DMA instance definitions
-  // DMA Scatter-Gather memory Rx/Tx distribution
-  #ifndef XPAR_SG_MEM_CPU_S_AXI_BASEADDR
-    // dummy SG memory definitions for simple DMA design
-    #define XPAR_SG_MEM_CPU_S_AXI_BASEADDR 0
-    #define XPAR_SG_MEM_CPU_S_AXI_HIGHADDR 0
-  #endif
   float const TIMER_TICK = 10.; //ns
+  // DMA Scatter-Gather memory Rx/Tx distribution
   enum {
     ETH_MIN_PACK_SIZE = 64, // Limitations in 100Gb Ethernet IP (set in Vivado)
     ETH_MAX_PACK_SIZE = 9600,
-    TX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR,
-    TX_SG_MEM_SIZE = (XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 - TX_SG_MEM_ADDR)/2,
-    RX_SG_MEM_ADDR =  XPAR_SG_MEM_CPU_S_AXI_BASEADDR   + TX_SG_MEM_SIZE,
-    RX_SG_MEM_SIZE =  XPAR_SG_MEM_CPU_S_AXI_HIGHADDR+1 - RX_SG_MEM_ADDR
+    TX_SG_MEM_ADDR =  SG_MEM_BASEADDR,
+    TX_SG_MEM_SIZE = (SG_MEM_HIGHADDR+1 - TX_SG_MEM_ADDR)/2,
+    RX_SG_MEM_ADDR =  SG_MEM_BASEADDR   + TX_SG_MEM_SIZE,
+    RX_SG_MEM_SIZE =  SG_MEM_HIGHADDR+1 - RX_SG_MEM_ADDR
   };
-  uint32_t* txMem  = reinterpret_cast<uint32_t*>(XPAR_TX_MEM_CPU_S_AXI_BASEADDR); // Tx mem base address
-  uint32_t* rxMem  = reinterpret_cast<uint32_t*>(XPAR_RX_MEM_CPU_S_AXI_BASEADDR); // Rx mem base address
-  uint32_t* sgMem  = reinterpret_cast<uint32_t*>(XPAR_SG_MEM_CPU_S_AXI_BASEADDR); // SG mem base address
+  uint32_t* txMem  = reinterpret_cast<uint32_t*>(TX_MEM_BASEADDR); // Tx mem base address
+  uint32_t* rxMem  = reinterpret_cast<uint32_t*>(RX_MEM_BASEADDR); // Rx mem base address
+  uint32_t* sgMem  = reinterpret_cast<uint32_t*>(SG_MEM_BASEADDR); // SG mem base address
   uint32_t* ddrMem = reinterpret_cast<uint32_t*>(0x90000000); // a segment of external DDR connected via cache (HBM for U55C)
   uint32_t* sysMem = reinterpret_cast<uint32_t*>(0xF0000000); // a segment of external HBM connected via cache
   uint32_t* extMem = reinterpret_cast<uint32_t*>(0x70000000); // same segment of external HBM but connected directly

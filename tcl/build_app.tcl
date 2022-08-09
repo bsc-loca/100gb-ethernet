@@ -105,7 +105,22 @@ bsp config sys_debug   true
 bsp config stdout mdm_1
 bsp config stdin  mdm_1
 
-bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG \
+#Searching in hw project for any instance of DMA connection to HBM in order to use proper DMA memory address
+set file_xpr [open ./project/ethernet_system.xpr r]
+while {[gets $file_xpr line] >= 0} {
+  if {[string match "*dma_connect*" $line]} {
+    put "------ DMA memory is HBM-based in hw design, setting its addresses accordingly ------"
+    set DEF_DMA_MEM_HBM "-DDMA_MEM_HBM"
+    break
+  }
+}
+if {[eof $file_xpr]} {
+  put "------ DMA memory is SRAM-based in hw design, setting its addresses accordingly ------"
+  set DEF_DMA_MEM_HBM ""
+} 
+close $file_xpr
+
+bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG ${DEF_DMA_MEM_HBM} \
                                          -I../../../../../../../../../src/cpp/syst_hw \
                                          -I../../../../../../../../../src/cpp/lwip_hw \
                                   -imacros ../../../../../../../../../src/cpp/lwip_hw/lwip_extra_defs.h -Werror=div-by-zero"
@@ -221,7 +236,7 @@ importsources -name eth_test -path ./src/cpp/
 app config -name eth_test -set build-config release
 set lwip_xil_path "./xsct_ws/ethernet_system_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip211_v1_6/src/contrib/ports/xilinx/"
 app config -name eth_test -add compiler-misc "-std=c++17 -fpermissive -Wall -Og \
-                                              -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA \
+                                              -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA ${DEF_DMA_MEM_HBM} \
                                               -I../../../project \
                                               -I../../../src/cpp/syst_hw \
                                               -I../../../src/cpp/lwip_hw \

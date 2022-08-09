@@ -51,7 +51,6 @@
 #include <algorithm>
 
 #include "EthSyst.h"
-#include "eth_defs.h"
 
 //***************** Initialization of 100Gb Ethernet Core *****************
 void EthSyst::ethCoreInit(bool gtLoopback) {
