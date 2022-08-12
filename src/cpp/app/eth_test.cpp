@@ -226,11 +226,15 @@ int main(int argc, char *argv[])
         DMA_PACKET_LEN   = txrxMemSize/3     - sizeof(uint32_t), // the parameter to play with (no issies met for any values and granularities)
         ETH_PACKET_LEN   = ETH_WORD_SIZE*150 - sizeof(uint32_t), // the parameter to play with (no issues met for granularity=sizeof(uint32_t) and range=[(1...~150)*ETH_WORD_SIZE]
                                                                  // (defaults in Eth100Gb IP as min/max packet length=64...9600(but only upto 9596 works)))
+      #ifdef DMA_MEM_HBM
+        ETH_MEMPACK_SIZE = ETH_PACKET_LEN
+      #else
         ETH_MEMPACK_SIZE = ETH_PACKET_LEN > DMA_AXI_BURST/2  ? ((ETH_PACKET_LEN + DMA_AXI_BURST-1) / DMA_AXI_BURST) * DMA_AXI_BURST :
                            ETH_PACKET_LEN > DMA_AXI_BURST/4  ? DMA_AXI_BURST/2  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/8  ? DMA_AXI_BURST/4  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/16 ? DMA_AXI_BURST/8  :
                            ETH_PACKET_LEN > DMA_AXI_BURST/32 ? DMA_AXI_BURST/16 : ETH_PACKET_LEN
+      #endif
         // ETH_PACKET_DECR = 7*sizeof(uint32_t) // optional length decrement for some packets for test purposes
   };
   enum { // hardware defined depths of channels
@@ -733,7 +737,7 @@ int main(int argc, char *argv[])
                     std::min(ethSyst.txBdCount,
                              ethSyst.rxBdCount));
         size_t txBunch = ETH_PACKET_LEN > ETH_WORD_SIZE*4 ? 1 : packets; // whole bunch Tx kick-off for small packets
-        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet mem alignment: %d bytes) \n",
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         dmaTxMemPtr = size_t(ethSyst.txMem);
         dmaRxMemPtr = size_t(ethSyst.rxMem);
@@ -953,7 +957,7 @@ int main(int argc, char *argv[])
                     std::min(ethSyst.txBdCount,
                              ethSyst.rxBdCount));
         size_t txBunch = ETH_PACKET_LEN > ETH_WORD_SIZE*4 ? 1 : packets; // whole bunch Tx kick-off for small packets
-        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet mem alignment: %d bytes) \n",
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         size_t dmaTxMemPtr = size_t(ethSyst.txMem);
         size_t dmaRxMemPtr = size_t(ethSyst.rxMem);
@@ -1036,7 +1040,7 @@ int main(int argc, char *argv[])
                     std::min(ethSyst.txBdCount,
                              ethSyst.rxBdCount));
         txBunch = ETH_PACKET_LEN > ETH_WORD_SIZE*4 ? 1 : packets; // whole bunch Tx kick-off for small packets
-        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet allocation %d bytes) \n",
+        xil_printf("DMA: Transferring %d whole packets with length %d bytes between memories with common size %d bytes (packet mem alignment: %d bytes) \n",
                     packets, ETH_PACKET_LEN, txrxMemSize, ETH_MEMPACK_SIZE);
         dmaTxMemPtr = size_t(ethSyst.txMem);
         dmaRxMemPtr = size_t(ethSyst.rxMem);

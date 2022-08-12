@@ -109,13 +109,13 @@ bsp config stdin  mdm_1
 set file_xpr [open ./project/ethernet_system.xpr r]
 while {[gets $file_xpr line] >= 0} {
   if {[string match "*dma_connect*" $line]} {
-    put "------ DMA memory is HBM-based in hw design, setting its addresses accordingly ------"
+    put "----- DMA memory is HBM-based in hw design, setting its addresses accordingly"
     set DEF_DMA_MEM_HBM "-DDMA_MEM_HBM"
     break
   }
 }
 if {[eof $file_xpr]} {
-  put "------ DMA memory is SRAM-based in hw design, setting its addresses accordingly ------"
+  put "----- DMA memory is SRAM-based in hw design, setting its addresses accordingly"
   set DEF_DMA_MEM_HBM ""
 } 
 close $file_xpr
@@ -268,7 +268,8 @@ app build all
 #This leads the first build to error: "LWIP_NETIF_TX_SINGLE_PBUF needs TCP_OVERSIZE enabled to create single-pbuf TCP packets"
 #because of auto-generated during it lwipopts.h with TCP_OVERSIZE=0. The snippet below fixes this and runs the build once again.
 put ""
-put "The build has finished with known error, fixing it in auto-generated lwipopts.h and running the build once again..."
+put "----- The build has finished with known error,"
+put "----- fixing it in auto-generated lwipopts.h and running the build once again..."
 put ""
 app clean all
 set file_orig  [open ${lwip_xil_path}/include/lwipopts.h       r]

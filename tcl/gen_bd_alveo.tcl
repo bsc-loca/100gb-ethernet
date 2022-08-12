@@ -568,6 +568,19 @@ if { ${g_dma_mem} eq "hbm" } {
    CONFIG.S00_HAS_DATA_FIFO {0} \
    CONFIG.S00_HAS_REGSLICE {0} \
  ] $dma_connect_tx
+
+  # Create instance: dma_rx_fifo, and set properties
+  set dma_rx_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 dma_rx_fifo ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {256} \
+ ] $dma_rx_fifo
+
+  # Create instance: dma_tx_fifo, and set properties
+  set dma_tx_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 dma_tx_fifo ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {256} \
+   CONFIG.FIFO_MODE {2} \
+ ] $dma_tx_fifo
 }
 
   # Create instance: eth100gb, and set properties
@@ -1184,7 +1197,6 @@ if { ${g_board_part} eq "u55c" } {
   # Create interface connections
   connect_bd_intf_net -intf_net CLK_IN1_D_0_1 [get_bd_intf_ports SYS_CLK] [get_bd_intf_pins sys_clk_gen/CLK_IN1_D]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins tx_mem/BRAM_PORTA] [get_bd_intf_pins tx_mem_cpu/BRAM_PORTA]
-  connect_bd_intf_net -intf_net axi_dma_0_M_AXIS_MM2S [get_bd_intf_pins eth_dma/M_AXIS_MM2S] [get_bd_intf_pins tx_axis_switch/S01_AXIS]
   connect_bd_intf_net -intf_net axi_uartlite_0_UART [get_bd_intf_ports UART] [get_bd_intf_pins axi_uartlite_0/UART]
   connect_bd_intf_net -intf_net axis_broadcaster_0_M00_AXIS [get_bd_intf_pins axis_broadcaster_0/M00_AXIS] [get_bd_intf_pins microblaze_0/S0_AXIS]
   connect_bd_intf_net -intf_net axis_broadcaster_0_M01_AXIS [get_bd_intf_pins axis_broadcaster_0/M01_AXIS] [get_bd_intf_pins microblaze_0/S1_AXIS]
@@ -1232,7 +1244,6 @@ if { ${g_board_part} eq "u55c" } {
   connect_bd_intf_net -intf_net microblaze_0_ilmb_1 [get_bd_intf_pins microblaze_0/ILMB] [get_bd_intf_pins microblaze_0_local_memory/ILMB]
   connect_bd_intf_net -intf_net microblaze_0_interrupt [get_bd_intf_pins microblaze_0/INTERRUPT] [get_bd_intf_pins microblaze_0_axi_intc/interrupt]
   connect_bd_intf_net -intf_net periph_connect_M14_AXI [get_bd_intf_pins axi_uartlite_0/S_AXI] [get_bd_intf_pins periph_connect/M14_AXI]
-  connect_bd_intf_net -intf_net rx_axis_switch_M01_AXIS [get_bd_intf_pins eth_dma/S_AXIS_S2MM] [get_bd_intf_pins rx_axis_switch/M01_AXIS]
   connect_bd_intf_net -intf_net rx_fifo_M_AXIS [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins rx_fifo/M_AXIS]
   connect_bd_intf_net -intf_net rx_mem_ctr_BRAM_PORTA [get_bd_intf_pins rx_mem/BRAM_PORTA] [get_bd_intf_pins rx_mem_cpu/BRAM_PORTA]
   connect_bd_intf_net -intf_net rx_switch_M00_AXIS [get_bd_intf_pins rx_axis_switch/M00_AXIS] [get_bd_intf_pins rx_fifo/S_AXIS]
@@ -1274,6 +1285,8 @@ if { ${g_eth_port} eq "qsfp1" } {
   connect_bd_intf_net -intf_net qsfp1_156mhz_1 [get_bd_intf_ports QSFP0_CLK] [get_bd_intf_pins gig_eth_phy/gtrefclk_in]
 }
 if { ${g_dma_mem} eq "sram" } {
+  connect_bd_intf_net -intf_net axi_dma_0_M_AXIS_MM2S [get_bd_intf_pins eth_dma/M_AXIS_MM2S] [get_bd_intf_pins tx_axis_switch/S01_AXIS]
+  connect_bd_intf_net -intf_net rx_axis_switch_M01_AXIS [get_bd_intf_pins eth_dma/S_AXIS_S2MM] [get_bd_intf_pins rx_axis_switch/M01_AXIS]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_MM2S [get_bd_intf_pins eth_dma/M_AXI_MM2S] [get_bd_intf_pins tx_mem_dma/S_AXI]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_S2MM [get_bd_intf_pins eth_dma/M_AXI_S2MM] [get_bd_intf_pins rx_mem_dma/S_AXI]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_SG [get_bd_intf_pins eth_dma/M_AXI_SG] [get_bd_intf_pins sg_mem_dma/S_AXI]
@@ -1282,6 +1295,10 @@ if { ${g_dma_mem} eq "sram" } {
   connect_bd_intf_net -intf_net tx_mem_dma_BRAM_PORTA [get_bd_intf_pins tx_mem/BRAM_PORTB] [get_bd_intf_pins tx_mem_dma/BRAM_PORTA]
 }
 if { ${g_dma_mem} eq "hbm" } {
+  connect_bd_intf_net -intf_net rx_axis_switch_M01_AXIS [get_bd_intf_pins dma_rx_fifo/S_AXIS] [get_bd_intf_pins rx_axis_switch/M01_AXIS]
+  connect_bd_intf_net -intf_net dma_rx_fifo_M_AXIS [get_bd_intf_pins dma_rx_fifo/M_AXIS] [get_bd_intf_pins eth_dma/S_AXIS_S2MM]
+  connect_bd_intf_net -intf_net dma_tx_fifo_M_AXIS [get_bd_intf_pins dma_tx_fifo/M_AXIS] [get_bd_intf_pins tx_axis_switch/S01_AXIS]
+  connect_bd_intf_net -intf_net eth_dma_M_AXIS_MM2S [get_bd_intf_pins dma_tx_fifo/S_AXIS] [get_bd_intf_pins eth_dma/M_AXIS_MM2S]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_MM2S [get_bd_intf_pins dma_connect_tx/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_MM2S]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_S2MM [get_bd_intf_pins dma_connect_rx/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_S2MM]
   connect_bd_intf_net -intf_net eth_dma_M_AXI_SG [get_bd_intf_pins dma_connect_sg/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_SG]
@@ -1399,14 +1416,14 @@ if { ${g_dma_mem} eq "sram" } {
   connect_bd_net -net eth_dma_mm2s_prmry_reset_out_n [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins loopback_fifo/s_axis_aresetn] [get_bd_pins tx_axis_switch/aresetn] [get_bd_pins tx_mem_dma/s_axi_aresetn]
 }
 if { ${g_dma_mem} eq "hbm" } {
-  connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins axi_reg_slice_rx/aclk] [get_bd_pins dma_connect_rx/ACLK] [get_bd_pins dma_connect_rx/M00_ACLK] [get_bd_pins dma_connect_rx/S00_ACLK] [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth100gb/rx_clk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins hbm_0/AXI_03_ACLK] [get_bd_pins loopback_fifo/m_axis_aclk] [get_bd_pins rx_axis_switch/aclk] [get_bd_pins rx_fifo/s_axis_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
-  connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins axi_reg_slice_tx/aclk] [get_bd_pins dma_connect_tx/ACLK] [get_bd_pins dma_connect_tx/M00_ACLK] [get_bd_pins dma_connect_tx/S00_ACLK] [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins hbm_0/AXI_02_ACLK] [get_bd_pins loopback_fifo/s_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/m_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
+  connect_bd_net -net cmac_usplus_0_gt_rxusrclk2 [get_bd_pins axi_reg_slice_rx/aclk] [get_bd_pins dma_connect_rx/ACLK] [get_bd_pins dma_connect_rx/M00_ACLK] [get_bd_pins dma_connect_rx/S00_ACLK] [get_bd_pins dma_rx_fifo/s_axis_aclk] [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth100gb/rx_clk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins hbm_0/AXI_03_ACLK] [get_bd_pins loopback_fifo/m_axis_aclk] [get_bd_pins rx_axis_switch/aclk] [get_bd_pins rx_fifo/s_axis_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
+  connect_bd_net -net cmac_usplus_0_gt_txusrclk2 [get_bd_pins axi_reg_slice_tx/aclk] [get_bd_pins dma_connect_tx/ACLK] [get_bd_pins dma_connect_tx/M00_ACLK] [get_bd_pins dma_connect_tx/S00_ACLK] [get_bd_pins dma_tx_fifo/s_axis_aclk] [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins hbm_0/AXI_02_ACLK] [get_bd_pins loopback_fifo/s_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/m_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
   connect_bd_net -net rx_rst_gen_interconnect_aresetn [get_bd_pins axi_reg_slice_rx/aresetn] [get_bd_pins rx_rst_gen/interconnect_aresetn]
   connect_bd_net -net rx_rst_gen_peripheral_aresetn [get_bd_pins hbm_0/AXI_03_ARESET_N] [get_bd_pins rx_rst_gen/peripheral_aresetn]
-  connect_bd_net -net eth_dma_s2mm_prmry_reset_out_n [get_bd_pins dma_connect_rx/ARESETN] [get_bd_pins dma_connect_rx/M00_ARESETN] [get_bd_pins dma_connect_rx/S00_ARESETN] [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins rx_axis_switch/aresetn] [get_bd_pins rx_fifo/s_axis_aresetn]
+  connect_bd_net -net eth_dma_s2mm_prmry_reset_out_n [get_bd_pins dma_connect_rx/ARESETN] [get_bd_pins dma_connect_rx/M00_ARESETN] [get_bd_pins dma_connect_rx/S00_ARESETN] [get_bd_pins dma_rx_fifo/s_axis_aresetn] [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins rx_axis_switch/aresetn] [get_bd_pins rx_fifo/s_axis_aresetn]
   connect_bd_net -net tx_rst_gen_interconnect_aresetn [get_bd_pins axi_reg_slice_tx/aresetn] [get_bd_pins tx_rst_gen/interconnect_aresetn]
   connect_bd_net -net tx_rst_gen_peripheral_aresetn [get_bd_pins hbm_0/AXI_02_ARESET_N] [get_bd_pins tx_rst_gen/peripheral_aresetn]
-  connect_bd_net -net eth_dma_mm2s_prmry_reset_out_n [get_bd_pins dma_connect_tx/ARESETN] [get_bd_pins dma_connect_tx/M00_ARESETN] [get_bd_pins dma_connect_tx/S00_ARESETN] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins loopback_fifo/s_axis_aresetn] [get_bd_pins tx_axis_switch/aresetn]
+  connect_bd_net -net eth_dma_mm2s_prmry_reset_out_n [get_bd_pins dma_connect_tx/ARESETN] [get_bd_pins dma_connect_tx/M00_ARESETN] [get_bd_pins dma_connect_tx/S00_ARESETN] [get_bd_pins dma_tx_fifo/s_axis_aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins loopback_fifo/s_axis_aresetn] [get_bd_pins tx_axis_switch/aresetn]
 }
 
   # Create address segments
