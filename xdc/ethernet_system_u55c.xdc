@@ -1423,7 +1423,7 @@ set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes       [current_design]
 #excluding AXI register slices intended to facilitate SLR crossing on the way to/from HBM located in SLR0
 set tx_clk_units [get_cells -filter {NAME !~ *axi_reg_slice_tx && NAME !~ *tx_rst_gen} -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_txusrclk2]]]
 set rx_clk_units [get_cells -filter {NAME !~ *axi_reg_slice_rx && NAME !~ *rx_rst_gen} -of_objects [get_nets -of_objects [get_pins -hierarchical eth100gb/gt_rxusrclk2]]]
-#Since clocks are not applied to memories explicitly in BD, include them separately to SLR placement.
+#Since clocks are not applied to memories explicitly in BD, include them explicitly to SLR placement.
 set eth_txmem [get_cells -hierarchical tx_mem]
 set eth_rxmem [get_cells -hierarchical rx_mem]
 #Setting specific SLR to which QSFP are wired since placer may miss it if just "group_name" is applied
