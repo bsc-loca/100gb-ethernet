@@ -19,10 +19,10 @@ set family_lifecycle { \
   virtexuplusHBM Production \
 }
 
-file mkdir ${root_dir}/${g_qsfp_port}
+file mkdir ${root_dir}/uart
 
 # Package project and set properties
-ipx::package_project -root_dir ${root_dir}/${g_qsfp_port} -import_files
+ipx::package_project -root_dir ${root_dir}/uart -import_files
 set ip_core [ipx::current_core]
 set_property -dict ${ip_properties} ${ip_core}
 set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}

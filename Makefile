@@ -11,8 +11,8 @@ all: uart
 #Generate the Ethernet IP
 
 uart: 
-	@(echo "Generate CVA6 UART IP for the Alveo $(FPGA_BOARD))
-	$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD) $@
+	@(echo "Generate CVA6 UART IP for the Alveo $(FPGA_BOARD)")
+	$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD)
 	@(echo "IP created under folder $@")
 
 

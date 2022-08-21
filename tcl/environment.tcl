@@ -17,3 +17,4 @@ set g_root_dir    $script_folder/../
 set g_project_dir ${g_root_dir}/project    
 set g_design_name ${g_project_name}          
 set g_useBlockDesign n 	  
+set g_top_module_name "alveo_uart_top"
