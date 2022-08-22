@@ -31,10 +31,10 @@ entity apb_uart_top is
     OUT2N : out std_logic;              -- Output 2
     RTSN  : out std_logic;              -- RTS output
     DTRN  : out std_logic;              -- DTR output
-    CTSN  : in  std_logic;              -- CTS input
-    DSRN  : in  std_logic;              -- DSR input
-    DCDN  : in  std_logic;              -- DCD input
-    RIN   : in  std_logic;              -- RI input
+    CTSN  : in  std_logic := '0';       -- CTS input
+    DSRN  : in  std_logic := '0';       -- DSR input
+    DCDN  : in  std_logic := '0';       -- DCD input
+    RIN   : in  std_logic := '0';       -- RI input
     SIN   : in  std_logic;              -- Receiver input
     SOUT  : out std_logic               -- Transmitter output
 
