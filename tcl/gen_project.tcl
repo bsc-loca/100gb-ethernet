@@ -13,14 +13,17 @@ source $script_folder/environment.tcl
 
 # Redefine the FPGA part in case the script is called with arguments
 # It defaults to u280
-if { $::argc == 1 } {
+if { $::argc >= 1 } {
 
         set g_board_part [lindex $argv 0]
         set g_fpga_part "xc${g_board_part}-fsvh2892-2L-e"
 
-} else {
-	puts "Error: Bad usage. This script must receive the Alveo Board code (u280/u55c)"
+} 
+if { $::argc == 2} {
+
+	set AxiAddrWidth [lindex $argv 1]
 }
+
 set root_dir $g_root_dir
 set g_project_name $g_project_name
 set projec_dir $root_dir/project

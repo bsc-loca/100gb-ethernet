@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 -- Serial UART
-entity apb_uart_top is
+entity meep_uart_top is
   port (
     s_axi_aclk    : in  std_logic;
     s_axi_aresetn : in  std_logic;
@@ -39,10 +39,10 @@ entity apb_uart_top is
     SOUT  : out std_logic               -- Transmitter output
 
     );
-end apb_uart_top;
+end meep_uart_top;
 
 
-architecture rtl of apb_uart_top is
+architecture rtl of meep_uart_top is
 
  -- Xilinx APB Axi bridge
   component axi_apb_bridge_0

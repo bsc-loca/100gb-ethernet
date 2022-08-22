@@ -4,18 +4,19 @@ VIVADO_PATH := /opt/Xilinx/Vivado/$(VIVADO_VER)/bin/
 VIVADO_XLNX := $(VIVADO_PATH)/vivado
 VIVADO_OPT  := -mode batch -nolog -nojournal -notrace -source
 FPGA_BOARD  ?= u55c
+AXI_AWIDTH  ?= 32
 
 
 DEVICE = uart
 
 all: uart
 
-#Generate the Ethernet IP
+#Generate the UART IP
 
 $(DEVICE): 
-	@(echo "Generate CVA6 UART IP for the Alveo $(FPGA_BOARD)")
-	$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD)
-	@(echo "IP created under folder $@")
+	@(echo "Generate a 16[6|7]50 UART IP for MEEP")
+	$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD) $(AXI_AWIDTH)
+	@(echo "IP created under folder /$@")
 
 
 clean:

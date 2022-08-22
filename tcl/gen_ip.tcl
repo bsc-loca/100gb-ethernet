@@ -29,13 +29,13 @@ set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 
 ## Custom IP section
 
-ipx::infer_bus_interfaces xilinx.com:interface:apb_rtl:1.0 [ipx::current_core]
-ipx::infer_bus_interfaces xilinx.com:interface:uart_rtl:1.0 [ipx::current_core]
+ipx::infer_bus_interfaces xilinx.com:interface:apb_rtl:1.0 $ip_core
+ipx::infer_bus_interfaces xilinx.com:interface:uart_rtl:1.0 $ip_core
 
-set_property driver_value 0 [ipx::get_ports CTSN -of_objects [ipx::current_core]]
-set_property driver_value 0 [ipx::get_ports DSRN -of_objects [ipx::current_core]]
-set_property driver_value 0 [ipx::get_ports DCDN -of_objects [ipx::current_core]]
-set_property driver_value 0 [ipx::get_ports RIN -of_objects [ipx::current_core]]
+set_property driver_value 0 [ipx::get_ports CTSN -of_objects $ip_core ]
+set_property driver_value 0 [ipx::get_ports DSRN -of_objects $ip_core ]
+set_property driver_value 0 [ipx::get_ports DCDN -of_objects $ip_core ]
+set_property driver_value 0 [ipx::get_ports RIN -of_objects  $ip_core ]
 
 
 ## Custom ends here
@@ -43,9 +43,7 @@ set_property driver_value 0 [ipx::get_ports RIN -of_objects [ipx::current_core]]
 
 ## Relative path to IP root directory
 ipx::create_xgui_files ${ip_core} -logo_file "${root_dir}/misc/BSC-Logo.png"
-set_property type LOGO [ipx::get_files "${root_dir}/misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]
-
-ipx::merge_project_changes ports [ipx::current_core]
+set_property type LOGO [ipx::get_files "${root_dir}/misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects $ip_core]]
 
 
 # Save IP and close project
