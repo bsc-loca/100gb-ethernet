@@ -44,8 +44,7 @@ end apb_uart_top;
 
 architecture rtl of apb_uart_top is
 
-
-------------- Begin Cut here for COMPONENT Declaration ------ COMP_TAG
+ -- Xilinx APB Axi bridge
   component axi_apb_bridge_0
     port (
       s_axi_aclk    : in  std_logic;
