@@ -37,10 +37,7 @@ ipx::infer_bus_interfaces xilinx.com:interface:uart_rtl:1.0 [ipx::current_core]
 ipx::create_xgui_files ${ip_core} -logo_file "${root_dir}/misc/BSC-Logo.png"
 set_property type LOGO [ipx::get_files "${root_dir}/misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]
 
-#ipx::add_bus_parameter FREQ_HZ [ipx::get_bus_interfaces ETH0_TX_AXIS -of_objects [ipx::current_core]]
-#ipx::add_bus_parameter FREQ_HZ [ipx::get_bus_interfaces ETH0_RX_AXIS -of_objects [ipx::current_core]]
-ipx::associate_bus_interfaces -busif ETH0_TX_AXIS -clock eth_gt_user_clock [ipx::current_core]
-ipx::associate_bus_interfaces -busif ETH0_RX_AXIS -clock eth_gt_user_clock [ipx::current_core]
+ipx::merge_project_changes ports [ipx::current_core]
 
 
 # Save IP and close project

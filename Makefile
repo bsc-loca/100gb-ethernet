@@ -6,11 +6,13 @@ VIVADO_OPT  := -mode batch -nolog -nojournal -notrace -source
 FPGA_BOARD  ?= u55c
 
 
+DEVICE = uart
+
 all: uart
 
 #Generate the Ethernet IP
 
-uart: 
+$(DEVICE): 
 	@(echo "Generate CVA6 UART IP for the Alveo $(FPGA_BOARD)")
 	$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD)
 	@(echo "IP created under folder $@")
@@ -19,7 +21,7 @@ uart:
 clean:
 	git clean -f
 	@(cd ip; find . -type f ! -name "*.tcl" -exec rm -r {} \;)
-	rm -rf xgui project qsfp*
+	rm -rf xgui project uart
 
 
 
