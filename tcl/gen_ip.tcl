@@ -37,6 +37,8 @@ set_property driver_value 0 [ipx::get_ports DSRN -of_objects $ip_core ]
 set_property driver_value 0 [ipx::get_ports DCDN -of_objects $ip_core ]
 set_property driver_value 0 [ipx::get_ports RIN -of_objects  $ip_core ]
 
+set_property name S_AXI [ipx::get_bus_interfaces s_axi -of_objects $ip_core]
+
 
 ## Custom ends here
 
