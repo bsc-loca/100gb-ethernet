@@ -42,13 +42,13 @@ entity apb_uart is
         PSEL        : in std_logic;                             -- APB psel signal
         PENABLE     : in std_logic;                             -- APB penable signal
         PWRITE      : in std_logic;                             -- APB pwrite signal
-        PADDR       : in std_logic_vector(2 downto 0);          -- APB paddr signal
+        PADDR       : in std_logic_vector(4 downto 0);          -- APB paddr signal
       	PWDATA      : in std_logic_vector(31 downto 0);         -- APB pwdata signal
       	PRDATA      : out std_logic_vector(31 downto 0);        -- APB prdata signal
         PREADY      : out std_logic;                            -- APB pready signal
         PSLVERR     : out std_logic;                            -- APB pslverr signal
 
-        INT         : out std_logic;                            -- Interrupt output
+        INTERRUPT   : out std_logic;                            -- Interrupt output
 
         OUT1N       : out std_logic;                            -- Output 1
         OUT2N       : out std_logic;                            -- Output 2
@@ -379,18 +379,18 @@ begin
     iRST   <= '1' when RSTN = '0' else '0';
 
     -- UART registers read/write signals
-    iRBRRead  <= '1' when iRead  = '1' and PADDR = "000" and iLCR_DLAB = '0' else '0';
-    iTHRWrite <= '1' when iWrite = '1' and PADDR = "000" and iLCR_DLAB = '0' else '0';
-    iDLLWrite <= '1' when iWrite = '1' and PADDR = "000" and iLCR_DLAB = '1' else '0';
-    iDLMWrite <= '1' when iWrite = '1' and PADDR = "001" and iLCR_DLAB = '1' else '0';
-    iIERWrite <= '1' when iWrite = '1' and PADDR = "001" and iLCR_DLAB = '0' else '0';
-    iIIRRead  <= '1' when iRead  = '1' and PADDR = "010" else '0';
-    iFCRWrite <= '1' when iWrite = '1' and PADDR = "010" else '0';
-    iLCRWrite <= '1' when iWrite = '1' and PADDR = "011" else '0';
-    iMCRWrite <= '1' when iWrite = '1' and PADDR = "100" else '0';
-    iLSRRead  <= '1' when iRead  = '1' and PADDR = "101" else '0';
-    iMSRRead  <= '1' when iRead  = '1' and PADDR = "110" else '0';
-    iSCRWrite <= '1' when iWrite = '1' and PADDR = "111" else '0';
+    iRBRRead  <= '1' when iRead  = '1' and PADDR = "00000" and iLCR_DLAB = '0' else '0';
+    iTHRWrite <= '1' when iWrite = '1' and PADDR = "00000" and iLCR_DLAB = '0' else '0';
+    iDLLWrite <= '1' when iWrite = '1' and PADDR = "00000" and iLCR_DLAB = '1' else '0';
+    iDLMWrite <= '1' when iWrite = '1' and PADDR = "00100" and iLCR_DLAB = '1' else '0';
+    iIERWrite <= '1' when iWrite = '1' and PADDR = "00100" and iLCR_DLAB = '0' else '0';
+    iIIRRead  <= '1' when iRead  = '1' and PADDR = "01000" else '0';
+    iFCRWrite <= '1' when iWrite = '1' and PADDR = "01000" else '0';
+    iLCRWrite <= '1' when iWrite = '1' and PADDR = "01100" else '0';
+    iMCRWrite <= '1' when iWrite = '1' and PADDR = "10000" else '0';
+    iLSRRead  <= '1' when iRead  = '1' and PADDR = "10100" else '0';
+    iMSRRead  <= '1' when iRead  = '1' and PADDR = "11000" else '0';
+    iSCRWrite <= '1' when iWrite = '1' and PADDR = "11100" else '0';
 
     -- Async. input synchronization
     UART_IS_SIN: slib_input_sync port map (CLK, iRST, SIN,  iSINr);
@@ -451,7 +451,7 @@ begin
                                        AFE => iMCR_AFE,
                                        MSR => iMSR(3 downto 0),
                                        IIR => iIIR(3 downto 0),
-                                       INT => INT
+                                       INT => INTERRUPT
                                       );
     -- THR empty interrupt
     UART_IIC_THRE_ED: slib_edge_detect port map (CLK => CLK, RST => iRST, D => iLSR_THRE, RE => iLSR_THRERE);
@@ -1004,23 +1004,23 @@ begin
     UART_DOUT: process (PADDR, iLCR_DLAB, iRBR, iDLL, iDLM, iIER, iIIR, iLCR, iMCR, iLSR, iMSR, iSCR)
     begin
         case PADDR is
-            when "000"  =>  if (iLCR_DLAB = '0') then
+            when "00000"  =>  if (iLCR_DLAB = '0') then
                                 PRDATA(7 downto 0) <= iRBR;
                             else
                                 PRDATA(7 downto 0) <= iDLL;
                             end if;
-            when "001"  =>  if (iLCR_DLAB = '0') then
+            when "00100"  =>  if (iLCR_DLAB = '0') then
                                 PRDATA(7 downto 0) <= iIER;
                             else
                                 PRDATA(7 downto 0) <= iDLM;
                             end if;
-            when "010"  =>  PRDATA(7 downto 0) <= iIIR;
-            when "011"  =>  PRDATA(7 downto 0) <= iLCR;
-            when "100"  =>  PRDATA(7 downto 0) <= iMCR;
-            when "101"  =>  PRDATA(7 downto 0) <= iLSR;
-            when "110"  =>  PRDATA(7 downto 0) <= iMSR;
-            when "111"  =>  PRDATA(7 downto 0) <= iSCR;
-            when others =>  PRDATA(7 downto 0) <= iRBR;
+            when "01000"  =>  PRDATA(7 downto 0) <= iIIR;
+            when "01100"  =>  PRDATA(7 downto 0) <= iLCR;
+            when "10000"  =>  PRDATA(7 downto 0) <= iMCR;
+            when "10100"  =>  PRDATA(7 downto 0) <= iLSR;
+            when "11000"  =>  PRDATA(7 downto 0) <= iMSR;
+            when "11100"  =>  PRDATA(7 downto 0) <= iSCR;
+            when others   =>  PRDATA(7 downto 0) <= iRBR;
         end case;
     end process;
 

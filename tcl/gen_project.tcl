@@ -52,7 +52,7 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 ####################################################
 #set g_top_name ${g_project_name}_top
 
-set top_module "$root_dir/src/${g_top_module_name}.v"
+set top_module "$root_dir/src/${g_top_module_name}.vhd"
 #set src_files [glob ${root_dir}/src/*]
 #set ip_files [glob -nocomplain ${root_dir}/ip/*/*.xci]
 #add_files ${src_files}

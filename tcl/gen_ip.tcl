@@ -27,6 +27,11 @@ set ip_core [ipx::current_core]
 set_property -dict ${ip_properties} ${ip_core}
 set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 
+ipx::infer_bus_interfaces xilinx.com:interface:apb_rtl:1.0 [ipx::current_core]
+ipx::infer_bus_interfaces xilinx.com:interface:uart_rtl:1.0 [ipx::current_core]
+
+
+
 
 ## Relative path to IP root directory
 ipx::create_xgui_files ${ip_core} -logo_file "${root_dir}/misc/BSC-Logo.png"
