@@ -4,10 +4,13 @@ use IEEE.numeric_std.all;
 
 -- Serial UART
 entity meep_uart_top is
+  generic (
+    G_ADDR_WIDTH : integer := 13
+  );
   port (
     s_axi_aclk    : in  std_logic;
     s_axi_aresetn : in  std_logic;
-    s_axi_awaddr  : in  std_logic_vector(31 downto 0);
+    s_axi_awaddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
     s_axi_awvalid : in  std_logic;
     s_axi_awready : out std_logic;
     s_axi_wdata   : in  std_logic_vector(31 downto 0);
@@ -16,7 +19,7 @@ entity meep_uart_top is
     s_axi_bresp   : out std_logic_vector(1 downto 0);
     s_axi_bvalid  : out std_logic;
     s_axi_bready  : in  std_logic;
-    s_axi_araddr  : in  std_logic_vector(31 downto 0);
+    s_axi_araddr  : in  std_logic_vector (G_ADDR_WIDTH-1 downto 0);
     s_axi_arvalid : in  std_logic;
     s_axi_arready : out std_logic;
     s_axi_rdata   : out std_logic_vector(31 downto 0);
@@ -49,7 +52,7 @@ architecture rtl of meep_uart_top is
     port (
       s_axi_aclk    : in  std_logic;
       s_axi_aresetn : in  std_logic;
-      s_axi_awaddr  : in  std_logic_vector(31 downto 0);
+      s_axi_awaddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
       s_axi_awvalid : in  std_logic;
       s_axi_awready : out std_logic;
       s_axi_wdata   : in  std_logic_vector(31 downto 0);
@@ -58,7 +61,7 @@ architecture rtl of meep_uart_top is
       s_axi_bresp   : out std_logic_vector(1 downto 0);
       s_axi_bvalid  : out std_logic;
       s_axi_bready  : in  std_logic;
-      s_axi_araddr  : in  std_logic_vector(31 downto 0);
+      s_axi_araddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
       s_axi_arvalid : in  std_logic;
       s_axi_arready : out std_logic;
       s_axi_rdata   : out std_logic_vector(31 downto 0);
