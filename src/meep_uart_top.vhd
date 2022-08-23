@@ -68,7 +68,7 @@ architecture rtl of meep_uart_top is
       s_axi_rresp   : out std_logic_vector(1 downto 0);
       s_axi_rvalid  : out std_logic;
       s_axi_rready  : in  std_logic;
-      m_apb_paddr   : out std_logic_vector(31 downto 0);
+      m_apb_paddr   : out std_logic_vector(G_ADDR_WIDTH-1 downto 0);
       m_apb_psel    : out std_logic_vector(0 downto 0);
       m_apb_penable : out std_logic;
       m_apb_pwrite  : out std_logic;
@@ -114,7 +114,7 @@ architecture rtl of meep_uart_top is
   signal m_apb_psel    : std_logic_vector(0 downto 0);
   signal m_apb_penable : std_logic;
   signal m_apb_pwrite  : std_logic;
-  signal m_apb_paddr   : std_logic_vector(31 downto 0);
+  signal m_apb_paddr   : std_logic_vector(G_ADDR_WIDTH-1 downto 0);
   signal m_apb_pwdata  : std_logic_vector(31 downto 0);
   signal m_apb_prdata  : std_logic_vector(31 downto 0);
   signal m_apb_pready  : std_logic_vector(0 downto 0);
