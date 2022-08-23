@@ -25,18 +25,18 @@ entity meep_uart_top is
     s_axi_rready  : in  std_logic;
 
     --
-    INTERRUPT : out std_logic;          -- Interrupt output
+    ip2intc_irpt : out std_logic;          -- Interrupt output
 
-    OUT1N : out std_logic;              -- Output 1
-    OUT2N : out std_logic;              -- Output 2
-    RTSN  : out std_logic;              -- RTS output
-    DTRN  : out std_logic;              -- DTR output
-    CTSN  : in  std_logic := '0';       -- CTS input
-    DSRN  : in  std_logic := '0';       -- DSR input
-    DCDN  : in  std_logic := '0';       -- DCD input
-    RIN   : in  std_logic := '0';       -- RI input
-    SIN   : in  std_logic;              -- Receiver input
-    SOUT  : out std_logic               -- Transmitter output
+    out1n : out std_logic;              -- Output 1
+    out2n : out std_logic;              -- Output 2
+    rtsn  : out std_logic;              -- RTS output
+    dtrn  : out std_logic;              -- DTR output
+    ctsn  : in  std_logic := '0';       -- CTS input
+    dsrn  : in  std_logic := '0';       -- DSR input
+    dcdn  : in  std_logic := '0';       -- DCD input
+    rin   : in  std_logic := '0';       -- RI input
+    sin   : in  std_logic;              -- Receiver input
+    sout  : out std_logic               -- Transmitter output
 
     );
 end meep_uart_top;
@@ -165,18 +165,18 @@ begin
       PREADY  => m_apb_pready(0),
       PSLVERR => m_apb_pslverr(0),
       --                 
-      INTERRUPT => INTERRUPT,
+      INTERRUPT => ip2intc_irpt,
       --                   
-      OUT1N   => OUT1N,
-      OUT2N   => OUT2N,
-      RTSN    => RTSN,
-      DTRN    => DTRN,
-      CTSN    => CTSN,
-      DSRN    => DSRN,
-      DCDN    => DCDN,
-      RIN     => RIN,
-      SIN     => SIN,
-      SOUT    => SOUT
+      OUT1N   => out1n,
+      OUT2N   => out2n,
+      RTSN    => rtsn,
+      DTRN    => dtrn,
+      CTSN    => ctsn,
+      DSRN    => dsrn,
+      DCDN    => dcdn,
+      RIN     => rin,
+      SIN     => sin,
+      SOUT    => sout
       );
 
 end rtl;

@@ -32,12 +32,18 @@ set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 ipx::infer_bus_interfaces xilinx.com:interface:apb_rtl:1.0 $ip_core
 ipx::infer_bus_interfaces xilinx.com:interface:uart_rtl:1.0 $ip_core
 
-set_property driver_value 0 [ipx::get_ports CTSN -of_objects $ip_core ]
-set_property driver_value 0 [ipx::get_ports DSRN -of_objects $ip_core ]
-set_property driver_value 0 [ipx::get_ports DCDN -of_objects $ip_core ]
-set_property driver_value 0 [ipx::get_ports RIN -of_objects  $ip_core ]
+set_property driver_value 0 [ipx::get_ports ctsn -of_objects $ip_core ]
+set_property driver_value 0 [ipx::get_ports dsrn -of_objects $ip_core ]
+set_property driver_value 0 [ipx::get_ports dcdn -of_objects $ip_core ]
+set_property driver_value 0 [ipx::get_ports rin -of_objects  $ip_core ]
 
+#set_property name S_AXI [ipx::get_bus_interfaces s_axi -of_objects $ip_core]
+#set_property slave_memory_map_ref S_AXI [ipx::get_bus_interfaces S_AXI -of_objects $ip_core ]
+
+set_property name S_AXI [ipx::get_memory_maps s_axi -of_objects $ip_core]
+set_property name Reg [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps S_AXI -of_objects $ip_core]]
 set_property name S_AXI [ipx::get_bus_interfaces s_axi -of_objects $ip_core]
+set_property slave_memory_map_ref S_AXI [ipx::get_bus_interfaces S_AXI -of_objects $ip_core]
 
 
 ## Custom ends here
@@ -52,7 +58,7 @@ set_property type LOGO [ipx::get_files "${root_dir}/misc/BSC-Logo.png" -of_objec
 ipx::check_integrity ${ip_core}
 ipx::save_core ${ip_core}
 
-ipx::merge_project_changes files [ipx::current_core]
+ipx::merge_project_changes files $ip_core
 update_ip_catalog -rebuild -scan_changes
 
 puts "IP succesfully packaged " 
