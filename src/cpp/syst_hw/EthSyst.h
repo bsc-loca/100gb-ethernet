@@ -192,6 +192,7 @@
 
 /***************************** Include Files *********************************/
 // #include "xparameters.h"
+#include <microblaze_sleep.h> // https://docs.xilinx.com/r/en-US/oslib_rm/Sleep-Routines-for-MicroBlaze-Processor
 #include "xintc.h"
 #include "xtmrctr.h"
 #include "xaxidma.h"
@@ -234,7 +235,7 @@ class EthSyst {
   XIntc   intrCtrl; // Instance of Interrupt Controller
   XTmrCtr timerCnt; // Instance of Timer counter
   XAxiDma axiDma;   // AXI DMA instance definitions
-  float const TIMER_TICK = 10.; //ns
+  float const TIMER_TICK = 1.0e+9 / Xil_GetMBFrequency(); //ns
   // DMA Scatter-Gather memory Rx/Tx distribution
   enum {
     ETH_MIN_PACK_SIZE = 64, // Limitations in 100Gb Ethernet IP (set in Vivado)

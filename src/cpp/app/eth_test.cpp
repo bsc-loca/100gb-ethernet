@@ -1,8 +1,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <algorithm>
+// #include <unistd.h> // needed for standard sleep() function
 // #include <vector>
 // #include <string>
 // #include <xil_sleeptimer.h>
@@ -15,7 +15,10 @@
 // #include <fcntl.h>
 // #include <sys/stat.h>
 
-#include "fsl.h" // FSL macros: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
+
+#include "fsl.h" // https://docs.xilinx.com/r/en-US/oslib_rm/MicroBlaze-Processor-FSL-Macros
+                 // https://docs.xilinx.com/v/u/2016.4-English/oslib_rm#page=16#page=16
+                 // https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_4/oslib_rm.pdf#page=16
 #include "EthSyst.h"
 #include "ping_test.h"
 
@@ -261,6 +264,7 @@ int main(int argc, char *argv[])
 
     switch (choice) {
       case 'l': {
+        printf("------- MicroBlaze/Timer clock cycle: %f ns -------\n", ethSyst.TIMER_TICK);
         xil_printf("------- Running CPU Short Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: CPU->LB, DMA->Eth
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: LB->CPU, Eth->DMA

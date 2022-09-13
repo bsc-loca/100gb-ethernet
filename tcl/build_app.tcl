@@ -27,7 +27,12 @@
 setws ./xsct_ws
 #Checking available apps as templates
 repo -apps
+
 #Create application project (combined creation of platform, domain/bsp, project/app)
+###########################################################################################################
+#### XSA taken from U55C board implementation results in approx. 20x slower app execution on U55C board, in order
+#### to speed-up execution on U55C board XSA from U280 board implementation should be taken (due to identical hw/addresses).
+###########################################################################################################
 app create -name eth_test -hw ./project/ethernet_system_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone -lang c++ -template {Empty Application (C++)}
 # -os freertos10_xilinx                # tested option to create app under simple OS
 # -lang c -template {lwIP Echo Server} # tested option to create simple lwIP-based app (further importsources command should be commented)

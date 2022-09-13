@@ -39,7 +39,8 @@ fpga -config-status
 fpga -state
 
 # ---- Programming FPGA
-fpga -file ./project/ethernet_system_wrapper.bit
+fpga -file ./project/ethernet_system.runs/impl_1/ethernet_system_wrapper.bit
+# fpga -file ./project/ethernet_system_wrapper.bit # extracted from XSA bitstream
 fpga -boot-status
 fpga -config-status
 fpga -state

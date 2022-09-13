@@ -47,7 +47,7 @@
 /***************************** Include Files *********************************/
 
 // #include <stdio.h>
-#include <unistd.h>
+// #include <unistd.h> // needed for standard sleep() function
 #include <algorithm>
 
 #include "EthSyst.h"

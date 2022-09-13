@@ -238,10 +238,10 @@ set_property IOSTANDARD  LVCMOS18 [get_ports "CPU_RESET_FPGA"] ;# Bank  65 VCCO 
 # set_property IOSTANDARD  LVCMOS18 [get_ports "FPGA_UART1_RXD"] ;# Bank  65 VCCO - VCC1V8   - IO_L2N_T0L_N3_FWE_FCS2_B_65
 # set_property PACKAGE_PIN BN47     [get_ports "FPGA_UART1_TXD"] ;# Bank  65 VCCO - VCC1V8   - IO_L2P_T0L_N2_FOE_B_65
 # set_property IOSTANDARD  LVCMOS18 [get_ports "FPGA_UART1_TXD"] ;# Bank  65 VCCO - VCC1V8   - IO_L2P_T0L_N2_FOE_B_65
-set_property PACKAGE_PIN BK41     [get_ports "UART_txd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15N_T2L_N5_AD11N_A03_D19_65
-set_property IOSTANDARD  LVCMOS18 [get_ports "UART_txd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15N_T2L_N5_AD11N_A03_D19_65
-set_property PACKAGE_PIN BJ41     [get_ports "UART_rxd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15P_T2L_N4_AD11P_A02_D18_65
-set_property IOSTANDARD  LVCMOS18 [get_ports "UART_rxd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15P_T2L_N4_AD11P_A02_D18_65
+set_property PACKAGE_PIN BK41     [get_ports "UART_rxd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15N_T2L_N5_AD11N_A03_D19_65
+set_property IOSTANDARD  LVCMOS18 [get_ports "UART_rxd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15N_T2L_N5_AD11N_A03_D19_65
+set_property PACKAGE_PIN BJ41     [get_ports "UART_txd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15P_T2L_N4_AD11P_A02_D18_65
+set_property IOSTANDARD  LVCMOS18 [get_ports "UART_txd"] ;# Bank  65 VCCO - VCC1V8   - IO_L15P_T2L_N4_AD11P_A02_D18_65
 ##################################################################################################################################################################
 ##
 ## 	  Bank 94 FPGA to Sattelite Controller CMS UART Interface (115200, No parity, 8 bits, 1 stop bit)

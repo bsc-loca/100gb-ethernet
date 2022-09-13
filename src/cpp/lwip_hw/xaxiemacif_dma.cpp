@@ -32,7 +32,7 @@
  *
  */
 
-#include <unistd.h>
+// #include <unistd.h> // needed for standard sleep() function
 #include "lwipopts.h"
 
 #include "lwip/stats.h"

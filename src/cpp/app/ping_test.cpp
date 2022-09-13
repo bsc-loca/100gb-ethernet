@@ -1,6 +1,6 @@
 //***************************** Include Files *********************************
 // #include <stdio.h>
-#include <unistd.h>
+// #include <unistd.h> // needed for standard sleep() function
 
 #include "ping_test.h"
 
