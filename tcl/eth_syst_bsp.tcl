@@ -55,11 +55,6 @@ while {[gets $tcl_orig line] >= 0} {
     continue
   }
 
-  # removing external AXI port association
-  if {[string first "CONFIG.ASSOCIATED_BUSIF {s_axi}" $line] >= 0} {
-    continue
-  }
-
   # reconnecting AXI Interconnect to MicroBlaze
   set line [string map {"get_bd_intf_ports s_axi" "get_bd_intf_pins microblaze_0/M_AXI_DP"} $line]
   # connecting clock to MicroBlaze

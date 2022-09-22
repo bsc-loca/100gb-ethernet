@@ -55,18 +55,33 @@ set board_param [ipx::get_user_parameters Board -of_objects                     
 set_property value_resolve_type user                             $board_param
 ipgui::add_param -name {Board} -component                                        $ip_core
 set_property widget {comboBox} [ipgui::get_guiparamspec -name "Board" -component $ip_core]
-set_property value $g_board_part                                 $board_param
 set_property value_validation_type list                          $board_param
 set_property value_validation_list "$g_board_part $g_board_part" $board_param
+set_property value                                $g_board_part  $board_param
 
 ipx::add_user_parameter QSFP_Port                                                    $ip_core
 set port_param [ipx::get_user_parameters QSFP_Port -of_objects                       $ip_core]
 set_property value_resolve_type user                         $port_param
 ipgui::add_param -name {QSFP_Port} -component                                        $ip_core
 set_property widget {comboBox} [ipgui::get_guiparamspec -name "QSFP_Port" -component $ip_core]
-set_property value ${g_eth_port}                             $port_param
 set_property value_validation_type list                      $port_param
 set_property value_validation_list "$g_eth_port $g_eth_port" $port_param
+set_property value                              $g_eth_port  $port_param
+
+ipx::add_user_parameter DMA_memory                                                   $ip_core
+set mem_param [ipx::get_user_parameters DMA_memory -of_objects                       $ip_core]
+set_property value_resolve_type user                   $mem_param
+ipgui::add_param -name {DMA_memory} -component                                        $ip_core
+set_property widget {comboBox} [ipgui::get_guiparamspec -name "DMA_memory" -component $ip_core]
+set_property value_validation_type list                $mem_param
+if { ${g_dma_mem} eq "sram" } {
+  set dma_mem "internal($g_dma_mem)"
+}
+if { ${g_dma_mem} eq "hbm" } {
+  set dma_mem "external($g_dma_mem)"
+}
+set_property value_validation_list "$dma_mem $dma_mem" $mem_param
+set_property value                           $dma_mem  $mem_param
 
 ## Relative path to IP root directory
 ipx::create_xgui_files ${ip_core} -logo_file "$g_root_dir/misc/BSC-Logo.png"
