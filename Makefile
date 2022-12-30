@@ -14,7 +14,7 @@ SAXI_FREQ   ?= "100000000"
 
 generate_ip: clean
 		@(echo "Generate 100Gb Ethernet IP"); mkdir -p $(ROOT_DIR)/ip
-		$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD) $(QSFP_PORT) $(SAXI_FREQ)
+		$(VIVADO_XLNX) $(VIVADO_OPT)  ./tcl/gen_project.tcl -tclargs $(FPGA_BOARD) $(QSFP_PORT) $(DMA_MEM) $(SAXI_FREQ)
 
 
 clean:
