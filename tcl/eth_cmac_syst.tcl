@@ -24,6 +24,7 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
   global g_board_part
   global g_eth_port
   global g_dma_mem
+  global g_saxi_freq
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
@@ -264,7 +265,7 @@ if { ${g_dma_mem} eq "hbm" } {
   set tx_rstn [ create_bd_port -dir O -from 0 -to 0 -type rst tx_rstn ]
 }
 
-  set s_axi_clk [ create_bd_port -dir I -type clk s_axi_clk ]
+  set s_axi_clk [ create_bd_port -dir I -type clk -freq_hz $g_saxi_freq s_axi_clk ]
   set s_axi_resetn [ create_bd_port -dir I -type rst s_axi_resetn ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_LOW} \

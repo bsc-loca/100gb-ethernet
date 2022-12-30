@@ -32,6 +32,8 @@ set g_vivado_version [version -short]
 set g_board_part u280
 set g_eth_port qsfp0
 set g_dma_mem sram
+set g_saxi_freq 100000000
+
 set g_fpga_part xc${g_board_part}-fsvh2892-2L-e
 set g_root_dir    [file normalize "$script_folder/../"]
 set g_project_name ethernet_system                       

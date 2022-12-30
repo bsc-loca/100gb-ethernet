@@ -60,6 +60,9 @@ if { $::argc > 0 } {
         if { $::argc > 2 } {
           set g_dma_mem  [lindex $argv 2]
         }
+        if { $::argc > 3 } {
+          set g_saxi_freq  [lindex $argv 3]
+        }
 }
 
 set root_dir $g_root_dir
