@@ -273,7 +273,8 @@ int main(int argc, char *argv[])
         receiveFrChan (CPU_PACKET_WORDS, SHORT_LOOPBACK_DEPTH);
         xil_printf("------- CPU Short Loopback test PASSED -------\n\n");
 
-        ethSyst.ethCoreInit(true);
+        ethSyst.ethCoreInit();
+        ethSyst.ethCoreBringup(true);  // loopback mode
 
         xil_printf("\n------- Running CPU Near-end Loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
@@ -569,6 +570,7 @@ int main(int argc, char *argv[])
         }
         xil_printf("------- DMA Tx/Rx/SG memory test PASSED -------\n\n");
 
+        ethSyst.timerCntInit(); // initializing Timer
         ethSyst.axiDmaInit();
 
         xil_printf("\n------- Running DMA-CPU Short Loopback test -------\n");
@@ -723,17 +725,15 @@ int main(int argc, char *argv[])
         }
         xil_printf("------- DMA Short Loopback test PASSED -------\n\n");
 
-
-        xil_printf("------- Running DMA Near-end loopback test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
         sleep(1); // in seconds
 
+        xil_printf("------- Running DMA Near-end loopback test -------\n");
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
-
-        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
         packets = txrxMemSize/ETH_MEMPACK_SIZE;
         if (XAxiDma_HasSg(&ethSyst.axiDma))
@@ -931,7 +931,8 @@ int main(int argc, char *argv[])
         xil_printf("%c\n", confirm);
         if (confirm != 'y') break;
 
-        ethSyst.ethCoreInit(false);
+        ethSyst.ethCoreInit();
+        ethSyst.ethCoreBringup(false); // non-loopback mode
 
         xil_printf("------- CPU 2-boards communication test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  true); // Tx switch: CPU->Eth, DMA->LB
@@ -946,18 +947,19 @@ int main(int argc, char *argv[])
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
         xil_printf("------- CPU 2-boards communication test PASSED -------\n\n");
 
+        ethSyst.timerCntInit(); // initializing Timer
         ethSyst.axiDmaInit();
-
-        xil_printf("------- Async DMA 2-boards communication test -------\n");
         ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
         ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
         sleep(1); // in seconds
+
+        xil_printf("------- Async DMA 2-boards communication test -------\n");
 
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
 
-        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
         size_t packets = txrxMemSize/ETH_MEMPACK_SIZE;
         if (XAxiDma_HasSg(&ethSyst.axiDma))
@@ -1030,21 +1032,13 @@ int main(int argc, char *argv[])
               exit(1);
           }
         }
-
-        ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
         xil_printf("------- Async DMA 2-boards communication test PASSED -------\n\n");
 
 
         xil_printf("------- Round-trip DMA 2-boards communication test -------\n");
-        ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
-        ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
-        sleep(1); // in seconds
-
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
-
-        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
         packets = txrxMemSize/ETH_MEMPACK_SIZE;
         if (XAxiDma_HasSg(&ethSyst.axiDma))
@@ -1142,11 +1136,16 @@ int main(int argc, char *argv[])
         xil_printf("%c\n", confirm);
         if (confirm != 'y') break;
 
-        ethSyst.ethCoreInit(false); // non-loopback mode
-        xil_printf("\n------- Physical connection is established -------\n");
+        ethSyst.intrCtrlInit();
+        ethSyst.timerCntInit(); // initializing Timer
+        ethSyst.ethCoreInit();
+        ethSyst.ethCoreBringup(false); // non-loopback mode
+        ethSyst.axiDmaInit();
+        ethSyst.switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
+        ethSyst.switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
+        ethSyst.ethTxRxEnable(); // Enabling Ethernet TX/RX
 
         while (true) {
-          ethSyst.ethSystInit(); // resetting hardware before any test
           xil_printf("\n------- Please choose particular IP-based test:\n");
           xil_printf("  Ping reply test:      p\n");
           xil_printf("  Ping request test:    q\n");

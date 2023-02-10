@@ -53,11 +53,10 @@
 #include "EthSyst.h"
 
 //***************** Initialization of 100Gb Ethernet Core *****************
-void EthSyst::ethCoreInit(bool gtLoopback) {
+void EthSyst::ethCoreInit() {
   xil_printf("------- Initializing Ethernet Core -------\n");
-  // GT control via pins 
-  uint32_t* gtCtrl = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);
-  enum { GT_CTRL = XGPIO_DATA_OFFSET / sizeof(uint32_t) };
+  //100Gb Ethernet subsystem registers: https://docs.xilinx.com/r/en-US/pg203-cmac-usplus/Register-Map
+  //old link: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
   enum { ETH_FULL_RST_ASSERT = RESET_REG_USR_RX_SERDES_RESET_MASK |
                                RESET_REG_USR_RX_RESET_MASK        |
                                RESET_REG_USR_TX_RESET_MASK,
@@ -99,8 +98,14 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   xil_printf("STAT_TX_STATUS_REG:    %0lX \n", ethCore[STAT_TX_STATUS_REG]);
   xil_printf("STAT_RX_STATUS_REG:    %0lX \n", ethCore[STAT_RX_STATUS_REG]);
   xil_printf("GT_LOOPBACK_REG:       %0lX \n", ethCore[GT_LOOPBACK_REG]);
-  xil_printf("\n");
+  xil_printf("-------\n");
   
+}
+
+
+//***************** Bring-up of 100Gb Ethernet Core *****************
+void EthSyst::ethCoreBringup(bool gtLoopback) {
+  xil_printf("------- Ethernet Core bring-up -------\n");
   if (gtLoopback) {
     xil_printf("Enabling Near-End PMA Loopback\n");
     // gtCtrl[GT_CTRL] = 0x2222; // via GPIO: http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-transceivers.pdf#page=88
@@ -124,9 +129,9 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   }
   xil_printf("\n");
   
-  xil_printf("Ethernet core bring-up.\n");
   physConnOrder = PHYS_CONN_WAIT_INI;
-  // http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
+  // http://docs.xilinx.com/r/en-US/pg203-cmac-usplus/Core-Bring-Up-Sequence
+  // old link: http://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=204
   // via GPIO
   // rxtxCtrl[RX_CTRL] = CONFIGURATION_RX_REG1_CTL_RX_ENABLE_MASK;
   // rxtxCtrl[TX_CTRL] = CONFIGURATION_TX_REG1_CTL_TX_SEND_RFI_MASK;
@@ -177,6 +182,7 @@ void EthSyst::ethCoreInit(bool gtLoopback) {
   xil_printf("STAT_TX/RX_STATUS_REGS: %0lX/%0lX \n", ethCore[STAT_TX_STATUS_REG],
                                                      ethCore[STAT_RX_STATUS_REG]);
   xil_printf("This Eth instance is physically connected in order (zero means 1st, non-zero means 2nd): %d \n", physConnOrder);
+  xil_printf("------- Physical connection is established -------\n");
 }
 
 
@@ -228,6 +234,7 @@ void EthSyst::timerCntInit() {
       exit(1);
     }
   }
+  xil_printf("Timer is initialized and tested\n\n");
 }
 
 
@@ -399,7 +406,7 @@ void EthSyst::axiDmaInit() {
   xil_printf("XAxiDma is initialized and reset: \n");
   xil_printf("HasSg       = %d  \n", axiDma.HasSg);
   xil_printf("Initialized = %d  \n", axiDma.Initialized);
-  if (0) {
+  if (1) {
     xil_printf("RegBase                  = %d  \n", axiDma.RegBase);
     xil_printf("HasMm2S                  = %d  \n", axiDma.HasMm2S);
     xil_printf("HasS2Mm                  = %d  \n", axiDma.HasS2Mm);
@@ -410,9 +417,9 @@ void EthSyst::axiDmaInit() {
     xil_printf("TxBdRing.DataWidth       = %d  \n", axiDma.TxBdRing.DataWidth);
     xil_printf("TxBdRing.Addr_ext        = %d  \n", axiDma.TxBdRing.Addr_ext);
     xil_printf("TxBdRing.MaxTransferLen  = %lX \n", axiDma.TxBdRing.MaxTransferLen);
-    xil_printf("TxBdRing.FirstBdPhysAddr = %d  \n", axiDma.TxBdRing.FirstBdPhysAddr);
-    xil_printf("TxBdRing.FirstBdAddr     = %d  \n", axiDma.TxBdRing.FirstBdAddr);
-    xil_printf("TxBdRing.LastBdAddr      = %d  \n", axiDma.TxBdRing.LastBdAddr);
+    xil_printf("TxBdRing.FirstBdPhysAddr = %lX \n", axiDma.TxBdRing.FirstBdPhysAddr);
+    xil_printf("TxBdRing.FirstBdAddr     = %lX \n", axiDma.TxBdRing.FirstBdAddr);
+    xil_printf("TxBdRing.LastBdAddr      = %lX \n", axiDma.TxBdRing.LastBdAddr);
     xil_printf("TxBdRing.Length          = %lX \n", axiDma.TxBdRing.Length);
     xil_printf("TxBdRing.Separation      = %d  \n", axiDma.TxBdRing.Separation);
     xil_printf("TxBdRing.Cyclic          = %d  \n", axiDma.TxBdRing.Cyclic);
@@ -424,9 +431,8 @@ void EthSyst::axiDmaInit() {
     xil_printf("Rx_status  reg = %0lX \n", dmaCore[S2MM_DMASR]);
     xil_printf("Initial DMA Tx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DEVICE_TO_DMA));
     xil_printf("Initial DMA Rx busy state: %ld \n", XAxiDma_Busy(&axiDma,XAXIDMA_DMA_TO_DEVICE));
+    xil_printf("-------\n");
   }
-
-  timerCntInit(); // initializing Timer as we use it in DMA transfer measurements
 }
 
 
@@ -437,19 +443,24 @@ void EthSyst::dmaBDSetup(bool RxnTx)
 	XAxiDma_BdRing* BdRingPtr = RxnTx ? XAxiDma_GetRxRing(&axiDma) :
 	                                    XAxiDma_GetTxRing(&axiDma);
 
-	// Disable all TX/RX interrupts before BD space setup
-	XAxiDma_BdRingIntDisable(BdRingPtr, XAXIDMA_IRQ_ALL_MASK);
+  // Disable all TX/RX interrupts before BD space setup
+  XAxiDma_BdRingIntDisable(BdRingPtr, XAXIDMA_IRQ_ALL_MASK);
 
-	// Set delay and coalesce
-	int const Coalesce = 1;
-	int const Delay    = 0;
-	XAxiDma_BdRingSetCoalesce(BdRingPtr, Coalesce, Delay);
+  // Set delay and coalesce
+  int const CoalesCount = 1;
+  int const CoalesDelay = 0;
+  int Status = XAxiDma_BdRingSetCoalesce(BdRingPtr, CoalesCount, CoalesDelay);
+  if (Status != XST_SUCCESS) {
+    xil_printf("\nERROR while setting interrupt coalescing parameters for BD ring(RxnTx=%d): packet counter %d, timer delay %d\r\n",
+               RxnTx, CoalesCount, CoalesDelay);
+    exit(1);
+  }
 
-	// Setup BD space
+  // Setup BD space
 	size_t const sgMemAddr = RxnTx ? RX_SG_MEM_ADDR : TX_SG_MEM_ADDR;
 	size_t const sgMemSize = RxnTx ? RX_SG_MEM_SIZE : TX_SG_MEM_SIZE;
 	uint32_t BdCount = XAxiDma_BdRingCntCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT, sgMemSize);
-	int Status = XAxiDma_BdRingCreate(BdRingPtr, sgMemAddr, sgMemAddr, XAXIDMA_BD_MINIMUM_ALIGNMENT, BdCount);
+	Status = XAxiDma_BdRingCreate(BdRingPtr, sgMemAddr, sgMemAddr, XAXIDMA_BD_MINIMUM_ALIGNMENT, BdCount);
 	if (Status != XST_SUCCESS) {
       xil_printf("\nERROR: RxnTx=%d, Creation of BD ring with %ld BDs at addr %x failed with status %d\r\n",
 	               RxnTx, BdCount, sgMemAddr, Status);
@@ -495,11 +506,12 @@ XAxiDma_Bd* EthSyst::dmaBDAlloc(bool RxnTx, size_t packets, size_t packLen, size
 	XAxiDma_Bd* BdPtr;
 	int Status = XAxiDma_BdRingAlloc(BdRingPtr, packets, &BdPtr);
 	if (Status != XST_SUCCESS) {
-      xil_printf("\nERROR: RxnTx=%d, Allocation of BD ring with %d BDs failed with status %d\r\n", RxnTx, packets, Status);
+      xil_printf("\nERROR: RxnTx=%d, Allocation of %d BDs failed with status %d\r\n", RxnTx, packets, Status);
       exit(1);
 	}
 	freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-    if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld free BDs are available after BDs allocation \n", RxnTx, freeBdCount);
+  if (packets > 1) xil_printf("RxnTx=%d, DMA in SG mode: %ld BDs are allocated at addr %lX, %d BDs are still free. \n",
+                               RxnTx, packets, size_t(BdPtr), freeBdCount);
 
 
 	XAxiDma_Bd* CurBdPtr = BdPtr;
@@ -559,7 +571,7 @@ void EthSyst::dmaBDTransfer(bool RxnTx, size_t packets, size_t bunchSize, XAxiDm
     for (packet = 0; packet < packets; packet++) {
       Status = XAxiDma_BdRingToHw(BdRingPtr, 1, CurBdPtr);
       if (Status != XST_SUCCESS) break;
-      // (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
+      // CurBdPtr = (XAxiDma_Bd*)XAxiDma_BdRingNext(BdRingPtr, CurBdPtr);
       CurBdPtr = (XAxiDma_Bd*)((UINTPTR)CurBdPtr + (BdRingPtr->Separation));
     }
   else
@@ -620,15 +632,15 @@ void EthSyst::dmaBDFree(bool RxnTx, size_t packets, size_t packCheckLen, XAxiDma
     }
   }
 
-	// Free all processed BDs for future transfers
+  // Free all processed BDs for future transfers
   int status = XAxiDma_BdRingFree(BdRingPtr, packets, BdPtr);
   if (status != XST_SUCCESS) {
     xil_printf("\nERROR: RxnTx=%d, Failed to free %ld BDs with status %d \r\n", RxnTx, packets, status);
     exit(1);
-	}
-	uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
-  xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs are available after their release \n",
-              RxnTx, packets, freeBdCount);
+  }
+  uint32_t freeBdCount = XAxiDma_BdRingGetFreeCnt(BdRingPtr);
+  xil_printf("RxnTx=%d, DMA in SG mode: %ld BD transfers are waited up, %ld free BDs at addr %lX after their release \n",
+              RxnTx, packets, freeBdCount, size_t(BdPtr));
 }
 
 
@@ -692,18 +704,6 @@ void EthSyst::switch_CPU_DMAxEth_LB(bool txNrx, bool cpu2eth_dma2lb) {
 }
 
 
-//***************** Initialization of Full Ethernet System *****************
-void EthSyst::ethSystInit() {
-  intrCtrlInit();
-  timerCntInit();
-  axiDmaInit();
-  switch_CPU_DMAxEth_LB(true,  false); // Tx switch: DMA->Eth, CPU->LB
-  switch_CPU_DMAxEth_LB(false, false); // Rx switch: Eth->DMA, LB->CPU
-  ethTxRxEnable();
-  sleep(1); // in seconds
-}
-
-
 //***************** Flush the Receive buffers. All data will be lost. *****************
 int EthSyst::flushReceive() {
   // Checking if the engine is already in accept process
@@ -751,16 +751,14 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 	unsigned Index;
 	unsigned Length = ByteCount;
 	volatile uint32_t AlignBuffer;
-	volatile uint32_t *To32Ptr;
 	uint32_t* From32Ptr;
 	volatile uint16_t* To16Ptr;
 	uint16_t* From16Ptr;
 	volatile uint8_t* To8Ptr;
 	uint8_t* From8Ptr;
+  size_t txAddr = 0;
 
-	To32Ptr = (volatile uint32_t*)txMem;
-
-	if ((((uint32_t) SrcPtr) & 0x00000003) == 0) {
+	if ((size_t(SrcPtr) & 0x00000003) == 0) {
 
 		/*
 		 * Word aligned buffer, no correction needed.
@@ -771,7 +769,11 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 			/*
 			 * Output each word destination.
 			 */
-			*To32Ptr++ = *From32Ptr++;
+      txMem[txAddr] = *From32Ptr++;
+      #ifdef TXRX_MEM_CACHED
+        cacheFlush(size_t(&txMem[txAddr]));
+      #endif
+      txAddr++;
 
 			/*
 			 * Adjust length accordingly
@@ -788,7 +790,7 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 		From8Ptr = (uint8_t*) From32Ptr;
 
 	}
-	else if ((((uint32_t) SrcPtr) & 0x00000001) != 0) {
+	else if ((size_t(SrcPtr) & 0x00000001) != 0) {
 		/*
 		 * Byte aligned buffer, correct.
 		 */
@@ -807,7 +809,12 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 			/*
 			 * Output the buffer
 			 */
-			*To32Ptr++ = AlignBuffer;
+      txMem[txAddr] = AlignBuffer;
+      #ifdef TXRX_MEM_CACHED
+        cacheFlush(size_t(&txMem[txAddr]));
+      #endif
+      txAddr++;
+
 
 			/*.
 			 * Reset the temporary buffer pointer and adjust length.
@@ -854,7 +861,12 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 			/*
 			 * Output the buffer.
 			 */
-			*To32Ptr++ = AlignBuffer;
+      txMem[txAddr] = AlignBuffer;
+      #ifdef TXRX_MEM_CACHED
+        cacheFlush(size_t(&txMem[txAddr]));
+      #endif
+      txAddr++;
+
 
 			/*
 			 * Reset the temporary buffer pointer and adjust length.
@@ -889,7 +901,12 @@ void EthSyst::alignedWrite(void* SrcPtr, unsigned ByteCount)
 		*To8Ptr++ = *From8Ptr++;
 	}
 	if (Length) {
-		*To32Ptr++ = AlignBuffer;
+    txMem[txAddr] = AlignBuffer;
+    #ifdef TXRX_MEM_CACHED
+      cacheFlush(size_t(&txMem[txAddr]));
+    #endif
+    txAddr++;
+
 	}
 }
 
@@ -969,7 +986,11 @@ int EthSyst::frameSend(uint8_t* FramePtr, unsigned ByteCount)
 ******************************************************************************/
 uint16_t EthSyst::getReceiveDataLength(uint16_t headerOffset) {
 
-	uint16_t length = rxMem[headerOffset / sizeof(uint32_t)];
+  uint32_t volatile* lengthPtr = &rxMem[headerOffset / sizeof(uint32_t)];
+  #ifdef TXRX_MEM_CACHED
+    cacheInvalid(size_t(lengthPtr));
+  #endif
+	uint16_t length = *lengthPtr;
 	length = ((length & 0xFF00) >> 8) | ((length & 0x00FF) << 8);
 
   xil_printf("   Accepting packet at mem addr 0x%X, extracting length/type %d(0x%X) at offset %d \n",
@@ -1000,15 +1021,13 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 	unsigned Length = ByteCount;
 	volatile uint32_t AlignBuffer;
 	uint32_t* To32Ptr;
-	volatile uint32_t* From32Ptr;
 	uint16_t* To16Ptr;
 	volatile uint16_t* From16Ptr;
 	uint8_t* To8Ptr;
 	volatile uint8_t* From8Ptr;
+  size_t rxAddr = 0;
 
-	From32Ptr = (uint32_t*)rxMem;
-
-	if ((((uint32_t) DestPtr) & 0x00000003) == 0) {
+	if ((size_t(DestPtr) & 0x00000003) == 0) {
 
 		/*
 		 * Word aligned buffer, no correction needed.
@@ -1019,7 +1038,11 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 			/*
 			 * Output each word.
 			 */
-			*To32Ptr++ = *From32Ptr++;
+      #ifdef TXRX_MEM_CACHED
+        cacheInvalid(size_t(&rxMem[rxAddr]));
+      #endif
+      *To32Ptr++ = rxMem[rxAddr];
+      rxAddr++;
 
 			/*
 			 * Adjust length accordingly.
@@ -1033,7 +1056,7 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 		To8Ptr = (uint8_t*) To32Ptr;
 
 	}
-	else if ((((uint32_t) DestPtr) & 0x00000001) != 0) {
+	else if ((size_t(DestPtr) & 0x00000001) != 0) {
 		/*
 		 * Byte aligned buffer, correct.
 		 */
@@ -1043,7 +1066,11 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 			/*
 			 * Copy each word into the temporary buffer.
 			 */
-			AlignBuffer = *From32Ptr++;
+      #ifdef TXRX_MEM_CACHED
+        cacheInvalid(size_t(&rxMem[rxAddr]));
+      #endif
+      AlignBuffer = rxMem[rxAddr];
+      rxAddr++;
 			From8Ptr = (uint8_t*) &AlignBuffer;
 
 			/*
@@ -1070,7 +1097,11 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 			/*
 			 * Copy each word into the temporary buffer.
 			 */
-			AlignBuffer = *From32Ptr++;
+      #ifdef TXRX_MEM_CACHED
+        cacheInvalid(size_t(&rxMem[rxAddr]));
+      #endif
+      AlignBuffer = rxMem[rxAddr];
+      rxAddr++;
 
 			/*
 			 * This is a funny looking cast. The new gcc, version
@@ -1105,7 +1136,11 @@ void EthSyst::alignedRead(void* DestPtr, unsigned ByteCount)
 	/*
 	 * Read the remaining data.
 	 */
-	AlignBuffer = *From32Ptr++;
+  #ifdef TXRX_MEM_CACHED
+    cacheInvalid(size_t(&rxMem[rxAddr]));
+  #endif
+  AlignBuffer = rxMem[rxAddr];
+  rxAddr++;
 	From8Ptr = (uint8_t*) &AlignBuffer;
 
 	for (Index = 0; Index < Length; Index++) {
@@ -1194,20 +1229,17 @@ uint16_t EthSyst::frameRecv(uint8_t* FramePtr)
 
 	alignedRead(FramePtr, Length);
 
-	/*
-	 * Acknowledge the frame.
-	 */
+  // Acknowledge the frame.
   if(XAxiDma_HasSg(&axiDma)) { // in SG mode
       XAxiDma_Bd* BdPtr = dmaBDAlloc(true, 1, XAE_MAX_FRAME_SIZE, XAE_MAX_FRAME_SIZE, size_t(rxMem));
       dmaBDTransfer(true, 1, 1, BdPtr);
+  } else { // in simple mode
+    int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XAE_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
+    if (XST_SUCCESS != status) {
+      xil_printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
+      size_t(rxMem), XAE_MAX_FRAME_SIZE, status);
+    }
   }
-	else { // in simple mode
-	  int status = XAxiDma_SimpleTransfer(&axiDma, size_t(rxMem), XAE_MAX_FRAME_SIZE, XAXIDMA_DEVICE_TO_DMA);
-      if (XST_SUCCESS != status) {
-        xil_printf("\nERROR: Ethernet XAxiDma Rx transfer to addr %0X with max lenth %d failed with status %d\n",
-		       size_t(rxMem), XAE_MAX_FRAME_SIZE, status);
-	  }
-	}
 
-	return Length;
+  return Length;
 }

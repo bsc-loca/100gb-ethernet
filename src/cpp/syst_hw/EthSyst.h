@@ -218,11 +218,13 @@ class EthSyst {
     STAT_RX_STATUS_REG    = STAT_RX_STATUS_REG_OFFSET    / sizeof(uint32_t),
     GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
   };
-  // Ethernet core control via pins
-  uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR);
+  
+  uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR); // Ethernet core control via pins
+  uint32_t* gtCtrl   = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);         // GT control via pins
   enum {
     TX_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t),
-    RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t)
+    RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t),
+    GT_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t)
   };
 
   void     dmaBDSetup(bool);
@@ -259,7 +261,8 @@ class EthSyst {
   uint8_t physConnOrder;
   enum {PHYS_CONN_WAIT_INI = 2};
 
-  void ethCoreInit(bool);
+  void ethCoreInit();
+  void ethCoreBringup(bool);
   void ethTxRxEnable();
   void ethTxRxDisable();
 
@@ -281,8 +284,6 @@ class EthSyst {
   void intrCtrlStop_l();
 
   void timerCntInit();
-
-  void ethSystInit();
 
   int flushReceive();
   int frameSend(uint8_t*, unsigned);
