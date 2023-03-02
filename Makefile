@@ -4,9 +4,9 @@ VIVADO_VER  ?= 2021.2
 VIVADO_PATH := /opt/Xilinx/Vivado/$(VIVADO_VER)/bin/
 VIVADO_XLNX := $(VIVADO_PATH)/vivado
 VIVADO_OPT  := -mode batch -nolog -nojournal -notrace -source
-FPGA_BOARD  ?= "u280"
-QSFP_PORT   ?= "qsfp0"
-DMA_MEM     ?= "sram"
+FPGA_BOARD  ?= "u55c"
+QSFP_PORT   ?= "qsfp1"
+DMA_MEM     ?= "hbm"
 SAXI_FREQ   ?= "100000000"
 
 
