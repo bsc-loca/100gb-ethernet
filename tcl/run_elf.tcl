@@ -55,7 +55,7 @@ targets
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
 # | fpganXXf08 | 10      | B4:00.0  | 8     | usb 1-6.3.1 | USB-UART-FPGACARD8 | Switch | fpganXXf07 | 4         | 13          |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# An automation could be applied by processing TCL list by command: targets -target-properties
+# An automation could be applied by processing TCL list from command: targets -target-properties
 #
 # targets 1
 # targets
