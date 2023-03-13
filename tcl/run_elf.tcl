@@ -32,9 +32,9 @@ connect -list
 
 # ---- Reading FPGA state
 targets
-# Here setting a particular target to be active. If the FPGA is single in the chain above command is enough.
-# In FPGA cluster we have 8 FPGA cards with following distribution of order in JTAG chain (target id):
-# (original table is in /etc/motd)
+# Here we may set a particular target to be active. If the FPGA is a single one in the JTAG chain thw above command is enough.
+# In FPGA cluster node we have 8 FPGA cards with following distribution of order in JTAG chain (target id):
+# (extension of the table in /etc/motd)
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
 # | FPGA Card  | Chassis | PCIe Bus | USB   | lsusb       | UART USB in /dev/  | QSFP0  | QSFP1      | no uBlazes| with uBlazes|
 # |            | Slot    |          | Hub # |             |                    |        |            | target id | target id   |
@@ -55,7 +55,7 @@ targets
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
 # | fpganXXf08 | 10      | B4:00.0  | 8     | usb 1-6.3.1 | USB-UART-FPGACARD8 | Switch | fpganXXf07 | 4         | 13          |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# An automation could be applied by processing TCL list from command: targets -target-properties
+# An automation could be applied by processing TCL list got from command: targets -target-properties
 #
 # targets 1
 # targets
