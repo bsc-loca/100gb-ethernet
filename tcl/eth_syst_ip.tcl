@@ -83,6 +83,10 @@ if { ${g_dma_mem} eq "hbm" } {
 set_property value_validation_list "$dma_mem $dma_mem" $mem_param
 set_property value                           $dma_mem  $mem_param
 
+# explicitely removing AXI signals auto-aded in BD Verilog in spite they are absent in BD itself
+ipx::remove_port s_axi_awprot $ip_core
+ipx::remove_port s_axi_arprot $ip_core
+
 ## Relative path to IP root directory
 ipx::create_xgui_files ${ip_core} -logo_file "$g_root_dir/misc/BSC-Logo.png"
 set_property type LOGO [ipx::get_files "$g_root_dir/misc/BSC-Logo.png" -of_objects [ipx::get_file_groups xilinx_utilityxitfiles -of_objects [ipx::current_core]]]
