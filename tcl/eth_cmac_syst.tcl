@@ -25,6 +25,7 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
   global g_eth_port
   global g_dma_mem
   global g_saxi_freq
+  global g_saxi_prot
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
@@ -214,13 +215,15 @@ if { ${g_dma_mem} eq "hbm" } {
 
   set qsfp_4x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp_4x ]
 
+  set AXIProt  [string replace $g_saxi_prot   [string first "-" $g_saxi_prot] end]
+  set AXIWidth [string replace $g_saxi_prot 0 [string first "-" $g_saxi_prot]    ]
   set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {22} \
    CONFIG.ARUSER_WIDTH {0} \
    CONFIG.AWUSER_WIDTH {0} \
    CONFIG.BUSER_WIDTH {0} \
-   CONFIG.DATA_WIDTH {64} \
+   CONFIG.DATA_WIDTH $AXIWidth \
    CONFIG.HAS_BRESP {1} \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_CACHE {0} \
@@ -231,17 +234,16 @@ if { ${g_dma_mem} eq "hbm" } {
    CONFIG.HAS_RRESP {1} \
    CONFIG.HAS_WSTRB {1} \
    CONFIG.ID_WIDTH {0} \
-   CONFIG.MAX_BURST_LENGTH {1} \
+   CONFIG.MAX_BURST_LENGTH {16} \
    CONFIG.NUM_READ_OUTSTANDING {256} \
    CONFIG.NUM_READ_THREADS {16} \
    CONFIG.NUM_WRITE_OUTSTANDING {256} \
    CONFIG.NUM_WRITE_THREADS {16} \
-   CONFIG.PHASE {0.0} \
-   CONFIG.PROTOCOL {AXI4LITE} \
+   CONFIG.PROTOCOL $AXIProt \
    CONFIG.READ_WRITE_MODE {READ_WRITE} \
    CONFIG.RUSER_BITS_PER_BYTE {0} \
    CONFIG.RUSER_WIDTH {0} \
-   CONFIG.SUPPORTS_NARROW_BURST {0} \
+   CONFIG.SUPPORTS_NARROW_BURST {1} \
    CONFIG.WUSER_BITS_PER_BYTE {0} \
    CONFIG.WUSER_WIDTH {0} \
    ] $s_axi

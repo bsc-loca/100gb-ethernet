@@ -29,10 +29,11 @@ variable script_folder
 set script_folder [_tcl::get_script_folder]
 
 set g_vivado_version [version -short] 
-set g_board_part u280
+set g_board_part u55c
 set g_eth_port qsfp0
-set g_dma_mem sram
+set g_dma_mem hbm
 set g_saxi_freq 100000000
+set g_saxi_prot AXI4LITE-64
 
 set g_fpga_part xc${g_board_part}-fsvh2892-2L-e
 set g_root_dir    [file normalize "$script_folder/../"]

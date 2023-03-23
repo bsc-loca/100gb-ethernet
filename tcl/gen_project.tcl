@@ -16,7 +16,12 @@
 # Date: 22.02.2022
 # Description: 
 
-
+# Parameters to apply:
+# $1 FPGA_BOARD:      u55c / u280
+# $2 QSFP_PORT:       qsfp0 / qsfp1
+# $3 DMA_MEM:         hbm / sram
+# $4 SAXI_FREQ in Hz: 100000000
+# $5 SAXI_PROTOCOL:   AXI4LITE-64 / AXI4-512 /...
 
 namespace eval _tcl {
 proc get_script_folder {} {
@@ -62,6 +67,9 @@ if { $::argc > 0 } {
         }
         if { $::argc > 3 } {
           set g_saxi_freq  [lindex $argv 3]
+        }
+        if { $::argc > 3 } {
+          set g_saxi_prot  [lindex $argv 4]
         }
 }
 
