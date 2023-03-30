@@ -53,7 +53,7 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 set_property target_language VHDL [current_project]
 
 set top_module "$root_dir/src/${g_top_module_name}.vhd"
-set src_files [glob ${root_dir}/src/apb_uart/src/*]
+set src_files [glob ${root_dir}/src/apb_uart/src/vhdl_orig/*]
 add_files ${src_files}
 add_files $top_module
 
