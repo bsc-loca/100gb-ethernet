@@ -164,7 +164,7 @@ begin
       PSEL    => m_apb_psel(0),
       PENABLE => m_apb_penable,
       PWRITE  => m_apb_pwrite,
-      PADDR   => m_apb_paddr(4 downto 0),
+      PADDR   => m_apb_paddr(G_ADDR_WIDTH-1 downto 0),
       PWDATA  => m_apb_pwdata,
       PRDATA  => m_apb_prdata,
       PREADY  => m_apb_pready(0),
