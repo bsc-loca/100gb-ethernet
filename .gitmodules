@@ -1,0 +1,3 @@
+[submodule "src/apb_uart"]
+	path = src/apb_uart
+	url = https://github.com/pulp-platform/apb_uart.git
