@@ -19,10 +19,6 @@ if { $::argc >= 1 } {
         set g_fpga_part "xc${g_board_part}-fsvh2892-2L-e"
 
 } 
-if { $::argc == 2} {
-
-	set AxiAddrWidth [lindex $argv 1]
-}
 
 set root_dir $g_root_dir
 set g_project_name $g_project_name

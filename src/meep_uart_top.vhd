@@ -5,7 +5,9 @@ use IEEE.numeric_std.all;
 -- Serial UART
 entity meep_uart_top is
   generic (
-    G_ADDR_WIDTH : integer := 13
+    G_ADDR_WIDTH : integer := 3;
+    G_DATA_WIDTH : integer := 32;
+    G_RESP_WIDTH : integer := 2
   );
   port (
     s_axi_aclk    : in  std_logic;
@@ -13,17 +15,17 @@ entity meep_uart_top is
     s_axi_awaddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
     s_axi_awvalid : in  std_logic;
     s_axi_awready : out std_logic;
-    s_axi_wdata   : in  std_logic_vector(31 downto 0);
+    s_axi_wdata   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
     s_axi_wvalid  : in  std_logic;
     s_axi_wready  : out std_logic;
-    s_axi_bresp   : out std_logic_vector(1 downto 0);
+    s_axi_bresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
     s_axi_bvalid  : out std_logic;
     s_axi_bready  : in  std_logic;
     s_axi_araddr  : in  std_logic_vector (G_ADDR_WIDTH-1 downto 0);
     s_axi_arvalid : in  std_logic;
     s_axi_arready : out std_logic;
-    s_axi_rdata   : out std_logic_vector(31 downto 0);
-    s_axi_rresp   : out std_logic_vector(1 downto 0);
+    s_axi_rdata   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    s_axi_rresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
     s_axi_rvalid  : out std_logic;
     s_axi_rready  : in  std_logic;
 
@@ -55,26 +57,26 @@ architecture rtl of meep_uart_top is
       s_axi_awaddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
       s_axi_awvalid : in  std_logic;
       s_axi_awready : out std_logic;
-      s_axi_wdata   : in  std_logic_vector(31 downto 0);
+      s_axi_wdata   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
       s_axi_wvalid  : in  std_logic;
       s_axi_wready  : out std_logic;
-      s_axi_bresp   : out std_logic_vector(1 downto 0);
+      s_axi_bresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
       s_axi_bvalid  : out std_logic;
       s_axi_bready  : in  std_logic;
       s_axi_araddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
       s_axi_arvalid : in  std_logic;
       s_axi_arready : out std_logic;
-      s_axi_rdata   : out std_logic_vector(31 downto 0);
-      s_axi_rresp   : out std_logic_vector(1 downto 0);
+      s_axi_rdata   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+      s_axi_rresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
       s_axi_rvalid  : out std_logic;
       s_axi_rready  : in  std_logic;
       m_apb_paddr   : out std_logic_vector(G_ADDR_WIDTH-1 downto 0);
       m_apb_psel    : out std_logic_vector(0 downto 0);
       m_apb_penable : out std_logic;
       m_apb_pwrite  : out std_logic;
-      m_apb_pwdata  : out std_logic_vector(31 downto 0);
+      m_apb_pwdata  : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
       m_apb_pready  : in  std_logic_vector(0 downto 0);
-      m_apb_prdata  : in  std_logic_vector(31 downto 0);
+      m_apb_prdata  : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
       m_apb_pslverr : in  std_logic_vector(0 downto 0)
       );
   end component;
@@ -89,13 +91,13 @@ architecture rtl of meep_uart_top is
       PSEL    : in  std_logic;                      -- APB psel signal
       PENABLE : in  std_logic;                      -- APB penable signal
       PWRITE  : in  std_logic;                      -- APB pwrite signal
-      PADDR   : in  std_logic_vector(4 downto 0);   -- APB paddr signal
-      PWDATA  : in  std_logic_vector(31 downto 0);  -- APB pwdata signal
-      PRDATA  : out std_logic_vector(31 downto 0);  -- APB prdata signal
+      PADDR   : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0); -- APB paddr signal
+      PWDATA  : in  std_logic_vector(G_DATA_WIDTH-1 downto 0); -- APB pwdata signal
+      PRDATA  : out std_logic_vector(G_DATA_WIDTH-1 downto 0); -- APB prdata signal
       PREADY  : out std_logic;                      -- APB pready signal
       PSLVERR : out std_logic;                      -- APB pslverr signal
       --
-      INTERRUPT  : out std_logic;                      -- Interrupt output
+      INT     : out std_logic;                      -- Interrupt output
       --
       OUT1N   : out std_logic;                      -- Output 1
       OUT2N   : out std_logic;                      -- Output 2
@@ -115,8 +117,8 @@ architecture rtl of meep_uart_top is
   signal m_apb_penable : std_logic;
   signal m_apb_pwrite  : std_logic;
   signal m_apb_paddr   : std_logic_vector(G_ADDR_WIDTH-1 downto 0);
-  signal m_apb_pwdata  : std_logic_vector(31 downto 0);
-  signal m_apb_prdata  : std_logic_vector(31 downto 0);
+  signal m_apb_pwdata  : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal m_apb_prdata  : std_logic_vector(G_DATA_WIDTH-1 downto 0);
   signal m_apb_pready  : std_logic_vector(0 downto 0);
   signal m_apb_pslverr : std_logic_vector(0 downto 0);
 
@@ -154,7 +156,7 @@ begin
       );
 
 
-  inst_cva6_apb_uart : apb_uart
+  inst_pulp_apb_uart : apb_uart
     port map (
       CLK     => s_axi_aclk,
       RSTN    => s_axi_aresetn,
@@ -168,7 +170,7 @@ begin
       PREADY  => m_apb_pready(0),
       PSLVERR => m_apb_pslverr(0),
       --                 
-      INTERRUPT => ip2intc_irpt,
+      INT => ip2intc_irpt,
       --                   
       OUT1N   => out1n,
       OUT2N   => out2n,
