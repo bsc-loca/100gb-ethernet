@@ -5,27 +5,27 @@ use IEEE.numeric_std.all;
 -- Serial UART
 entity meep_uart_top is
   generic (
-    G_ADDR_WIDTH : integer := 3;
-    G_DATA_WIDTH : integer := 32;
-    G_RESP_WIDTH : integer := 2
+    ADDR_WIDTH : integer := 5;
+    DATA_WIDTH : integer := 32;
+    RESP_WIDTH : integer := 2
   );
   port (
     s_axi_aclk    : in  std_logic;
     s_axi_aresetn : in  std_logic;
-    s_axi_awaddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
+    s_axi_awaddr  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
     s_axi_awvalid : in  std_logic;
     s_axi_awready : out std_logic;
-    s_axi_wdata   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    s_axi_wdata   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
     s_axi_wvalid  : in  std_logic;
     s_axi_wready  : out std_logic;
-    s_axi_bresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
+    s_axi_bresp   : out std_logic_vector(RESP_WIDTH-1 downto 0);
     s_axi_bvalid  : out std_logic;
     s_axi_bready  : in  std_logic;
-    s_axi_araddr  : in  std_logic_vector (G_ADDR_WIDTH-1 downto 0);
+    s_axi_araddr  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
     s_axi_arvalid : in  std_logic;
     s_axi_arready : out std_logic;
-    s_axi_rdata   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
-    s_axi_rresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
+    s_axi_rdata   : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    s_axi_rresp   : out std_logic_vector(RESP_WIDTH-1 downto 0);
     s_axi_rvalid  : out std_logic;
     s_axi_rready  : in  std_logic;
 
@@ -54,30 +54,30 @@ architecture rtl of meep_uart_top is
     port (
       s_axi_aclk    : in  std_logic;
       s_axi_aresetn : in  std_logic;
-      s_axi_awaddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
+      s_axi_awaddr  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       s_axi_awvalid : in  std_logic;
       s_axi_awready : out std_logic;
-      s_axi_wdata   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
+      s_axi_wdata   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
       s_axi_wvalid  : in  std_logic;
       s_axi_wready  : out std_logic;
-      s_axi_bresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
+      s_axi_bresp   : out std_logic_vector(RESP_WIDTH-1 downto 0);
       s_axi_bvalid  : out std_logic;
       s_axi_bready  : in  std_logic;
-      s_axi_araddr  : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0);
+      s_axi_araddr  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       s_axi_arvalid : in  std_logic;
       s_axi_arready : out std_logic;
-      s_axi_rdata   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
-      s_axi_rresp   : out std_logic_vector(G_RESP_WIDTH-1 downto 0);
+      s_axi_rdata   : out std_logic_vector(DATA_WIDTH-1 downto 0);
+      s_axi_rresp   : out std_logic_vector(RESP_WIDTH-1 downto 0);
       s_axi_rvalid  : out std_logic;
       s_axi_rready  : in  std_logic;
-      m_apb_paddr   : out std_logic_vector(G_ADDR_WIDTH-1 downto 0);
-      m_apb_psel    : out std_logic_vector(0 downto 0);
+      m_apb_paddr   : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      m_apb_psel    : out std_logic;
       m_apb_penable : out std_logic;
       m_apb_pwrite  : out std_logic;
-      m_apb_pwdata  : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
-      m_apb_pready  : in  std_logic_vector(0 downto 0);
-      m_apb_prdata  : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
-      m_apb_pslverr : in  std_logic_vector(0 downto 0)
+      m_apb_pwdata  : out std_logic_vector(DATA_WIDTH-1 downto 0);
+      m_apb_pready  : in  std_logic;
+      m_apb_prdata  : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+      m_apb_pslverr : in  std_logic
       );
   end component;
 
@@ -91,9 +91,9 @@ architecture rtl of meep_uart_top is
       PSEL    : in  std_logic;                      -- APB psel signal
       PENABLE : in  std_logic;                      -- APB penable signal
       PWRITE  : in  std_logic;                      -- APB pwrite signal
-      PADDR   : in  std_logic_vector(G_ADDR_WIDTH-1 downto 0); -- APB paddr signal
-      PWDATA  : in  std_logic_vector(G_DATA_WIDTH-1 downto 0); -- APB pwdata signal
-      PRDATA  : out std_logic_vector(G_DATA_WIDTH-1 downto 0); -- APB prdata signal
+      PADDR   : in  std_logic_vector(ADDR_WIDTH-3 downto 0); -- APB paddr signal
+      PWDATA  : in  std_logic_vector(DATA_WIDTH-1 downto 0); -- APB pwdata signal
+      PRDATA  : out std_logic_vector(DATA_WIDTH-1 downto 0); -- APB prdata signal
       PREADY  : out std_logic;                      -- APB pready signal
       PSLVERR : out std_logic;                      -- APB pslverr signal
       --
@@ -113,14 +113,14 @@ architecture rtl of meep_uart_top is
   end component;
 
 
-  signal m_apb_psel    : std_logic_vector(0 downto 0);
+  signal m_apb_psel    : std_logic;
   signal m_apb_penable : std_logic;
   signal m_apb_pwrite  : std_logic;
-  signal m_apb_paddr   : std_logic_vector(G_ADDR_WIDTH-1 downto 0);
-  signal m_apb_pwdata  : std_logic_vector(G_DATA_WIDTH-1 downto 0);
-  signal m_apb_prdata  : std_logic_vector(G_DATA_WIDTH-1 downto 0);
-  signal m_apb_pready  : std_logic_vector(0 downto 0);
-  signal m_apb_pslverr : std_logic_vector(0 downto 0);
+  signal m_apb_paddr   : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal m_apb_pwdata  : std_logic_vector(DATA_WIDTH-1 downto 0);
+  signal m_apb_prdata  : std_logic_vector(DATA_WIDTH-1 downto 0);
+  signal m_apb_pready  : std_logic;
+  signal m_apb_pslverr : std_logic;
 
 
 begin
@@ -129,7 +129,7 @@ begin
     port map (
       s_axi_aclk    => s_axi_aclk,
       s_axi_aresetn => s_axi_aresetn,
-      s_axi_awaddr  => s_axi_awaddr(G_ADDR_WIDTH-1 downto 0),
+      s_axi_awaddr  => s_axi_awaddr,
       s_axi_awvalid => s_axi_awvalid,
       s_axi_awready => s_axi_awready,
       s_axi_wdata   => s_axi_wdata,
@@ -138,14 +138,14 @@ begin
       s_axi_bresp   => s_axi_bresp,
       s_axi_bvalid  => s_axi_bvalid,
       s_axi_bready  => s_axi_bready,
-      s_axi_araddr  => s_axi_araddr(G_ADDR_WIDTH-1 downto 0),
+      s_axi_araddr  => s_axi_araddr,
       s_axi_arvalid => s_axi_arvalid,
       s_axi_arready => s_axi_arready,
       s_axi_rdata   => s_axi_rdata,
       s_axi_rresp   => s_axi_rresp,
       s_axi_rvalid  => s_axi_rvalid,
       s_axi_rready  => s_axi_rready,
-      m_apb_paddr   => m_apb_paddr(G_ADDR_WIDTH-1 downto 0),
+      m_apb_paddr   => m_apb_paddr,
       m_apb_psel    => m_apb_psel,
       m_apb_penable => m_apb_penable,
       m_apb_pwrite  => m_apb_pwrite,
@@ -161,14 +161,14 @@ begin
       CLK     => s_axi_aclk,
       RSTN    => s_axi_aresetn,
       --                       
-      PSEL    => m_apb_psel(0),
+      PSEL    => m_apb_psel,
       PENABLE => m_apb_penable,
       PWRITE  => m_apb_pwrite,
-      PADDR   => m_apb_paddr(G_ADDR_WIDTH-1 downto 0),
+      PADDR   => m_apb_paddr(ADDR_WIDTH-1 downto 2),
       PWDATA  => m_apb_pwdata,
       PRDATA  => m_apb_prdata,
-      PREADY  => m_apb_pready(0),
-      PSLVERR => m_apb_pslverr(0),
+      PREADY  => m_apb_pready,
+      PSLVERR => m_apb_pslverr,
       --                 
       INT => ip2intc_irpt,
       --                   
