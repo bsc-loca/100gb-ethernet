@@ -805,6 +805,30 @@ int main(int argc, char *argv[])
           }
         }
 
+        // measuring latecy while transferring minimal word packet
+        packets = 1;
+        xil_printf("\n Measuring latecy, DMA: Transferring %d packet with length %d bytes between memories \n",
+                    packets, ETH_WORD_SIZE);
+        dmaTxMemPtr = size_t(ethSyst.txMem);
+        dmaRxMemPtr = size_t(ethSyst.rxMem);
+        if (XAxiDma_HasSg(&ethSyst.axiDma)) {
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, ETH_WORD_SIZE, ETH_WORD_SIZE, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, ETH_WORD_SIZE, ETH_WORD_SIZE, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr); // Rx
+          ethSyst.dmaBDTransfer                   (false, packets, packets,        txBdPtr); // Tx, each packet kick-off for big packets
+          txBdPtr             = ethSyst.dmaBDPoll (false, packets); // Tx
+          rxBdPtr             = ethSyst.dmaBDPoll (true,  packets); // Rx
+          ethSyst.dmaBDFree                       (false, packets, ETH_WORD_SIZE, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, ETH_WORD_SIZE, rxBdPtr); // Rx
+
+          uint32_t transDat = packets * ETH_WORD_SIZE;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          xil_printf("Transfer: %d Bytes \n", transDat);
+          printf("Tx time: %f ns \n", txTime);
+          printf("Rx time: %f ns \n", rxTime);
+        }
+
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX
         xil_printf("------- DMA Near-end loopback test PASSED -------\n\n");
 
@@ -1032,6 +1056,32 @@ int main(int argc, char *argv[])
               exit(1);
           }
         }
+
+        // measuring latecy while transferring minimal word packet
+        packets = 1;
+        xil_printf("\n Measuring latecy, DMA: Transferring %d packet with length %d bytes between memories \n",
+                    packets, ETH_WORD_SIZE);
+        dmaTxMemPtr = size_t(ethSyst.txMem);
+        dmaRxMemPtr = size_t(ethSyst.rxMem);
+        if (XAxiDma_HasSg(&ethSyst.axiDma)) {
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, ETH_WORD_SIZE, ETH_WORD_SIZE, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, ETH_WORD_SIZE, ETH_WORD_SIZE, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr); // Rx
+          sleep(1); // in seconds, timeout before Tx transfer to make sure opposite side also has set Rx transfer
+          ethSyst.dmaBDTransfer                   (false, packets, packets,        txBdPtr); // Tx, each packet kick-off for big packets
+          txBdPtr             = ethSyst.dmaBDPoll (false, packets); // Tx
+          rxBdPtr             = ethSyst.dmaBDPoll (true,  packets); // Rx
+          ethSyst.dmaBDFree                       (false, packets, ETH_WORD_SIZE, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, ETH_WORD_SIZE, rxBdPtr); // Rx
+
+          uint32_t transDat = packets * ETH_WORD_SIZE;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          xil_printf("Transfer: %d Bytes \n", transDat);
+          printf("Tx time: %f ns \n", txTime);
+          if (0) printf("Rx time: %f ns \n", rxTime); // meaningless here
+        }
+
         xil_printf("------- Async DMA 2-boards communication test PASSED -------\n\n");
 
 
@@ -1120,6 +1170,38 @@ int main(int argc, char *argv[])
                           word, packet, addr, ethSyst.rxMem[addr]);
               exit(1);
           }
+        }
+
+        // measuring latecy while transferring minimal word packet
+        packets = 1;
+        xil_printf("\n Measuring latecy, DMA: Transferring %d packet with length %d bytes between memories \n",
+                    packets, ETH_WORD_SIZE);
+        dmaTxMemPtr = size_t(ethSyst.txMem);
+        dmaRxMemPtr = size_t(ethSyst.rxMem);
+        if (XAxiDma_HasSg(&ethSyst.axiDma)) {
+          XAxiDma_Bd* rxBdPtr = ethSyst.dmaBDAlloc(true,  packets, ETH_WORD_SIZE, ETH_WORD_SIZE, dmaRxMemPtr); // Rx
+          XAxiDma_Bd* txBdPtr = ethSyst.dmaBDAlloc(false, packets, ETH_WORD_SIZE, ETH_WORD_SIZE, dmaTxMemPtr); // Tx
+          ethSyst.dmaBDTransfer                   (true,  packets, packets,        rxBdPtr); // Rx
+          if (ethSyst.physConnOrder) { // depending on board instance play "initiator" role
+            xil_printf("Initiator side: starting the transfer and receiving it back \n");
+            sleep(3); // in seconds, timeout before Tx transfer to make sure opposite side also has set Rx transfer
+            ethSyst.dmaBDTransfer                 (false, packets, packets,        txBdPtr); // Tx, each packet kick-off for big packets
+            txBdPtr           = ethSyst.dmaBDPoll (false, packets); // Tx
+            rxBdPtr           = ethSyst.dmaBDPoll (true,  packets); // Rx
+          } else { // depending on board instance play "responder" role
+            xil_printf("Responder side: accepting the transfer and sending it back \n");
+            rxBdPtr           = ethSyst.dmaBDPoll (true,  packets); // Rx
+            ethSyst.dmaBDTransfer                 (false, packets, packets,        txBdPtr); // Tx, each packet kick-off for big packets
+            txBdPtr           = ethSyst.dmaBDPoll (false, packets); // Tx
+          }
+          ethSyst.dmaBDFree                       (false, packets, ETH_WORD_SIZE, txBdPtr); // Tx
+          ethSyst.dmaBDFree                       (true,  packets, ETH_WORD_SIZE, rxBdPtr); // Rx
+          uint32_t transDat = packets * ETH_WORD_SIZE;
+          float txTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 0) * ethSyst.TIMER_TICK;
+          float rxTime = XTmrCtr_GetValue(&ethSyst.timerCnt, 1) * ethSyst.TIMER_TICK;
+          xil_printf("Transfer: %d Bytes \n", transDat);
+          printf("Tx time: %f ns \n", txTime);
+          if (ethSyst.physConnOrder) printf("Rx time: %f ns \n", rxTime);
         }
 
         ethSyst.ethTxRxDisable(); //Disabling Ethernet TX/RX

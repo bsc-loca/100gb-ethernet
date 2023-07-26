@@ -37,23 +37,23 @@ targets
 # (extension of the table in /etc/motd)
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
 # | FPGA Card  | Chassis | PCIe Bus | USB   | lsusb       | UART USB in /dev/  | QSFP0  | QSFP1      | no uBlazes| with uBlazes|
-# |            | Slot    |          | Hub # |             |                    |        |            | target id | target id   |
+# |            | Slot    |          | Port  |             |                    |        |            | target id | target id   |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf01 | 3       | 34:00.0  | 1     | usb 1-6.4.4 | USB-UART-FPGACARD1 | Switch | fpganXXf02 | 5         | 17          |
+# | fpganXXf01 | 3       | 34:00.0  | 1     | usb 1-6.4.4 | USB-UART-FPGACARD1 | Switch | fpganXXf02 | 6         |  21         |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf02 | 4       | 33:00.0  | 2     | usb 1-6.4.3 | USB-UART-FPGACARD2 | Switch | fpganXXf01 | 1         | 1           |
+# | fpganXXf02 | 4       | 33:00.0  | 2     | usb 1-6.4.3 | USB-UART-FPGACARD2 | Switch | fpganXXf01 | 1         |  1          |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf03 | 5       | 19:00.0  | 3     | usb 1-6.4.2 | USB-UART-FPGACARD3 | Switch | fpganXXf04 | 6         | 21          |
+# | fpganXXf03 | 5       | 19:00.0  | 3     | usb 1-6.4.2 | USB-UART-FPGACARD3 | Switch | fpganXXf04 | 5         |  17         |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf04 | 6       | 1A:00.0  | 4     | usb 1-6.4.1 | USB-UART-FPGACARD4 | Switch | fpganXXf03 | 2         | 5           |
+# | fpganXXf04 | 6       | 1A:00.0  | 4     | usb 1-6.4.1 | USB-UART-FPGACARD4 | Switch | fpganXXf03 | 2         |  5          |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf05 | 7       | CD:00.0  | 5     | usb 1-6.3.4 | USB-UART-FPGACARD5 | Switch | fpganXXf06 | 7         | 25          |
+# | fpganXXf05 | 7       | CD:00.0  | 5     | usb 1-6.3.4 | USB-UART-FPGACARD5 | Switch | fpganXXf06 | 7         |  25         |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf06 | 8       | CC:00.0  | 6     | usb 1-6.3.3 | USB-UART-FPGACARD6 | Switch | fpganXXf05 | 3         | 9           |
+# | fpganXXf06 | 8       | CC:00.0  | 6     | usb 1-6.3.3 | USB-UART-FPGACARD6 | Switch | fpganXXf05 | 3         |  9          |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf07 | 9       | B3:00.0  | 7     | usb 1-6.3.2 | USB-UART-FPGACARD7 | Switch | fpganXXf08 | 8         | 29          |
+# | fpganXXf07 | 9       | B3:00.0  | 7     | usb 1-6.3.2 | USB-UART-FPGACARD7 | Switch | fpganXXf08 | 4         |  13         |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf08 | 10      | B4:00.0  | 8     | usb 1-6.3.1 | USB-UART-FPGACARD8 | Switch | fpganXXf07 | 4         | 13          |
+# | fpganXXf08 | 10      | B4:00.0  | 8     | usb 1-6.3.1 | USB-UART-FPGACARD8 | Switch | fpganXXf07 | 8         |  29         |
 # +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
 # An automation could be applied by processing TCL list got from command: targets -target-properties
 #
