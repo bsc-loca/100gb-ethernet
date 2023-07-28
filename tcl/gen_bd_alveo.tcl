@@ -84,6 +84,8 @@ xilinx.com:ip:axi_gpio:2.0\
 xilinx.com:ip:util_reduced_logic:2.0\
 xilinx.com:ip:hbm:1.0\
 xilinx.com:ip:axis_data_fifo:2.0\
+xilinx.com:ip:bscan_jtag:1.0\
+xilinx.com:ip:debug_bridge:3.0\
 xilinx.com:ip:mdm:3.2\
 xilinx.com:ip:smartconnect:1.0\
 xilinx.com:ip:microblaze:11.0\
@@ -947,11 +949,28 @@ if { ${g_dma_mem} eq "hbm" } {
    CONFIG.IS_ACLK_ASYNC {1} \
  ] $loopback_fifo
 
+  # Create instance: bscan_prim, and set properties
+  set bscan_prim [ create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 bscan_prim ]
+  set_property -dict [ list \
+   CONFIG.C_DEBUG_MODE {7} \
+ ] $bscan_prim
+
+  # Create instance: bscan2jtag, and set properties
+  set bscan2jtag [ create_bd_cell -type ip -vlnv xilinx.com:ip:bscan_jtag:1.0 bscan2jtag ]
+
+  # Create instance: jtag2bscan, and set properties
+  set jtag2bscan [ create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 jtag2bscan ]
+  set_property -dict [ list \
+   CONFIG.C_DEBUG_MODE {4} \
+   CONFIG.C_NUM_BS_MASTER {1} \
+ ] $jtag2bscan
+
   # Create instance: mdm_1, and set properties
   set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
   set_property -dict [ list \
    CONFIG.C_ADDR_SIZE {32} \
    CONFIG.C_M_AXI_ADDR_WIDTH {32} \
+   CONFIG.C_USE_BSCAN {2} \
    CONFIG.C_USE_UART {1} \
  ] $mdm_1
 
@@ -1260,6 +1279,8 @@ if { ${g_board_part} eq "u55c" } {
   connect_bd_intf_net -intf_net microblaze_0_M_AXI_DP [get_bd_intf_pins microblaze_0/M_AXI_DP] [get_bd_intf_pins periph_connect/S00_AXI]
   connect_bd_intf_net -intf_net microblaze_0_M_AXI_IC [get_bd_intf_pins mem_connect/S00_AXI] [get_bd_intf_pins microblaze_0/M_AXI_IC]
   connect_bd_intf_net -intf_net microblaze_0_debug [get_bd_intf_pins mdm_1/MBDEBUG_0] [get_bd_intf_pins microblaze_0/DEBUG]
+  connect_bd_intf_net -intf_net bscan_prim_m0_bscan [get_bd_intf_pins bscan_prim/m0_bscan] [get_bd_intf_pins bscan2jtag/S_BSCAN]
+  connect_bd_intf_net -intf_net jtag2bscan_m0_bscan [get_bd_intf_pins jtag2bscan/m0_bscan] [get_bd_intf_pins mdm_1/BSCAN]
   connect_bd_intf_net -intf_net microblaze_0_dlmb_1 [get_bd_intf_pins microblaze_0/DLMB] [get_bd_intf_pins microblaze_0_local_memory/DLMB]
   connect_bd_intf_net -intf_net microblaze_0_ilmb_1 [get_bd_intf_pins microblaze_0/ILMB] [get_bd_intf_pins microblaze_0_local_memory/ILMB]
   connect_bd_intf_net -intf_net microblaze_0_interrupt [get_bd_intf_pins microblaze_0/INTERRUPT] [get_bd_intf_pins microblaze_0_axi_intc/interrupt]
@@ -1393,6 +1414,10 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets eth_dma_M_AXI_SG] [get_bd_intf_p
   connect_bd_net -net gt_loopback2_Dout [get_bd_pins gt_loopback/In2] [get_bd_pins gt_loopback2/Dout]
   connect_bd_net -net gt_loopback3_Dout [get_bd_pins gt_loopback/In3] [get_bd_pins gt_loopback3/Dout]
   connect_bd_net -net hbm_0_DRAM_0_STAT_CATTRIP [get_bd_ports HBM_CATTRIP] [get_bd_pins hbm_0/DRAM_0_STAT_CATTRIP]
+  connect_bd_net -net bscan2jtag_JTAG_TCK [get_bd_pins bscan2jtag/JTAG_TCK] [get_bd_pins jtag2bscan/jtag_tck]
+  connect_bd_net -net bscan2jtag_JTAG_TDI [get_bd_pins bscan2jtag/JTAG_TDI] [get_bd_pins jtag2bscan/jtag_tdi]
+  connect_bd_net -net bscan2jtag_JTAG_TMS [get_bd_pins bscan2jtag/JTAG_TMS] [get_bd_pins jtag2bscan/jtag_tms]
+  connect_bd_net -net bscan2jtag_JTAG_TDO [get_bd_pins bscan2jtag/JTAG_TDO] [get_bd_pins jtag2bscan/jtag_tdo]
   connect_bd_net -net mdm_1_Interrupt [get_bd_pins concat_intc/In0] [get_bd_pins mdm_1/Interrupt]
   connect_bd_net -net mem_raddr_con_dout [get_bd_pins hbm_0/AXI_01_ARADDR] [get_bd_pins mem_raddr_con/dout]
   connect_bd_net -net mem_waddr_con_dout [get_bd_pins hbm_0/AXI_01_AWADDR] [get_bd_pins mem_waddr_con/dout]
