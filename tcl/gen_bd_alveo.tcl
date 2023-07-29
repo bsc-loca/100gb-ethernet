@@ -953,7 +953,11 @@ if { ${g_dma_mem} eq "hbm" } {
   set bscan_prim [ create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 bscan_prim ]
   set_property -dict [ list \
    CONFIG.C_DEBUG_MODE {7} \
+   CONFIG.C_NUM_BS_MASTER {2} \
  ] $bscan_prim
+
+  # Create instance: debug_hub, and set properties
+  set debug_hub [ create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 debug_hub ]
 
   # Create instance: bscan2jtag, and set properties
   set bscan2jtag [ create_bd_cell -type ip -vlnv xilinx.com:ip:bscan_jtag:1.0 bscan2jtag ]
@@ -1280,6 +1284,7 @@ if { ${g_board_part} eq "u55c" } {
   connect_bd_intf_net -intf_net microblaze_0_M_AXI_IC [get_bd_intf_pins mem_connect/S00_AXI] [get_bd_intf_pins microblaze_0/M_AXI_IC]
   connect_bd_intf_net -intf_net microblaze_0_debug [get_bd_intf_pins mdm_1/MBDEBUG_0] [get_bd_intf_pins microblaze_0/DEBUG]
   connect_bd_intf_net -intf_net bscan_prim_m0_bscan [get_bd_intf_pins bscan_prim/m0_bscan] [get_bd_intf_pins bscan2jtag/S_BSCAN]
+  connect_bd_intf_net -intf_net bscan_prim_m1_bscan [get_bd_intf_pins bscan_prim/m1_bscan] [get_bd_intf_pins debug_hub/S_BSCAN]
   connect_bd_intf_net -intf_net jtag2bscan_m0_bscan [get_bd_intf_pins jtag2bscan/m0_bscan] [get_bd_intf_pins mdm_1/BSCAN]
   connect_bd_intf_net -intf_net microblaze_0_dlmb_1 [get_bd_intf_pins microblaze_0/DLMB] [get_bd_intf_pins microblaze_0_local_memory/DLMB]
   connect_bd_intf_net -intf_net microblaze_0_ilmb_1 [get_bd_intf_pins microblaze_0/ILMB] [get_bd_intf_pins microblaze_0_local_memory/ILMB]
@@ -1490,6 +1495,7 @@ if { ${g_dma_mem} eq "hbm" } {
   connect_bd_net -net tx_rst_gen_peripheral_aresetn [get_bd_pins hbm_0/AXI_02_ARESET_N] [get_bd_pins tx_rst_gen/peripheral_aresetn]
   connect_bd_net -net eth_dma_mm2s_prmry_reset_out_n [get_bd_pins dma_connect_tx/ARESETN] [get_bd_pins dma_connect_tx/M00_ARESETN] [get_bd_pins dma_connect_tx/S00_ARESETN] [get_bd_pins dma_ila_tx/resetn] [get_bd_pins dma_tx_fifo/s_axis_aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins loopback_fifo/s_axis_aresetn] [get_bd_pins tx_axis_switch/aresetn]
 }
+  connect_bd_net [get_bd_pins debug_hub/clk] [get_bd_pins microblaze_0/Clk]
 
   # Create address segments
 if { ${g_dma_mem} eq "sram" } {
