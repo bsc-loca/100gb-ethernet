@@ -22,6 +22,15 @@
 # XSCT reference: https://www.xilinx.com/html_docs/xilinx2020_1/vitis_doc/upu1569395223804.html
 # XSCT uses Xvfb and thus "ssh -X" should be used for remote run
 
+# Setting board number as zero (for single board at MEEP server) and redefining it if we work at FPGA cluster
+set board_num 0
+if { $::argc > 0 } {
+  set board_num [lindex $argv 0]
+  put "Using FPGA Board $board_num"
+} else {
+  put "Board number is not provided, using by default FPGA Board $board_num, meaning single one at the workstation."
+}
+
 # ----- Connecting to the board via JTAG, initializing target
 # Remote connection case (on remote host with board connected "hw_server -s tcp::3121" should be run with port 3121 enabled in firewall)
 # connect -url tcp:192.168.0.14:3121
@@ -32,40 +41,44 @@ connect -list
 
 # ---- Reading FPGA state
 targets
-# Here we may set a particular target to be active. If the FPGA is a single one in the JTAG chain thw above command is enough.
-# In FPGA cluster node we have 8 FPGA cards with following distribution of order in JTAG chain (target id):
-# (extension of the table in /etc/motd)
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | FPGA Card  | Chassis | PCIe Bus | USB   | lsusb       | UART USB in /dev/  | QSFP0  | QSFP1      | no uBlazes| with uBlazes|
-# |            | Slot    |          | Port  |             |                    |        |            | target id |target id(+3)|
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf01 | 3       | 34:00.0  | 1     | usb 1-6.4.4 | USB-UART-FPGACARD1 | Switch | fpganXXf02 | 6         |  16         |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf02 | 4       | 33:00.0  | 2     | usb 1-6.4.3 | USB-UART-FPGACARD2 | Switch | fpganXXf01 | 1         |  1          |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf03 | 5       | 19:00.0  | 3     | usb 1-6.4.2 | USB-UART-FPGACARD3 | Switch | fpganXXf04 | 5         |  13         |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf04 | 6       | 1A:00.0  | 4     | usb 1-6.4.1 | USB-UART-FPGACARD4 | Switch | fpganXXf03 | 2         |  4          |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf05 | 7       | CD:00.0  | 5     | usb 1-6.3.4 | USB-UART-FPGACARD5 | Switch | fpganXXf06 | 7         |  19         |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf06 | 8       | CC:00.0  | 6     | usb 1-6.3.3 | USB-UART-FPGACARD6 | Switch | fpganXXf05 | 3         |  7          |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf07 | 9       | B3:00.0  | 7     | usb 1-6.3.2 | USB-UART-FPGACARD7 | Switch | fpganXXf08 | 4         |  10         |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# | fpganXXf08 | 10      | B4:00.0  | 8     | usb 1-6.3.1 | USB-UART-FPGACARD8 | Switch | fpganXXf07 | 8         |  22         |
-# +------------+---------+----------+-------+-------------+--------------------+--------+------------+-----------+-------------+
-# An automation could be applied by processing TCL list got from command: targets -target-properties
-#
-# targets 1
-# targets
+# Here we set a particular target as active. If the FPGA is a single one in the JTAG chain then above command is enough.
+# In FPGA cluster node we have 8 FPGA cards with, so automation is applied by processing file '/etc/motd' and
+# TCL list got from file command: targets -target-properties
+
+if { $board_num != 0} {
+  set board_table [open "/etc/motd" "r"]
+	while {[gets $board_table line] >= 0} {
+    if [string match "*fpgan??f0$board_num*XFL*" $line] {
+      set board_serial [lindex $line 5]
+      put "Board serial: $board_serial"
+      break
+    }
+  }
+  close $board_table
+  if {![info exists board_serial]} {
+    put "No serial is found for board $board_num (should be in range 0...8), exiting..."
+    exit
+  }
+
+  set target_list [targets -target-properties]
+  foreach target_dict $target_list {
+    if {[dict get $target_dict name ] == "xcu280_u55c" &&
+        [string match "*$board_serial*" $target_dict]} {
+      set target_id [dict get $target_dict target_id]
+      targets $target_id
+      put "Activating JTAG target $target_id as xcu280_u55c FPGA for its programming..."
+    }
+  }
+}
 fpga -boot-status
 fpga -config-status
 fpga -state
 
 # ---- Programming FPGA
-fpga -file ./project/ethernet_system.runs/impl_1/ethernet_system_wrapper.bit
-# fpga -file ./project/ethernet_system_wrapper.bit # extracted from XSA bitstream
+set bitstream "./project/ethernet_system.runs/impl_1/ethernet_system_wrapper.bit"
+# set bitstream ./project/ethernet_system_wrapper.bit # extracted from XSA bitstream
+put "Programming FPGA with bitstream $bitstream"
+fpga -file $bitstream
 fpga -boot-status
 fpga -config-status
 fpga -state
@@ -73,9 +86,20 @@ fpga -state
 # ---- Setting CPU as debug target
 after 3000
 targets
-# targets 6
-# targets 27
-targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
+if { $board_num == 0} {
+  targets -set -nocase -filter {name =~ "*MicroBlaze*0*"}
+} else {
+  set target_list [targets -target-properties]
+  foreach target_dict $target_list {
+    if {[dict get $target_dict name ] == "MicroBlaze #0" &&
+        [string match "*$board_serial*" $target_dict]} {
+      set target_id [dict get $target_dict target_id]
+      targets $target_id
+      put "Activating JTAG target $target_id as MicroBlaze CPU for its booting..."
+    }
+  }
+}
+
 targets
 # loadhw -hw ./project/ethernet_system_wrapper.xsa
 state

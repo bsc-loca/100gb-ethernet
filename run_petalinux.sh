@@ -24,7 +24,7 @@ hw_server -d
 # petalinux-boot --jtag --fpga --kernel
 
 export ELF_TO_RUN="./plnx_proj/images/linux/image.elf"
-xsct -interactive ./tcl/run_elf.tcl
+xsct -interactive ./tcl/run_elf.tcl $1
 
 #In separate terminal:
 # picocom -b 115200 /dev/ttyUSB2
