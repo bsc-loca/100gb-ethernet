@@ -25,6 +25,7 @@
 #  the user must ensure to use the following commands within an opened vivado block design:"
 
 #  cd [get_property DIRECTORY [current_project]]"
+open_bd_design {./bd/ethernet_system/ethernet_system.bd}
 if { ${g_board_part} eq "versal" } {
 write_bd_tcl -force -hier_blks [get_bd_cells /] ./tcl/gen_bd_versal.tcl
 } else {

@@ -36,22 +36,21 @@ set script_folder [_tcl::get_script_folder]
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-set scripts_vivado_version 2021.2
-set current_vivado_version [version -short]
+# set scripts_vivado_version 2023.2
+# set current_vivado_version [version -short]
 
-if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
-    puts ""
-    catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "ERROR" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."}
+# if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
+#     puts ""
+#     catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "ERROR" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."}
 
-    return 1
-}
+#     return 1
+# }
 
 
 puts "The environment tcl will be sourced from ${script_folder}"
 source $script_folder/environment.tcl
 
-# Redefine the FPGA part in case the script is called with arguments
-# It defaults to u280
+# Redefine global defaults from above environment.tcl in case the script is called with arguments
 if { $::argc > 0 } {
 
         set g_board_part [lindex $argv 0]

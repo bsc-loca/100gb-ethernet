@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /**
 *
-* @file Initially started from original Xilinx xaxiemacif_dma.c (from lwip211_v1_6 lib)
+* @file Initially started from original Xilinx xaxiemacif_dma.c (from lwip211_v1_6 lib in Vitis-2021.2)
 *
  * Copyright (C) 2010 - 2021 Xilinx, Inc.
  * All rights reserved.
@@ -450,7 +450,7 @@ static void axidma_recv_handler(void *arg)
 	XAxiDma_BdRingIntEnable(rxring, XAXIDMA_IRQ_ALL_MASK);
 }
 
-s32_t is_tx_space_available(xaxiemacif_s *emac)
+s32_t xaxiemac_is_tx_space_available(xaxiemacif_s *emac)
 {
 	XAxiDma_BdRing *txring;
 

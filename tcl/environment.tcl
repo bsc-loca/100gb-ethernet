@@ -30,7 +30,7 @@ set script_folder [_tcl::get_script_folder]
 
 set g_vivado_version [version -short] 
 set g_board_part u55c
-set g_eth_port qsfp0
+set g_eth_port qsfp1
 set g_dma_mem hbm
 set g_saxi_freq 100000000
 set g_saxi_prot AXI4LITE-64

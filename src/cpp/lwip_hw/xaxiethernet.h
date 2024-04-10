@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /**
 *
-* @file Initially started from original Xilinx xaxiethernet.h
+* @file Initially started from original Xilinx xaxiethernet.h in Vitis-2021.2
 *
 * @addtogroup axiethernet_v5_13
 * @{
