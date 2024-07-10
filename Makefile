@@ -1,9 +1,7 @@
 ROOT_DIR  = $(PWD)
 IP_DIR    = $(ROOT_DIR)/ip
-# taking default Xilinx install path if not propagated from environment var
-VIVADO_VER    ?= 2023.2
-XILINX_VIVADO ?= /opt/Xilinx/Vivado/$(VIVADO_VER)/
-VIVADO_XLNX   := $(XILINX_VIVADO)/bin/vivado
+# taking default Xilinx install path
+VIVADO_XLNX := $(XILINX_VIVADO)/bin/vivado
 VIVADO_OPT  := -mode batch -nolog -nojournal -notrace -source
 FPGA_BOARD  ?= "u55c"
 QSFP_PORT   ?= "qsfp1"

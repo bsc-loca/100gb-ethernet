@@ -76,8 +76,7 @@ set_property widget {comboBox} [ipgui::get_guiparamspec -name "DMA_memory" -comp
 set_property value_validation_type list                $mem_param
 if { ${g_dma_mem} eq "sram" } {
   set dma_mem "internal($g_dma_mem)"
-}
-if { ${g_dma_mem} eq "hbm" } {
+} else {
   set dma_mem "external($g_dma_mem)"
 }
 set_property value_validation_list "$dma_mem $dma_mem" $mem_param
