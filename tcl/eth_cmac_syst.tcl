@@ -213,12 +213,26 @@ if { ${g_dma_mem} ne "sram" } {
    ] $m_axi_tx
 
   if { ${g_dma_mem} eq "ddr" } {
-  set_property CONFIG.DATA_WIDTH  {32} [get_bd_intf_ports m_axi_sg]
-  set_property CONFIG.DATA_WIDTH {512} [get_bd_intf_ports m_axi_rx]
-  set_property CONFIG.DATA_WIDTH {512} [get_bd_intf_ports m_axi_tx]
-  set_property CONFIG.PROTOCOL  {AXI4} [get_bd_intf_ports m_axi_sg]
-  set_property CONFIG.PROTOCOL  {AXI4} [get_bd_intf_ports m_axi_rx]
-  set_property CONFIG.PROTOCOL  {AXI4} [get_bd_intf_ports m_axi_tx]
+    set_property -dict [ list \
+      CONFIG.DATA_WIDTH  {32} \
+      CONFIG.NUM_READ_OUTSTANDING {32} \
+      CONFIG.NUM_WRITE_OUTSTANDING {32} \
+      CONFIG.PROTOCOL {AXI4} \
+    ] [get_bd_intf_ports m_axi_sg]
+    
+    set_property -dict [ list \
+      CONFIG.DATA_WIDTH  {512} \
+      CONFIG.NUM_READ_OUTSTANDING {32} \
+      CONFIG.NUM_WRITE_OUTSTANDING {32} \
+      CONFIG.PROTOCOL {AXI4} \
+    ] [get_bd_intf_ports m_axi_rx]
+    
+    set_property -dict [ list \
+      CONFIG.DATA_WIDTH  {512} \
+      CONFIG.NUM_READ_OUTSTANDING {32} \
+      CONFIG.NUM_WRITE_OUTSTANDING {32} \
+      CONFIG.PROTOCOL {AXI4} \
+    ] [get_bd_intf_ports m_axi_tx]
   }
 }
 
