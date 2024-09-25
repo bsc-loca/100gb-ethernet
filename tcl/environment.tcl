@@ -34,6 +34,8 @@ set g_eth_port qsfp1
 set g_dma_mem hbm
 set g_saxi_freq 100000000
 set g_saxi_prot AXI4LITE-64
+set g_max_dma_addr_width 40
+set g_ext_dma_addr_width $g_max_dma_addr_width
 
 set g_fpga_part xc${g_board_part}-fsvh2892-2L-e
 set g_root_dir    [file normalize "$script_folder/../"]

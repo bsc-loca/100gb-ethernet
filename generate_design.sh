@@ -17,4 +17,4 @@
 # Date: 22.02.2022
 # Description: 
 
-vivado -mode batch -nolog -nojournal -notrace -source ./tcl/gen_project.tcl -tclargs $1 $2 $3 $4 $5
+vivado -mode batch -nolog -nojournal -notrace -source ./tcl/gen_project.tcl -tclargs $1 $2 $3 $4 $5 $6

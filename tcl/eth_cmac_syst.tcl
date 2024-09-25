@@ -26,7 +26,7 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
   global g_dma_mem
   global g_saxi_freq
   global g_saxi_prot
-  set    dma_addr_width 40
+  global g_max_dma_addr_width
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
@@ -171,7 +171,7 @@ current_bd_design $design_name
 if { ${g_dma_mem} ne "sram" } {
   set m_axi_sg [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_sg ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH $dma_addr_width \
+   CONFIG.ADDR_WIDTH $g_max_dma_addr_width \
    CONFIG.DATA_WIDTH {256} \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_LOCK {0} \
@@ -184,7 +184,7 @@ if { ${g_dma_mem} ne "sram" } {
 
   set m_axi_rx [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_rx ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH $dma_addr_width \
+   CONFIG.ADDR_WIDTH $g_max_dma_addr_width \
    CONFIG.DATA_WIDTH {256} \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_LOCK {0} \
@@ -199,7 +199,7 @@ if { ${g_dma_mem} ne "sram" } {
 
   set m_axi_tx [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_tx ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH $dma_addr_width \
+   CONFIG.ADDR_WIDTH $g_max_dma_addr_width \
    CONFIG.DATA_WIDTH {256} \
    CONFIG.HAS_BRESP {0} \
    CONFIG.HAS_BURST {1} \
@@ -573,7 +573,7 @@ if { $g_saxi_freq < 50000000 || $g_saxi_freq > 250000000 } {
   # Create instance: eth_dma, and set properties
   set eth_dma [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 eth_dma ]
   set_property -dict [ list \
-   CONFIG.c_addr_width $dma_addr_width \
+   CONFIG.c_addr_width $g_max_dma_addr_width \
    CONFIG.c_include_mm2s_dre {1} \
    CONFIG.c_include_s2mm_dre {1} \
    CONFIG.c_include_sg {1} \
@@ -970,9 +970,9 @@ if { ${g_dma_mem} eq "sram" } {
   assign_bd_address -offset 0x00300000 -range 0x00040000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs sg_mem_cpu/S_AXI/Mem0] -force
   assign_bd_address -offset 0x00100000 -range 0x00080000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs tx_mem_cpu/S_AXI/Mem0] -force
 } else {
-  assign_bd_address -offset 0x00000000 -range [expr (1 << $dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_MM2S] [get_bd_addr_segs m_axi_tx/Reg] -force
-  assign_bd_address -offset 0x00000000 -range [expr (1 << $dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_S2MM] [get_bd_addr_segs m_axi_rx/Reg] -force
-  assign_bd_address -offset 0x00000000 -range [expr (1 << $dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_SG]   [get_bd_addr_segs m_axi_sg/Reg] -force
+  assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_MM2S] [get_bd_addr_segs m_axi_tx/Reg] -force
+  assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_S2MM] [get_bd_addr_segs m_axi_rx/Reg] -force
+  assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_SG]   [get_bd_addr_segs m_axi_sg/Reg] -force
 }
 
 

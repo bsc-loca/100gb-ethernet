@@ -53,8 +53,11 @@ if { $::argc > 0 } {
         if { $::argc > 3 } {
           set g_saxi_freq  [lindex $argv 3]
         }
-        if { $::argc > 3 } {
+        if { $::argc > 4 } {
           set g_saxi_prot  [lindex $argv 4]
+        }
+        if { $::argc > 5 } {
+          set g_ext_dma_addr_width [lindex $argv 5]
         }
 }
 
