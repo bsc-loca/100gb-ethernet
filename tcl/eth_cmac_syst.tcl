@@ -316,6 +316,7 @@ if { ${g_dma_mem} ne "sram" } {
  ] $STAT_TX_STATUS_REG
 
 if { ${g_dma_mem} ne "sram" } {
+  # AXI register slices, by default assuming Multi-SLR crossing (mode 15) for connection of DMA to SDRAM
   # Create instance: axi_reg_slice_rx, and set properties
   set axi_reg_slice_rx [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 axi_reg_slice_rx ]
   set_property -dict [ list \
@@ -337,6 +338,25 @@ if { ${g_dma_mem} ne "sram" } {
    CONFIG.REG_W {15} \
    CONFIG.USE_AUTOPIPELINING {1} \
  ] $axi_reg_slice_tx
+
+  # In case of U55C we have single border SLR crossing (mode 10), default mode 15 with Autopipelining causes errors in Vivado-2024.1
+  if { ${g_board_part} eq "u55c" } {
+    set_property -dict [ list \
+      CONFIG.REG_AR {10} \
+      CONFIG.REG_AW {10} \
+      CONFIG.REG_B  {10} \
+      CONFIG.REG_R  {10} \
+      CONFIG.REG_W  {10} \
+    ] $axi_reg_slice_rx
+
+    set_property -dict [ list \
+      CONFIG.REG_AR {10} \
+      CONFIG.REG_AW {10} \
+      CONFIG.REG_B  {10} \
+      CONFIG.REG_R  {10} \
+      CONFIG.REG_W  {10} \
+    ] $axi_reg_slice_tx
+  }
 }
 
   # Create instance: axi_timer_0, and set properties
@@ -933,9 +953,9 @@ if { ${g_dma_mem} eq "sram" } {
   connect_bd_net [get_bd_ports tx_clk] [get_bd_pins axi_reg_slice_tx/aclk] [get_bd_pins dma_loopback_fifo/s_axis_aclk] [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins eth_loopback_fifo/m_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/s_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
   connect_bd_net [get_bd_pins dma_loopback_fifo/s_axis_aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins tx_axis_switch/aresetn] [get_bd_pins tx_fifo/s_axis_aresetn]
   connect_bd_net [get_bd_ports s_axi_resetn] [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ext_rstn_inv/Op1] [get_bd_pins gt_ctl/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins rx_rst_gen/aux_reset_in] [get_bd_pins rx_rst_gen/ext_reset_in] [get_bd_pins tx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins tx_rst_gen/aux_reset_in] [get_bd_pins tx_rst_gen/ext_reset_in] [get_bd_pins tx_rx_ctl_stat/s_axi_aresetn]
-  connect_bd_net [get_bd_pins axi_reg_slice_rx/aresetn] [get_bd_pins rx_rst_gen/interconnect_aresetn]
+  connect_bd_net [get_bd_pins axi_reg_slice_rx/aresetn] [get_bd_pins eth_dma/s2mm_prmry_reset_out_n]
   connect_bd_net [get_bd_ports rx_rstn] [get_bd_pins rx_rst_gen/peripheral_aresetn]
-  connect_bd_net [get_bd_pins axi_reg_slice_tx/aresetn] [get_bd_pins tx_rst_gen/interconnect_aresetn]
+  connect_bd_net [get_bd_pins axi_reg_slice_tx/aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n]
   connect_bd_net [get_bd_ports tx_rstn] [get_bd_pins tx_rst_gen/peripheral_aresetn]
   if { ${g_dma_mem} eq "hbm" } {
   connect_bd_net [get_bd_pins dma_connect_sg/aresetn] [get_bd_pins eth_dma/axi_resetn]
