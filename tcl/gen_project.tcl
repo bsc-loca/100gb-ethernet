@@ -41,6 +41,10 @@ if { $::argc > 0 } {
 
         set g_board_part [lindex $argv 0]
         set g_fpga_part "xc${g_board_part}-fsvh2892-2L-e"
+        if { $g_board_part == "u250" } {
+        set g_fpga_part xcu250-figd2104-2L-e
+        puts "Prototype design is not yet supported for Alveo U250"
+        }
         if { ${g_board_part} eq "versal" } {
         set g_fpga_part "xcvc1802-viva1596-2LP-e-S"
         }
@@ -192,10 +196,12 @@ source $root_dir/tcl/eth_syst_xparams.tcl
 # creating full Ethernet system BD
 if { ${g_board_part} eq "versal" } {
 source $root_dir/tcl/gen_bd_versal.tcl
-} else {
-source $root_dir/tcl/gen_bd_alveo.tcl
-}
 create_root_design ""
+# prototype design is not yet supported for U250
+} elseif { $g_board_part != "u250" } {
+source $root_dir/tcl/gen_bd_alveo.tcl
+create_root_design ""
+}
 
 validate_bd_design
 save_bd_design

@@ -339,8 +339,9 @@ if { ${g_dma_mem} ne "sram" } {
    CONFIG.USE_AUTOPIPELINING {1} \
  ] $axi_reg_slice_tx
 
-  # In case of U55C we have single border SLR crossing (mode 10), default mode 15 with Autopipelining causes errors in Vivado-2024.1
-  if { ${g_board_part} eq "u55c" } {
+  # In case of U55C/U250 we have single border SLR crossing (mode 10), default mode 15 with Autopipelining causes errors in Vivado-2024.1
+  if { $g_board_part == "u55c" ||
+       $g_board_part == "u250" } {
     set_property -dict [ list \
       CONFIG.REG_AR {10} \
       CONFIG.REG_AW {10} \
@@ -506,6 +507,27 @@ if { ${g_dma_mem} eq "hbm" } {
       set g_lane2_loc     "X0Y45"
       set g_lane3_loc     "X0Y46"
       set g_lane4_loc     "X0Y47"
+    }
+  }
+  if { ${g_board_part} eq "u250" } {
+    set g_eth100gb_freq "156.25"
+    if { ${g_eth_port} eq "qsfp0" } {
+      # set g_cmac_loc      "CMACE4_X0Y7"
+      set g_cmac_loc      "CMACE4_X0Y8"
+      set g_gt_grp_loc    "X1Y44~X1Y47"
+      set g_lane1_loc     "X1Y44"
+      set g_lane2_loc     "X1Y45"
+      set g_lane3_loc     "X1Y46"
+      set g_lane4_loc     "X1Y47"
+    }
+    if { ${g_eth_port} eq "qsfp1" } {
+      # set g_cmac_loc      "CMACE4_X0Y6"
+      set g_cmac_loc      "CMACE4_X0Y7"
+      set g_gt_grp_loc    "X1Y40~X1Y43"
+      set g_lane1_loc     "X1Y40"
+      set g_lane2_loc     "X1Y41"
+      set g_lane3_loc     "X1Y42"
+      set g_lane4_loc     "X1Y43"
     }
   }
   if { ${g_board_part} eq "u55c" } {

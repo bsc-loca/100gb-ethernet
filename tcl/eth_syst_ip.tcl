@@ -48,7 +48,7 @@ ipx::package_project -root_dir $g_root_dir/ip -module Eth_CMAC_syst -import_file
 
 set ip_core [ipx::current_core]
 set_property -dict ${ip_properties} ${ip_core}
-set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
+# set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 
 ipx::add_user_parameter Board                                                    $ip_core
 set board_param [ipx::get_user_parameters Board -of_objects                      $ip_core]
