@@ -25,7 +25,7 @@ file mkdir ${root_dir}/uart
 ipx::package_project -root_dir ${root_dir}/uart -import_files
 set ip_core [ipx::current_core]
 set_property -dict ${ip_properties} ${ip_core}
-set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
+# set_property SUPPORTED_FAMILIES ${family_lifecycle} ${ip_core}
 
 ## Custom IP section
 
