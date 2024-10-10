@@ -168,7 +168,8 @@ current_bd_design $design_name
 
 
   # Create interface ports
-if { ${g_dma_mem} ne "sram" } {
+if { $g_dma_mem == "hbm" ||
+     $g_dma_mem == "ddr" } {
   set m_axi_sg [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_sg ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH $g_max_dma_addr_width \
@@ -237,6 +238,21 @@ if { ${g_dma_mem} ne "sram" } {
   }
 }
 
+if { $g_dma_mem == "cache" } {
+  set m_axi_dma [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_dma ]
+  set_property -dict [ list \
+   CONFIG.ADDR_WIDTH $g_max_dma_addr_width \
+   CONFIG.DATA_WIDTH {256} \
+   CONFIG.HAS_BURST {1} \
+   CONFIG.HAS_LOCK {0} \
+   CONFIG.HAS_QOS {0} \
+   CONFIG.HAS_REGION {0} \
+   CONFIG.NUM_READ_OUTSTANDING {256} \
+   CONFIG.NUM_WRITE_OUTSTANDING {256} \
+   CONFIG.PROTOCOL {AXI4} \
+   ] $m_axi_dma
+}
+
   set qsfp_4x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 qsfp_4x ]
 
   set AXIProt  [string replace $g_saxi_prot   [string first "-" $g_saxi_prot] end]
@@ -276,7 +292,8 @@ if { ${g_dma_mem} ne "sram" } {
   # Create ports
   set intc [ create_bd_port -dir O -from 1 -to 0 intc ]
 
-if { ${g_dma_mem} ne "sram" } {
+if { $g_dma_mem == "hbm" ||
+     $g_dma_mem == "ddr" } {
   set rx_clk [ create_bd_port -dir O -type clk rx_clk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {m_axi_rx} \
@@ -291,7 +308,13 @@ if { ${g_dma_mem} ne "sram" } {
   set tx_rstn [ create_bd_port -dir O -from 0 -to 0 -type rst tx_rstn ]
 }
 
+if {[string is digit -strict $g_saxi_freq]} {
   set s_axi_clk [ create_bd_port -dir I -type clk -freq_hz $g_saxi_freq s_axi_clk ]
+} else {
+  set s_axi_clk [ create_bd_port -dir I -type clk s_axi_clk ]
+  # separate input initializing clock for CMAC 
+  set init_clk  [ create_bd_port -dir I -type clk init_clk  ]
+}
   set s_axi_resetn [ create_bd_port -dir I -type rst s_axi_resetn ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_LOW} \
@@ -315,7 +338,8 @@ if { ${g_dma_mem} ne "sram" } {
    CONFIG.NUM_PORTS {2} \
  ] $STAT_TX_STATUS_REG
 
-if { ${g_dma_mem} ne "sram" } {
+if { $g_dma_mem == "hbm" ||
+     $g_dma_mem == "ddr" } {
   # AXI register slices, by default assuming Multi-SLR crossing (mode 15) for connection of DMA to SDRAM
   # Create instance: axi_reg_slice_rx, and set properties
   set axi_reg_slice_rx [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 axi_reg_slice_rx ]
@@ -480,6 +504,15 @@ if { ${g_dma_mem} eq "hbm" } {
   ] $dma_connect_tx
 }
 
+if { $g_dma_mem == "cache" } {
+  # Create instance of AXI interconnect to combine 3 DMA masters
+  set dma_intconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 dma_intconnect ]
+  set_property -dict [ list \
+   CONFIG.NUM_SI   {3} \
+   CONFIG.NUM_CLKS {3} \
+  ] $dma_intconnect
+}
+
   # Create instance: dma_loopback_fifo, and set properties
   set dma_loopback_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 dma_loopback_fifo ]
   set_property -dict [ list \
@@ -602,7 +635,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
    CONFIG.FREQ_HZ $g_refport_freq \
    ] $qsfp_refck
 
-if { $g_saxi_freq < 50000000 || $g_saxi_freq > 250000000 } {
+if { [string is digit -strict $g_saxi_freq] && ($g_saxi_freq < 50000000 || $g_saxi_freq > 250000000) } {
   #Create instance: clk_wiz_cmac, and set properties
   set clk_wiz_cmac [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_cmac ]
   #By default we have 100 MHz as output
@@ -900,24 +933,31 @@ if { ${g_dma_mem} eq "sram" } {
   connect_bd_intf_net [get_bd_intf_pins eth_tx_mem/BRAM_PORTB] [get_bd_intf_pins tx_mem_dma/BRAM_PORTA]
   connect_bd_intf_net [get_bd_intf_pins eth100gb/axis_tx] [get_bd_intf_pins tx_axis_switch/M01_AXIS]
 } else {
-  connect_bd_intf_net [get_bd_intf_ports m_axi_rx] [get_bd_intf_pins axi_reg_slice_rx/M_AXI]
-  connect_bd_intf_net [get_bd_intf_ports m_axi_tx] [get_bd_intf_pins axi_reg_slice_tx/M_AXI]
   connect_bd_intf_net [get_bd_intf_pins eth100gb/axis_rx] [get_bd_intf_pins rx_fifo/S_AXIS]
   connect_bd_intf_net [get_bd_intf_pins rx_axis_switch/S01_AXIS] [get_bd_intf_pins rx_fifo/M_AXIS]
   connect_bd_intf_net [get_bd_intf_ports s_axi] [get_bd_intf_pins periph_connect/S00_AXI]
   connect_bd_intf_net [get_bd_intf_pins tx_axis_switch/M01_AXIS] [get_bd_intf_pins tx_fifo/S_AXIS]
   connect_bd_intf_net [get_bd_intf_pins eth100gb/axis_tx] [get_bd_intf_pins tx_fifo/M_AXIS]
-  if { ${g_dma_mem} eq "hbm" } {
-  connect_bd_intf_net [get_bd_intf_pins dma_connect_sg/M00_AXI] [get_bd_intf_ports m_axi_sg] 
+  if { $g_dma_mem == "hbm" } {
+  connect_bd_intf_net [get_bd_intf_pins axi_reg_slice_rx/M_AXI] [get_bd_intf_ports m_axi_rx]
+  connect_bd_intf_net [get_bd_intf_pins axi_reg_slice_tx/M_AXI] [get_bd_intf_ports m_axi_tx]
+  connect_bd_intf_net [get_bd_intf_pins dma_connect_sg/M00_AXI] [get_bd_intf_ports m_axi_sg]
   connect_bd_intf_net [get_bd_intf_pins dma_connect_sg/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_SG]
   connect_bd_intf_net [get_bd_intf_pins dma_connect_rx/M00_AXI] [get_bd_intf_pins axi_reg_slice_rx/S_AXI] 
   connect_bd_intf_net [get_bd_intf_pins dma_connect_rx/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_S2MM]
   connect_bd_intf_net [get_bd_intf_pins dma_connect_tx/M00_AXI] [get_bd_intf_pins axi_reg_slice_tx/S_AXI] 
   connect_bd_intf_net [get_bd_intf_pins dma_connect_tx/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_MM2S]
+  } elseif { $g_dma_mem == "ddr" } {
+  connect_bd_intf_net [get_bd_intf_pins axi_reg_slice_rx/M_AXI] [get_bd_intf_ports m_axi_rx]
+  connect_bd_intf_net [get_bd_intf_pins axi_reg_slice_tx/M_AXI] [get_bd_intf_ports m_axi_tx]
+  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXI_SG]       [get_bd_intf_ports m_axi_sg]
+  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXI_S2MM]     [get_bd_intf_pins axi_reg_slice_rx/S_AXI] 
+  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXI_MM2S]     [get_bd_intf_pins axi_reg_slice_tx/S_AXI]
   } else {
-  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXI_SG]   [get_bd_intf_ports m_axi_sg]
-  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXI_S2MM] [get_bd_intf_pins axi_reg_slice_rx/S_AXI] 
-  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXI_MM2S] [get_bd_intf_pins axi_reg_slice_tx/S_AXI]
+  connect_bd_intf_net [get_bd_intf_pins dma_intconnect/M00_AXI] [get_bd_intf_ports m_axi_dma]
+  connect_bd_intf_net [get_bd_intf_pins dma_intconnect/S00_AXI] [get_bd_intf_pins eth_dma/M_AXI_SG]
+  connect_bd_intf_net [get_bd_intf_pins dma_intconnect/S01_AXI] [get_bd_intf_pins eth_dma/M_AXI_S2MM]
+  connect_bd_intf_net [get_bd_intf_pins dma_intconnect/S02_AXI] [get_bd_intf_pins eth_dma/M_AXI_MM2S]
   }
 }
 
@@ -971,14 +1011,24 @@ if { ${g_dma_mem} eq "sram" } {
 } else {
   connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins eth100gb/s_axi_aclk] [get_bd_pins eth_dma/m_axi_sg_aclk] [get_bd_pins eth_dma/s_axi_lite_aclk] [get_bd_pins gt_ctl/s_axi_aclk] [get_bd_pins periph_connect/aclk] [get_bd_pins rx_axis_switch/s_axi_ctrl_aclk] [get_bd_pins tx_axis_switch/s_axi_ctrl_aclk] [get_bd_pins tx_rx_ctl_stat/s_axi_aclk]
   connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins eth_loopback_fifo/s_axis_aresetn] [get_bd_pins rx_axis_switch/aresetn] [get_bd_pins rx_fifo/s_axis_aresetn]
-  connect_bd_net [get_bd_ports rx_clk] [get_bd_pins axi_reg_slice_rx/aclk] [get_bd_pins dma_loopback_fifo/m_axis_aclk] [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth100gb/rx_clk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins eth_loopback_fifo/s_axis_aclk] [get_bd_pins rx_axis_switch/aclk] [get_bd_pins rx_fifo/s_axis_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
-  connect_bd_net [get_bd_ports tx_clk] [get_bd_pins axi_reg_slice_tx/aclk] [get_bd_pins dma_loopback_fifo/s_axis_aclk] [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins eth_loopback_fifo/m_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/s_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
+  connect_bd_net [get_bd_pins dma_loopback_fifo/m_axis_aclk] [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth100gb/rx_clk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins eth_loopback_fifo/s_axis_aclk] [get_bd_pins rx_axis_switch/aclk] [get_bd_pins rx_fifo/s_axis_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
+  connect_bd_net [get_bd_pins dma_loopback_fifo/s_axis_aclk] [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins eth_loopback_fifo/m_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/s_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
   connect_bd_net [get_bd_pins dma_loopback_fifo/s_axis_aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins tx_axis_switch/aresetn] [get_bd_pins tx_fifo/s_axis_aresetn]
   connect_bd_net [get_bd_ports s_axi_resetn] [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ext_rstn_inv/Op1] [get_bd_pins gt_ctl/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins rx_rst_gen/aux_reset_in] [get_bd_pins rx_rst_gen/ext_reset_in] [get_bd_pins tx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins tx_rst_gen/aux_reset_in] [get_bd_pins tx_rst_gen/ext_reset_in] [get_bd_pins tx_rx_ctl_stat/s_axi_aresetn]
-  connect_bd_net [get_bd_pins axi_reg_slice_rx/aresetn] [get_bd_pins eth_dma/s2mm_prmry_reset_out_n]
+  if { $g_dma_mem == "hbm" ||
+       $g_dma_mem == "ddr" } {
   connect_bd_net [get_bd_ports rx_rstn] [get_bd_pins rx_rst_gen/peripheral_aresetn]
-  connect_bd_net [get_bd_pins axi_reg_slice_tx/aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n]
   connect_bd_net [get_bd_ports tx_rstn] [get_bd_pins tx_rst_gen/peripheral_aresetn]
+  connect_bd_net [get_bd_pins axi_reg_slice_rx/aclk]    [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_ports rx_clk]
+  connect_bd_net [get_bd_pins axi_reg_slice_tx/aclk]    [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_ports tx_clk]
+  connect_bd_net [get_bd_pins axi_reg_slice_rx/aresetn] [get_bd_pins eth_dma/s2mm_prmry_reset_out_n]
+  connect_bd_net [get_bd_pins axi_reg_slice_tx/aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n]
+  } else {
+  connect_bd_net [get_bd_pins dma_intconnect/aclk]    [get_bd_pins eth_dma/m_axi_sg_aclk]
+  connect_bd_net [get_bd_pins dma_intconnect/aclk1]   [get_bd_pins eth_dma/m_axi_s2mm_aclk]
+  connect_bd_net [get_bd_pins dma_intconnect/aclk2]   [get_bd_pins eth_dma/m_axi_mm2s_aclk]
+  connect_bd_net [get_bd_pins dma_intconnect/aresetn] [get_bd_pins eth_dma/axi_resetn]
+  }
   if { ${g_dma_mem} eq "hbm" } {
   connect_bd_net [get_bd_pins dma_connect_sg/aresetn] [get_bd_pins eth_dma/axi_resetn]
   connect_bd_net [get_bd_pins dma_connect_rx/aresetn] [get_bd_pins eth_dma/s2mm_prmry_reset_out_n]
@@ -989,11 +1039,15 @@ if { ${g_dma_mem} eq "sram" } {
   }
 }
 # drp_clk and init_clk inputs of CMAC require frequency in range 50...250 MHz
+if { [string is digit -strict $g_saxi_freq] } {
 if { $g_saxi_freq < 50000000 || $g_saxi_freq > 250000000 } {
   connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins clk_wiz_cmac/clk_in1]
   connect_bd_net [get_bd_pins clk_wiz_cmac/clk_out1] [get_bd_pins eth100gb/drp_clk] [get_bd_pins eth100gb/init_clk]
 } else {
   connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins eth100gb/drp_clk] [get_bd_pins eth100gb/init_clk]
+}
+} else {
+  connect_bd_net [get_bd_ports init_clk]  [get_bd_pins eth100gb/drp_clk] [get_bd_pins eth100gb/init_clk]
 }
 
   # Create address segments
@@ -1011,10 +1065,15 @@ if { ${g_dma_mem} eq "sram" } {
   assign_bd_address -offset 0x00200000 -range 0x00080000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs rx_mem_cpu/S_AXI/Mem0] -force
   assign_bd_address -offset 0x00300000 -range 0x00040000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs sg_mem_cpu/S_AXI/Mem0] -force
   assign_bd_address -offset 0x00100000 -range 0x00080000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs tx_mem_cpu/S_AXI/Mem0] -force
-} else {
+} elseif { $g_dma_mem == "hbm" ||
+           $g_dma_mem == "ddr" } {
   assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_MM2S] [get_bd_addr_segs m_axi_tx/Reg] -force
   assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_S2MM] [get_bd_addr_segs m_axi_rx/Reg] -force
   assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_SG]   [get_bd_addr_segs m_axi_sg/Reg] -force
+} else {
+  assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_MM2S] [get_bd_addr_segs m_axi_dma/Reg] -force
+  assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_S2MM] [get_bd_addr_segs m_axi_dma/Reg] -force
+  assign_bd_address -offset 0x00000000 -range [expr (1 << $g_max_dma_addr_width)] -target_address_space [get_bd_addr_spaces eth_dma/Data_SG]   [get_bd_addr_segs m_axi_dma/Reg] -force
 }
 
 

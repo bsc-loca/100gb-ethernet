@@ -78,10 +78,13 @@ if { ${g_dma_mem} eq "sram" } {
   set dma_mem "internal($g_dma_mem)"
 } else {
   set dma_mem "external($g_dma_mem)"
+  if { $g_dma_mem == "hbm" ||
+       $g_dma_mem == "ddr" } {
   # update of ADDR_WIDTH parameter for DMA AXI master ports to actually used by outside SDRAM
   set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_tx -of_objects $ip_core]]
   set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_rx -of_objects $ip_core]]
   set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_sg -of_objects $ip_core]]
+  }
 }
 set_property value_validation_list "$dma_mem $dma_mem" $mem_param
 set_property value                           $dma_mem  $mem_param
