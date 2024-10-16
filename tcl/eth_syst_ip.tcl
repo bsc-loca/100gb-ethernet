@@ -84,6 +84,8 @@ if { ${g_dma_mem} eq "sram" } {
   set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_tx -of_objects $ip_core]]
   set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_rx -of_objects $ip_core]]
   set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_sg -of_objects $ip_core]]
+  } else {
+  set_property value $g_ext_dma_addr_width [ipx::get_bus_parameters ADDR_WIDTH -of_objects [ipx::get_bus_interfaces m_axi_dma -of_objects $ip_core]]
   }
 }
 set_property value_validation_list "$dma_mem $dma_mem" $mem_param
