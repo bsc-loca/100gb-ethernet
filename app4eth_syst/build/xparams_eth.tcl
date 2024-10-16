@@ -1,28 +1,11 @@
-# Copyright 2022 Barcelona Supercomputing Center-Centro Nacional de Supercomputación
-
-# Licensed under the Solderpad Hardware License v 2.1 (the "License");
-# you may not use this file except in compliance with the License, or, at your option, the Apache License version 2.0.
-# You may obtain a copy of the License at
-# 
-#     http://www.solderpad.org/licenses/SHL-2.1
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# Author: Alexander Kropotov, BSC-CNS
-# Date: 22.02.2022
-# Description: 
-
-
 
 # Script to generate C-header containing hardware definitions for Ethernet core
 
-set bd_tcl [open $g_root_dir/bd/Eth_CMAC_syst/eth_cmac_syst.tcl r]
-set bd_hdr [open $g_root_dir/bd/Eth_CMAC_syst/xparameters.h     w]
+set env_tcl [open ../../tcl/environment.tcl   r]
+set bd_tcl  [open ../../tcl/eth_cmac_syst.tcl r]
+set bd_hdr  [open ./xparameters.h             w]
 
+puts $bd_hdr "// Ethernet subsystem hw parameters"
 puts $bd_hdr "#ifndef XPARAMETERS_H  // prevent circular inclusions"
 puts $bd_hdr "#define XPARAMETERS_H  // by using protection macros"
 
@@ -30,20 +13,58 @@ puts $bd_hdr ""
 puts $bd_hdr "// Some pre-definitions for Timer driver (needed as defines)"
 puts $bd_hdr "#define XPAR_XTMRCTR_NUM_INSTANCES  1"
 puts $bd_hdr "#define XPAR_TMRCTR_0_DEVICE_ID     0"
-puts $bd_hdr "#define XPAR_TMRCTR_0_CLOCK_FREQ_HZ 100000000U"
-puts $bd_hdr ""
-puts $bd_hdr "enum {"
 
+while {[gets $env_tcl line] >= 0} {
+  # extracting global AXI clock definition
+  if {[string first       "set g_saxi_freq" $line] >= 0} {
+    set line [string map {"set g_saxi_freq" "#define XPAR_TMRCTR_0_CLOCK_FREQ_HZ"} $line]
+  } else {
+    continue
+  }
+  puts $bd_hdr $line
+  puts $bd_hdr ""
+  break;
+}
+
+puts $bd_hdr "enum {"
 puts $bd_hdr "  // Some pre-definitions for DMA driver"
 puts $bd_hdr "   XPAR_XAXIDMA_NUM_INSTANCES      = 1,"
 puts $bd_hdr "   XPAR_AXIDMA_0_DEVICE_ID         = 0,"
 puts $bd_hdr "   XPAR_AXIDMA_0_NUM_MM2S_CHANNELS = 1,"
 puts $bd_hdr "   XPAR_AXIDMA_0_NUM_S2MM_CHANNELS = 1,"
 puts $bd_hdr "   XPAR_AXI_DMA_0_MICRO_DMA        = 0,"
-puts $bd_hdr "   XPAR_AXI_DMA_0_ADDR_WIDTH       = 32,"
+
+while {[gets $env_tcl line] >= 0} {
+  # extracting global DMA master address width definition
+  if {[string first       "set g_max_dma_addr_width" $line] >= 0} {
+    set line [string map {"set g_max_dma_addr_width" "   XPAR_AXI_DMA_0_ADDR_WIDTH ="} $line]
+  } else {
+    continue
+  }
+  puts -nonewline $bd_hdr $line
+  puts            $bd_hdr ","
+  break;
+}
+
 puts $bd_hdr "  // Definitions extracted from Ethernet subsystem BD tcl script"
 set comma_first 0
 while {[gets $bd_tcl line] >= 0} {
+
+  # extracting some AXI port definitions
+  if      {[string first "set s_axi" $line] >= 0} {
+    while {[string first  {] $s_axi} $line] <  0} {
+      gets $bd_tcl line
+      if        {[string first "CONFIG.ADDR_WIDTH" $line] >= 0} {
+        set line [string map  {"CONFIG.ADDR_WIDTH"           "ETH_SYST_ADRWIDTH ="} $line]
+        set line [string map  {\} ", ETH_SYST_ADRRANGE = 1 << ETH_SYST_ADRWIDTH"  } $line]
+      } else {
+        continue
+      }
+      set line [string map {\{ "" \} "" \\ ","} $line]
+      puts $bd_hdr $line
+    }
+    continue
+  }
 
   # extracting some DMA hw definitions
   if      {[string first "set eth_dma" $line] >= 0} {
@@ -97,13 +118,13 @@ while {[gets $bd_tcl line] >= 0} {
   }
 
   # extracting address definitions
-  if {[string first "get_bd_addr_segs axi_timer_0" $line] >= 0} {
+  if {[string first "get_bd_addr_segs axi_timer_0"          $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "XPAR_TMRCTR_0_BASEADDR ="}  $line]
     set line [string map {"-range"                    ", AXI_TIMER_0_ADRRANGE ="}    $line]
-  } elseif {[string first "get_bd_addr_segs eth100gb" $line] >= 0} {
+  } elseif {[string first "get_bd_addr_segs eth100gb"       $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "ETH100GB_BASEADDR ="}       $line]
     set line [string map {"-range"                    ", ETH100GB_ADRRANGE ="}       $line]
-  } elseif {[string first "get_bd_addr_segs eth_dma" $line] >= 0} {
+  } elseif {[string first "get_bd_addr_segs eth_dma"        $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "XPAR_AXIDMA_0_BASEADDR ="}  $line]
     set line [string map {"-range"                    ", ETH_DMA_ADRRANGE ="}        $line]
   } elseif {[string first "get_bd_addr_segs tx_axis_switch" $line] >= 0} {
@@ -112,19 +133,19 @@ while {[gets $bd_tcl line] >= 0} {
   } elseif {[string first "get_bd_addr_segs rx_axis_switch" $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "RX_AXIS_SWITCH_BASEADDR ="} $line]
     set line [string map {"-range"                    ", RX_AXIS_SWITCH_ADRRANGE ="} $line]
-  } elseif {[string first "get_bd_addr_segs tx_mem_cpu" $line] >= 0} {
+  } elseif {[string first "get_bd_addr_segs tx_mem_cpu"     $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "TX_MEM_CPU_BASEADDR ="}     $line]
     set line [string map {"-range"                    ", TX_MEM_CPU_ADRRANGE ="}     $line]
-  } elseif {[string first "get_bd_addr_segs rx_mem_cpu" $line] >= 0} {
+  } elseif {[string first "get_bd_addr_segs rx_mem_cpu"     $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "RX_MEM_CPU_BASEADDR ="}     $line]
     set line [string map {"-range"                    ", RX_MEM_CPU_ADRRANGE ="}     $line]
-  } elseif {[string first "get_bd_addr_segs sg_mem_cpu" $line] >= 0} {
+  } elseif {[string first "get_bd_addr_segs sg_mem_cpu"     $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "SG_MEM_CPU_BASEADDR ="}     $line]
     set line [string map {"-range"                    ", SG_MEM_CPU_ADRRANGE ="}     $line]
   } elseif {[string first "get_bd_addr_segs tx_rx_ctl_stat" $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "TX_RX_CTL_STAT_BASEADDR ="} $line]
     set line [string map {"-range"                    ", TX_RX_CTL_STAT_ADRRANGE ="} $line]
-  } elseif {[string first "get_bd_addr_segs gt_ctl" $line] >= 0} {
+  } elseif {[string first "get_bd_addr_segs gt_ctl"         $line] >= 0} {
     set line [string map {"assign_bd_address -offset"   "GT_CTL_BASEADDR ="}         $line]
     set line [string map {"-range"                    ", GT_CTL_ADRRANGE ="}         $line]
   } else {
@@ -143,5 +164,6 @@ while {[gets $bd_tcl line] >= 0} {
 puts $bd_hdr "};"
 puts $bd_hdr "#endif // end of protection macro"
 
+close $env_tcl
 close $bd_tcl
 close $bd_hdr

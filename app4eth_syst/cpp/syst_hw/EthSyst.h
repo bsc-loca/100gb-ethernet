@@ -191,21 +191,22 @@
 #define ETHDRV_H  // by using protection macros
 
 /***************************** Include Files *********************************/
-// #include "xparameters.h"
-#include <microblaze_sleep.h> // https://docs.xilinx.com/r/en-US/oslib_rm/Sleep-Routines-for-MicroBlaze-Processor
-#include "xintc.h"
+#include "xparameters.h"
+#include "xparams_soc.h"
 #include "xtmrctr.h"
 #include "xaxidma.h"
-#include "ethernet_system_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
+#include "Eth_CMAC_syst_eth100gb_0_axi4_lite_registers.h" // generated during implementation if AXI-Lite is enabled in Ethernet core
 #include "xgpio.h"
 #include "xaxis_switch.h"
-#include "eth_defs.h"
 
 
 /**************************** Type Definitions *******************************/
 class EthSyst {
-  uint32_t* ethCore = reinterpret_cast<uint32_t*>(XPAR_ETH100GB_BASEADDR); // Ethernet core base address
-  //100Gb Ethernet subsystem registers: https://www.xilinx.com/support/documentation/ip_documentation/cmac_usplus/v3_1/pg203-cmac-usplus.pdf#page=177
+  uint32_t volatile* ethSystBase; // Whole Ethernet system base address
+  uint32_t volatile* ethCore;     // Ethernet core base address
+  uint32_t volatile* cacheMem;    // cached system memory range for DMA usage
+  uint32_t volatile* uncacheMem;  // uncached system memory range for DMA usage
+  uint8_t  volatile* cacheFlAddr; // Control address for enforced Cache Flush
   enum {
     GT_RESET_REG          = GT_RESET_REG_OFFSET          / sizeof(uint32_t),
     RESET_REG             = RESET_REG_OFFSET             / sizeof(uint32_t),
@@ -219,8 +220,9 @@ class EthSyst {
     GT_LOOPBACK_REG       = GT_LOOPBACK_REG_OFFSET       / sizeof(uint32_t)
   };
 
-  uint32_t* rxtxCtrl = reinterpret_cast<uint32_t*>(XPAR_TX_RX_CTL_STAT_BASEADDR); // Ethernet core control via pins
-  uint32_t* gtCtrl   = reinterpret_cast<uint32_t*>(XPAR_GT_CTL_BASEADDR);         // GT control via pins
+  uint32_t volatile* rxtxCtrl; // Ethernet core control via pins
+  uint32_t volatile* gtCtrl;   // GT control via pins
+  uint8_t aurLbMode = 0; // storage of loopback mode for Aurora
   enum {
     TX_CTRL = XGPIO_DATA_OFFSET  / sizeof(uint32_t),
     RX_CTRL = XGPIO_DATA2_OFFSET / sizeof(uint32_t),
@@ -234,25 +236,65 @@ class EthSyst {
   uint16_t getReceiveDataLength(uint16_t);
 
   public:
-  XIntc   intrCtrl; // Instance of Interrupt Controller
   XTmrCtr timerCnt; // Instance of Timer counter
   XAxiDma axiDma;   // AXI DMA instance definitions
-  float const TIMER_TICK = 1.0e+9 / Xil_GetMBFrequency(); //ns
   // DMA Scatter-Gather memory Rx/Tx distribution
+  float const TIMER_TICK = 1.0e+9 / XPAR_TMRCTR_0_CLOCK_FREQ_HZ; //ns
   enum {
+    #ifndef AURORA
     ETH_MIN_PACK_SIZE = 64, // Limitations in 100Gb Ethernet IP (set in Vivado)
     ETH_MAX_PACK_SIZE = 9600,
-    TX_SG_MEM_ADDR =  SG_MEM_BASEADDR,
-    TX_SG_MEM_SIZE = (SG_MEM_HIGHADDR+1 - TX_SG_MEM_ADDR)/2,
-    RX_SG_MEM_ADDR =  SG_MEM_BASEADDR   + TX_SG_MEM_SIZE,
-    RX_SG_MEM_SIZE =  SG_MEM_HIGHADDR+1 - RX_SG_MEM_ADDR
+    #else
+    // Limitations for Aurora caused by no ability to support non-aligned to 32 bytes (Aurora stream width) packets.
+    ETH_MIN_PACK_SIZE = 32*3, // min packet should be big enough to support exchange with non-aligned packets (for ping max=74)
+    ETH_MAX_PACK_SIZE = 32*220,
+    #endif
+    UNCACHE_MEM_ADDR = DRAM_UNCACHE_BASEADDR,
+    CACHE_MEM_ADDR   = DRAM_CACHE_BASEADDR + DRAM_CACHE_ADRRANGE - ETH_SYST_ADRRANGE,
+    // Control address for explicit Cache Flush: https://parallel.princeton.edu/openpiton/docs/micro_arch.pdf#page=48
+    CACHE_FLUSH_ADDRMASK =  0x03FFFFFFC0,
+    CACHE_FLUSH_BASEADDR =  0xAC00000000 | (CACHE_MEM_ADDR & CACHE_FLUSH_ADDRMASK),
+    CACHE_FLUSH_USER6MSB = (0xFC00000000 &  CACHE_MEM_ADDR) >> (40-6),
+
+// Memory physical addresses from DMA perspective
+#ifdef DMA_MEM_HBM
+    TX_MEMNC_ADDR  = UNCACHE_MEM_ADDR + TX_MEM_CPU_BASEADDR - DRAM_BASEADDR,
+    RX_MEMNC_ADDR  = UNCACHE_MEM_ADDR + RX_MEM_CPU_BASEADDR - DRAM_BASEADDR,
+    SG_MEMNC_ADDR  = UNCACHE_MEM_ADDR + SG_MEM_CPU_BASEADDR - DRAM_BASEADDR,
+  #ifdef TXRX_MEM_CACHED
+    TX_MEM_ADDR    = CACHE_MEM_ADDR   + TX_MEM_CPU_BASEADDR - DRAM_BASEADDR,
+    RX_MEM_ADDR    = CACHE_MEM_ADDR   + RX_MEM_CPU_BASEADDR - DRAM_BASEADDR,
+  #else
+    TX_MEM_ADDR    = TX_MEMNC_ADDR,
+    RX_MEM_ADDR    = RX_MEMNC_ADDR,
+  #endif
+  #ifdef SG_MEM_CACHED
+    SG_MEM_ADDR    = CACHE_MEM_ADDR   + SG_MEM_CPU_BASEADDR - DRAM_BASEADDR,
+  #else
+    SG_MEM_ADDR    = SG_MEMNC_ADDR,
+  #endif
+#else // SRAM case: DMA doesn't see CPU address space, just own 3 separate memories, so full address is not mandatory
+    TX_MEMNC_ADDR  = 0, // ETH_SYST_BASEADDR + TX_MEM_CPU_BASEADDR,
+    RX_MEMNC_ADDR  = 0, // ETH_SYST_BASEADDR + RX_MEM_CPU_BASEADDR,
+    SG_MEMNC_ADDR  = 0, // ETH_SYST_BASEADDR + SG_MEM_CPU_BASEADDR,
+    TX_MEM_ADDR    = TX_MEMNC_ADDR,
+    RX_MEM_ADDR    = RX_MEMNC_ADDR,
+    SG_MEM_ADDR    = SG_MEMNC_ADDR,
+#endif
+
+    SG_TX_MEM_SIZE = SG_MEM_CPU_ADRRANGE/2,
+    SG_RX_MEM_SIZE = SG_MEM_CPU_ADRRANGE/2,
+    SG_TX_MEM_ADDR = SG_MEM_ADDR,
+    SG_RX_MEM_ADDR = SG_TX_MEM_ADDR + SG_TX_MEM_SIZE
   };
-  uint32_t* txMem  = reinterpret_cast<uint32_t*>(TX_MEM_BASEADDR); // Tx mem base address
-  uint32_t* rxMem  = reinterpret_cast<uint32_t*>(RX_MEM_BASEADDR); // Rx mem base address
-  uint32_t* sgMem  = reinterpret_cast<uint32_t*>(SG_MEM_BASEADDR); // SG mem base address
-  uint32_t* ddrMem = reinterpret_cast<uint32_t*>(0x90000000); // a segment of external DDR connected via cache (HBM for U55C)
-  uint32_t* sysMem = reinterpret_cast<uint32_t*>(0xF0000000); // a segment of external HBM connected via cache
-  uint32_t* extMem = reinterpret_cast<uint32_t*>(0x70000000); // same segment of external HBM but connected directly
+  uint32_t volatile* txMem;   // Tx mem base address
+  uint32_t volatile* rxMem;   // Rx mem base address
+  uint32_t volatile* sgMem;   // SG mem base address
+  uint32_t volatile* sgTxMem; // Tx SG mem base address
+  uint32_t volatile* sgRxMem; // Rx SG mem base address
+  uint32_t volatile* txMemNC; // Tx mem base address
+  uint32_t volatile* rxMemNC; // Rx mem base address
+  uint32_t volatile* sgMemNC; // SG mem base address
 
   size_t txBdCount = 0;
   size_t rxBdCount = 0;
@@ -261,33 +303,33 @@ class EthSyst {
   uint8_t physConnOrder;
   enum {PHYS_CONN_WAIT_INI = 2};
 
+  uint8_t volatile cacheFlush  (size_t);
+  uint8_t volatile cacheInvalid(size_t);
+  EthSyst();
+  // ~EthSyst();
   void ethCoreInit();
   void ethCoreBringup(bool);
   void ethTxRxEnable();
   void ethTxRxDisable();
+  void aurCoreBringup(bool);
+  void aurDisable();
 
   void axiDmaInit();
   XAxiDma_Bd* dmaBDAlloc   (bool, size_t, size_t, size_t, size_t);
   void        dmaBDTransfer(bool, size_t, size_t, XAxiDma_Bd*);
   XAxiDma_Bd* dmaBDPoll    (bool, size_t);
   void        dmaBDFree    (bool, size_t, size_t, XAxiDma_Bd*);
-  void switch_CPU_DMAxEth_LB(bool, bool);
-
-  void intrCtrlInit();
-  void intrCtrlConnect     (uint8_t, void(*)(void), bool);
-  void intrCtrlConnect_l   (uint8_t, void(*)(void), bool);
-  void intrCtrlDisconnect  (uint8_t);
-  void intrCtrlDisconnect_l(uint8_t);
-  void intrCtrlStart  (bool);
-  void intrCtrlStart_l(bool);
-  void intrCtrlStop  ();
-  void intrCtrlStop_l();
+  void switch_LB_DMA_Eth   (bool, bool);
 
   void timerCntInit();
 
   int flushReceive();
   int frameSend(uint8_t*, unsigned);
   uint16_t frameRecv(uint8_t*);
+
+  // uint64_t swap64(uint64_t);
+  // uint32_t swap32(uint32_t);
+  // uint16_t swap16(uint16_t);
 };
 
 #endif // end of protection macro
