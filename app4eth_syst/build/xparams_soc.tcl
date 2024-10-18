@@ -1,9 +1,12 @@
 
 # Script to generate C-header containing hardware definitions for SOC
 
-set fl_xml "../../../../../../../../xilinx/alveou280/devices_sarg.xml"
-set dv_xml [open $fl_xml         r]
-set bd_hdr [open ./xparams_soc.h w]
+set fl_xml [glob -nocomplain "../../../../../../../../xilinx/alveou280/devices_*.xml"]
+set fl_hdr "./xparams_soc.h"
+if {[file exists $fl_xml]} {
+puts "----- Extracting SOC definitions to `$fl_hdr` from OpenPiton device xml file `$fl_xml`"
+set dv_xml [open $fl_xml r]
+set bd_hdr [open $fl_hdr w]
 
 puts $bd_hdr "// SOC (OpenPiton) hw parameters from $fl_xml"
 puts $bd_hdr "#ifndef XPARAMS_SOC_H  // prevent circular inclusions"
@@ -66,3 +69,6 @@ puts $bd_hdr "#endif // end of protection macro"
 
 close $bd_hdr
 close $dv_xml
+} else {
+  puts "----- OpenPiton device xml file `$fl_xml` doesn't exist, hence leaving SOC definitions `$fl_hdr` as is"
+}

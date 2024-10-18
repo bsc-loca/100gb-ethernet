@@ -3,10 +3,10 @@
 rm ./eth_test
 
 echo ""
-echo "----- Extracting hw definitions from BD tcl script to create C-header file"
+# extraction of Eth subsystem hw definitions from Vivado BD TCL scripts
 # vivado -mode batch -nolog -nojournal -notrace -source ./xparams_eth.tcl
 tclsh ./xparams_eth.tcl
-# extraction of SOC address definitions from devices.xml, please comment if SOC is different from ACME(meep_openpiton)
+# extraction of SOC definitions from devices_xxx.xml for OpenPiton based designs (ACME, Cincoranch)
 tclsh ./xparams_soc.tcl
 
 # Taking some DMA driver sources to edit and for reference
@@ -17,19 +17,35 @@ sed -i 's|#define XPAR_AXIDMA_0_INCLUDE_SG|//#define XPAR_AXIDMA_0_INCLUDE_SG|g'
 echo "----- Checking if hw is implemented under MEEP_SHELL:"
 # SG_MEM_CACHED and TXRX_MEM_CACHED defines are suitable only for Ariane-based design
 # DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED"
-if grep "ETHERNET,yes.*hbm" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-   grep "ETHERNET,yes.*ddr" ../../../../accelerator/meep_shell/accelerator_def.csv
+if grep "AURORA,yes" ../../../../accelerator/meep_shell/accelerator_def.csv
 then
-  echo "----- Eth DMA memory is HBM-based in hw design, setting its addresses accordingly"
-  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
-elif grep "AURORA,yes.*hbm" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-     grep "AURORA,yes.*ddr" ../../../../accelerator/meep_shell/accelerator_def.csv
+  if grep "AURORA,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv
+  then
+    echo "----- Aurora DMA memory is SRAM-based in MEEP_SHELL, setting its addresses accordingly"
+    DEF_DMA_MEM_HBM="-DAURORA"
+  else
+    echo "----- Aurora DMA memory is DRAM-based in MEEP_SHELL, setting its addresses accordingly"
+    DEF_DMA_MEM_HBM="-DAURORA -DDMA_MEM_HBM"
+  fi
+elif grep "ETHERNET,yes" ../../../../accelerator/meep_shell/accelerator_def.csv ||
+     grep "set g_dma_mem" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
 then
-  echo "----- Aurora DMA memory is HBM-based in hw design, setting its addresses accordingly"
-  DEF_DMA_MEM_HBM="-DAURORA -DDMA_MEM_HBM"
-else
-  echo "----- Eth/Aurora DMA memory is SRAM-based in hw design, setting its addresses accordingly"
+  if grep "ETHERNET,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv ||
+     grep "set g_dma_mem.*sram" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+  then
+    echo "----- Eth DMA memory is SRAM-based in MEEP_SHELL/OpenPiton, setting its addresses accordingly"
+    DEF_DMA_MEM_HBM=""
+  else
+    echo "----- Eth DMA memory is DRAM-based in MEEP_SHELL/OpenPiton, setting its addresses accordingly"
+    DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
+  fi
+elif grep "set g_dma_mem.*sram" ../../tcl/environment.tcl
+then
+  echo "----- Eth DMA memory is SRAM-based by default in Eth IP, setting its addresses accordingly"
   DEF_DMA_MEM_HBM=""
+else
+  echo "----- Eth DMA memory is DRAM-based by default in Eth IP, setting its addresses accordingly"
+  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
 fi
 echo ""
 

@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     switch (choice) {
       case 'l': {
         #ifdef DMA_MEM_HBM
-        printf("------- Running DMA Tx/Rx/SG memory test (HBM-based) -------\n");
+        printf("------- Running DMA Tx/Rx/SG memory test (DRAM-based) -------\n");
         enum {MEM_TEST_COMBINATIONS = 2};
         #else
         printf("------- Running DMA Tx/Rx/SG memory test (SRAM-based) -------\n");

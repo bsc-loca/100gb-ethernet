@@ -1,9 +1,12 @@
 
 # Script to generate C-header containing hardware definitions for Ethernet core
 
+set fl_hdr "./xparameters.h"
+puts "----- Extracting Ethernet subsystem hw definitions to `$fl_hdr` from Vivado BD scripts"
+
 set env_tcl [open ../../tcl/environment.tcl   r]
 set bd_tcl  [open ../../tcl/eth_cmac_syst.tcl r]
-set bd_hdr  [open ./xparameters.h             w]
+set bd_hdr  [open $fl_hdr                     w]
 
 puts $bd_hdr "// Ethernet subsystem hw parameters"
 puts $bd_hdr "#ifndef XPARAMETERS_H  // prevent circular inclusions"

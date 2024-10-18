@@ -249,7 +249,7 @@ if { $g_dma_mem == "cache" } {
    CONFIG.HAS_REGION {0} \
    CONFIG.NUM_READ_OUTSTANDING {256} \
    CONFIG.NUM_WRITE_OUTSTANDING {256} \
-   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.PROTOCOL {AXI3} \
    ] $m_axi_dma
 }
 
