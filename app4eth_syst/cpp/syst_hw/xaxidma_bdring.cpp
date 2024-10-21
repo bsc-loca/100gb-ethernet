@@ -54,8 +54,9 @@
 #include "xaxidma_bdring.h"
 #include <unistd.h>
 
-#ifdef SG_MEM_CACHED
-// mapping of Cache Flush/Invalidate functions to OpenPiton hw-specific ones (Invalidate is dummy so far)
+#if defined(SG_MEM_CACHED) && !defined(DMA_MEM_COHER)
+// Mapping of Xilinx Flush/Invalidate macros to OpenPiton hw-specific functions (Invalidate is dummy so far)
+// Both Xilinx Flush/Invalidate macros are empty if macro "__aarch64__" is defined
 #undef XAXIDMA_CACHE_FLUSH
 #undef XAXIDMA_CACHE_INVALIDATE
 
@@ -1274,7 +1275,7 @@ int XAxiDma_BdRingFromHw(XAxiDma_BdRing *RingPtr, int BdLimit,
 		XAXIDMA_CACHE_INVALIDATE(CurBdPtr);
 		BdSts = XAxiDma_BdRead(CurBdPtr, XAXIDMA_BD_STS_OFFSET);
 		BdCr = XAxiDma_BdRead(CurBdPtr, XAXIDMA_BD_CTRL_LEN_OFFSET);
-        #ifdef SG_MEM_CACHED
+        #if defined(SG_MEM_CACHED) && !defined(DMA_MEM_COHER)
           // workaround of above dummy so far cache Invalidate call
           XAXIDMA_CACHE_FLUSH(CurBdPtr);
         #endif
@@ -1319,7 +1320,7 @@ int XAxiDma_BdRingFromHw(XAxiDma_BdRing *RingPtr, int BdLimit,
 		/* Move on to the next BD in work group */
 		CurBdPtr = (XAxiDma_Bd *)((void *)XAxiDma_BdRingNext(RingPtr, CurBdPtr));
 	}
-    #ifdef SG_MEM_CACHED
+    #if defined(SG_MEM_CACHED) && !defined(DMA_MEM_COHER)
       // a delay to make effective the above workaround of dummy so far cache Invalidate call,
 	  // meaning giving a chance for DMA engine to update status before next flush
       usleep(0);

@@ -14,9 +14,7 @@ cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/x
 cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_bdring.c ../cpp/syst_hw/
 sed -i 's|#define XPAR_AXIDMA_0_INCLUDE_SG|//#define XPAR_AXIDMA_0_INCLUDE_SG|g' ./xaxidma_g.c
 
-echo "----- Checking if hw is implemented under MEEP_SHELL:"
-# SG_MEM_CACHED and TXRX_MEM_CACHED defines are suitable only for Ariane-based design
-# DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED"
+echo "----- Checking automatically if Eth DMA is DRAM based:"
 if grep "AURORA,yes" ../../../../accelerator/meep_shell/accelerator_def.csv
 then
   if grep "AURORA,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv
@@ -47,6 +45,12 @@ else
   echo "----- Eth DMA memory is DRAM-based by default in Eth IP, setting its addresses accordingly"
   DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
 fi
+
+# For DRAM based option setting manually defines if Eth DMA utilizes cached region and cache-coherent/non-coherent connection
+# SG_MEM_CACHED and TXRX_MEM_CACHED defines together without DMA_MEM_COHER are suitable only for Ariane-based design
+# DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED"
+# DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED -DDMA_MEM_COHER"
+echo "Eth DMA mem define line: $DEF_DMA_MEM_HBM"
 echo ""
 
 # -DDEBUG for enabling Xilinx debug output

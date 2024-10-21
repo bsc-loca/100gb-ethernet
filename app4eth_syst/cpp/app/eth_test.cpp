@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         // ETH_PACKET_DECR = 7*sizeof(uint32_t) // optional length decrement for some packets for test purposes
       #endif
   };
-  #if defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)
+  #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && !defined(DMA_MEM_COHER)
     // Dummy memory for flushing cache
     enum { CACHE_LINE = 0x40,
            CACHE_SIZE = 0x10000*4};
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMemNC[addr] = 0;
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMemNC[addr] = 0;
         for (size_t addr = 0; addr < sgMemWords; ++addr) ethSyst.sgMemNC[addr] = 0;
-        #if defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)
+        #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && !defined(DMA_MEM_COHER)
           // flushing cache
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
           if (axiWordIdx%4 == 2) sgMemWr32[addr/4] = val >> 32;
           if (axiWordIdx%4 == 3) sgMemWr64[addr/8] = val;
         }
-        #if defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)
+        #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && !defined(DMA_MEM_COHER)
         if (!wrNonCachMem) // flushing cache after write to cached/mixed regions
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
-        #ifdef TXRX_MEM_CACHED
+        #if defined(TXRX_MEM_CACHED) && !defined(DMA_MEM_COHER)
           // flushing cache
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
@@ -505,12 +505,17 @@ int main(int argc, char *argv[])
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
-        #ifdef TXRX_MEM_CACHED
+        #if defined(TXRX_MEM_CACHED) && !defined(DMA_MEM_COHER)
           // flushing cache
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
 
+        #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && defined(DMA_MEM_COHER)
+        // here is a workaround of some problem with cache-coherent access for many packets in a row
+        packets = txrxMemSize/ETH_MEMPACK_SIZE/10;
+        #else
         packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        #endif
         if (XAxiDma_HasSg(&ethSyst.axiDma))
           packets = std::min(packets,
                     std::min(ethSyst.txBdCount,
@@ -652,7 +657,7 @@ int main(int argc, char *argv[])
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
-        #ifdef TXRX_MEM_CACHED
+        #if defined(TXRX_MEM_CACHED) && !defined(DMA_MEM_COHER)
           // flushing cache
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
@@ -769,7 +774,7 @@ int main(int argc, char *argv[])
         srand(1);
         for (size_t addr = 0; addr < txMemWords; ++addr) ethSyst.txMem[addr] = rand();
         for (size_t addr = 0; addr < rxMemWords; ++addr) ethSyst.rxMem[addr] = 0;
-        #ifdef TXRX_MEM_CACHED
+        #if defined(TXRX_MEM_CACHED) && !defined(DMA_MEM_COHER)
           // flushing cache
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
