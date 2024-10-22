@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
         #endif
 
         #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && defined(DMA_MEM_COHER)
-        // here is a workaround of some problem with cache-coherent access for many packets in a row
+        // here is a workaround of some problem with cache-coherent access for multiple packets in a row
         packets = txrxMemSize/ETH_MEMPACK_SIZE/10;
         #else
         packets = txrxMemSize/ETH_MEMPACK_SIZE;
@@ -662,7 +662,12 @@ int main(int argc, char *argv[])
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
 
+        #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && defined(DMA_MEM_COHER)
+        // here is a workaround of some problem with cache-coherent access for multiple packets in a row
+        size_t packets = txrxMemSize/ETH_MEMPACK_SIZE/15;
+        #else
         size_t packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        #endif
         if (XAxiDma_HasSg(&ethSyst.axiDma))
           packets = std::min(packets,
                     std::min(ethSyst.txBdCount,
@@ -779,7 +784,12 @@ int main(int argc, char *argv[])
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
 
+        #if (defined(TXRX_MEM_CACHED) || defined(SG_MEM_CACHED)) && defined(DMA_MEM_COHER)
+        // here is a workaround of some problem with cache-coherent access for multiple packets in a row
+        packets = txrxMemSize/ETH_MEMPACK_SIZE/15;
+        #else
         packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        #endif
         if (XAxiDma_HasSg(&ethSyst.axiDma))
           packets = std::min(packets,
                     std::min(ethSyst.txBdCount,
