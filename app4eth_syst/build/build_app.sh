@@ -14,43 +14,53 @@ cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/x
 cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_bdring.c ../cpp/syst_hw/
 sed -i 's|#define XPAR_AXIDMA_0_INCLUDE_SG|//#define XPAR_AXIDMA_0_INCLUDE_SG|g' ./xaxidma_g.c
 
-echo "----- Checking automatically if Eth DMA is DRAM based:"
-if grep "AURORA,yes" ../../../../accelerator/meep_shell/accelerator_def.csv
+echo ""
+echo "----- Defining automatically a type of Eth/Aurora DMA memory in MEEP_SHELL/OpenPiton environment:"
+if grep -s "AURORA,yes" ../../../../accelerator/meep_shell/accelerator_def.csv
 then
-  if grep "AURORA,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv
+  if grep -s "AURORA,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv
   then
-    echo "----- Aurora DMA memory is SRAM-based in MEEP_SHELL, setting its addresses accordingly"
+    echo "----- Aurora DMA memory is SRAM-based."
     DEF_DMA_MEM_HBM="-DAURORA"
   else
-    echo "----- Aurora DMA memory is DRAM-based in MEEP_SHELL, setting its addresses accordingly"
+    echo "----- Aurora DMA memory is DRAM-based."
     DEF_DMA_MEM_HBM="-DAURORA -DDMA_MEM_HBM"
   fi
-elif grep "ETHERNET,yes" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-     grep "set g_dma_mem" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+elif grep -s "ETHERNET,yes" ../../../../accelerator/meep_shell/accelerator_def.csv ||
+     grep -s "set g_dma_mem" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
 then
-  if grep "ETHERNET,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-     grep "set g_dma_mem.*sram" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+  if grep -s "ETHERNET,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv ||
+     grep -s "set g_dma_mem.*sram" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
   then
-    echo "----- Eth DMA memory is SRAM-based in MEEP_SHELL/OpenPiton, setting its addresses accordingly"
+    echo "----- Eth DMA memory is SRAM-based."
     DEF_DMA_MEM_HBM=""
+  elif grep -s "ETHERNET,yes.*cache" ../../../../accelerator/meep_shell/accelerator_def.csv ||
+       grep -s "set g_dma_mem.*cache" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+  then
+    echo "----- Eth DMA memory is DRAM-based with cache-coherent connection."
+    DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED -DDMA_MEM_COHER"
   else
-    echo "----- Eth DMA memory is DRAM-based in MEEP_SHELL/OpenPiton, setting its addresses accordingly"
+    echo "----- Eth DMA memory is DRAM-based."
     DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
   fi
-elif grep "set g_dma_mem.*sram" ../../tcl/environment.tcl
+elif grep -s "set g_dma_mem.*sram" ../../tcl/environment.tcl
 then
-  echo "----- Eth DMA memory is SRAM-based by default in Eth IP, setting its addresses accordingly"
+  echo "----- Eth DMA memory is SRAM-based by default in Eth IP."
   DEF_DMA_MEM_HBM=""
 else
-  echo "----- Eth DMA memory is DRAM-based by default in Eth IP, setting its addresses accordingly"
+  echo "----- Eth DMA memory is DRAM-based by default in Eth IP."
   DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
 fi
 
-# For DRAM based option setting manually defines if Eth DMA utilizes cached region and cache-coherent/non-coherent connection
-# SG_MEM_CACHED and TXRX_MEM_CACHED defines together without DMA_MEM_COHER are suitable only for Ariane-based design
-# DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED"
-# DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED -DDMA_MEM_COHER"
-echo "Eth DMA mem define line: $DEF_DMA_MEM_HBM"
+#Manual setting of Eth DMA connection type
+# Eth DMA utilizes non-cached region of DRAM through direct connection
+#  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
+# Eth DMA utilizes cached region of DRAM through direct connection (requires explicit cache flush/invalidate, suitable for OP Ariane-based design)
+#  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED"
+# Eth DMA utilizes cached region of DRAM through cache-coherent connection (supported in Cincoranch architechure)
+#  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED -DDMA_MEM_COHER"
+
+echo "----- Eth DMA mem define line: $DEF_DMA_MEM_HBM"
 echo ""
 
 # -DDEBUG for enabling Xilinx debug output

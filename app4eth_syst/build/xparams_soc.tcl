@@ -4,7 +4,7 @@
 set fl_xml [glob -nocomplain "../../../../../../../../xilinx/alveou280/devices_*.xml"]
 set fl_hdr "./xparams_soc.h"
 if {[file exists $fl_xml]} {
-puts "----- Extracting SOC definitions to `$fl_hdr` from OpenPiton device xml file `$fl_xml`"
+puts "----- Extracting SOC definitions to `$fl_hdr` from OpenPiton device xml `$fl_xml`"
 set dv_xml [open $fl_xml r]
 set bd_hdr [open $fl_hdr w]
 
@@ -13,7 +13,7 @@ puts $bd_hdr "#ifndef XPARAMS_SOC_H  // prevent circular inclusions"
 puts $bd_hdr "#define XPARAMS_SOC_H  // by using protection macros"
 
 puts $bd_hdr "enum {"
-puts $bd_hdr "  // Definitions extracted from common OpenPiton devices.xml"
+puts $bd_hdr "  // Definitions extracted from OpenPiton devices xml"
 
 while {[gets $dv_xml line] >= 0} {
   # extracting whole Ethernet subsystem address definitions
