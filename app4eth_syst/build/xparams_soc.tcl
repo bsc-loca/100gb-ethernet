@@ -1,7 +1,8 @@
 
 # Script to generate C-header containing hardware definitions for SOC
 
-set fl_xml [glob -nocomplain "../../../../../../../../xilinx/alveou280/devices_*.xml"]
+# If SOC is based on OpenPiton, possible locations of device xml file
+set fl_xml [lindex [glob -nocomplain  "../../../../accelerator/piton/design/xilinx/alveou280/devices_*.xml" "../../../../../../../../xilinx/alveou280/devices_*.xml"] 0]
 set fl_hdr "./xparams_soc.h"
 if {[file exists $fl_xml]} {
 puts "----- Extracting SOC definitions to `$fl_hdr` from OpenPiton device xml `$fl_xml`"
