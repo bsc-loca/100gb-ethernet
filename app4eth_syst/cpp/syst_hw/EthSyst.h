@@ -249,8 +249,9 @@ class EthSyst {
     ETH_MIN_PACK_SIZE = 32*3, // min packet should be big enough to support exchange with non-aligned packets (for ping max=74)
     ETH_MAX_PACK_SIZE = 32*220,
     #endif
-    UNCACHE_MEM_ADDR = DRAM_UNCACHE_BASEADDR,
-    CACHE_MEM_ADDR   = DRAM_CACHE_BASEADDR + DRAM_CACHE_ADRRANGE - ETH_SYST_ADRRANGE,
+    // For test purposes taking end of range, these two areas shouldn't overlap physically for proper mmap()
+    UNCACHE_MEM_ADDR = DRAM_UNCACHE_BASEADDR + DRAM_UNCACHE_ADRRANGE - 2*ETH_SYST_ADRRANGE,
+    CACHE_MEM_ADDR   = DRAM_CACHE_BASEADDR   + DRAM_CACHE_ADRRANGE   -   ETH_SYST_ADRRANGE,
     // Control address for explicit Cache Flush: https://parallel.princeton.edu/openpiton/docs/micro_arch.pdf#page=48
     CACHE_FLUSH_ADDRMASK =  0x03FFFFFFC0,
     CACHE_FLUSH_BASEADDR =  0xAC00000000 | (CACHE_MEM_ADDR & CACHE_FLUSH_ADDRMASK),
