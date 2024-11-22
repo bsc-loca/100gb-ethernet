@@ -484,7 +484,10 @@ int main(int argc, char *argv[])
 
         for (size_t addr = 0; addr < (packets * DMA_PACKET_LEN)/sizeof(uint32_t); ++addr) {
           if (ethSyst.rxMem[addr] != ethSyst.txMem[addr]) {
-            printf("\nERROR: Incorrect data transferred by DMA at addr %ld: %0X, expected: %0X \n", addr, ethSyst.rxMem[addr], ethSyst.txMem[addr]);
+            printf("\nERROR: Incorrect data transferred by DMA at addr offs 0x%lX: 0x%0X, expected: 0x%0X \n",
+                    addr*sizeof(uint32_t), ethSyst.rxMem[addr], ethSyst.txMem[addr]);
+            // infinite read of faulty/ref addresses for hw debug
+            while (ethSyst.rxMem[addr] != ethSyst.txMem[addr]);
             exit(1);
           }
         }
