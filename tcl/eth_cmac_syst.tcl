@@ -840,17 +840,17 @@ if { ${g_dma_mem} eq "sram" } {
 if { ${g_dma_mem} ne "sram" } {
   # Create instance: rx_fifo, and set properties
   set rx_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 rx_fifo ]
-  set_property USER_COMMENTS.comment_6 "FIFO depth is set to 256 to fit max CMAC packet 150 x 64bytes = 9600 bytes.
-But functionality is fine for at least depth 16." [get_bd_cells /rx_fifo]
+  set_property USER_COMMENTS.comment_6 "FIFO depth is set to 4096 to fit (4096/150) CMAC max packets 150 x 64bytes = 9600 bytes for low-speed cache-coherent DMA-DRAM connection.
+But functionality is fine for at least depth 16 if DMA is directly (bypassing cache) connected to DRAM." [get_bd_cells /rx_fifo]
   set_property -dict [ list \
-   CONFIG.FIFO_DEPTH {256} \
+   CONFIG.FIFO_DEPTH {4096} \
    CONFIG.IS_ACLK_ASYNC {0} \
  ] $rx_fifo
 
   # Create instance: tx_fifo, and set properties
   set tx_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 tx_fifo ]
-  set_property USER_COMMENTS.comment_5 "FIFO depth is set to 256 to fit max CMAC packet 150 x 64bytes = 9600 bytes.
-But functionality is fine for at least depth 128." [get_bd_cells /tx_fifo]
+  set_property USER_COMMENTS.comment_5 "FIFO depth is set to 256 to fit CMAC max packet 150 x 64bytes = 9600 bytes.
+But functionality is fine for at least depth 128 (in non-packet mode)." [get_bd_cells /tx_fifo]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {256} \
    CONFIG.FIFO_MODE {2} \
