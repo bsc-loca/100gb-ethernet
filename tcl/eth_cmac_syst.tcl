@@ -236,20 +236,22 @@ if { $g_dma_mem == "hbm" ||
       CONFIG.PROTOCOL {AXI4} \
     ] [get_bd_intf_ports m_axi_tx]
   }
-}
 
-if { $g_dma_mem == "cache" } {
+} elseif { $g_dma_mem != "sram" } {
+  # extracting AXI parameters if a single AXI port is requested
+  set AXIProt  [string replace $g_dma_mem   [string first "-" $g_dma_mem] end]
+  set AXIWidth [string replace $g_dma_mem 0 [string first "-" $g_dma_mem]    ]
   set m_axi_dma [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_dma ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH $g_max_dma_addr_width \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH $AXIWidth \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_LOCK {0} \
    CONFIG.HAS_QOS {0} \
    CONFIG.HAS_REGION {0} \
    CONFIG.NUM_READ_OUTSTANDING {256} \
    CONFIG.NUM_WRITE_OUTSTANDING {256} \
-   CONFIG.PROTOCOL {AXI3} \
+   CONFIG.PROTOCOL $AXIProt \
    ] $m_axi_dma
 }
 
@@ -502,10 +504,10 @@ if { ${g_dma_mem} eq "hbm" } {
   set_property -dict [ list \
    CONFIG.NUM_SI {1} \
   ] $dma_connect_tx
-}
 
-if { $g_dma_mem == "cache" } {
-  # Create instance of AXI interconnect to combine 3 DMA masters
+} elseif { $g_dma_mem != "ddr" &&
+           $g_dma_mem != "sram" } {
+  # Create instance of AXI interconnect to combine 3 DMA masters if a single AXI port is requested
   set dma_intconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 dma_intconnect ]
   set_property -dict [ list \
    CONFIG.NUM_SI   {3} \
