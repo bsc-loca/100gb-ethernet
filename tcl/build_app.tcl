@@ -13,8 +13,8 @@
 # limitations under the License.
 
 # Author: Alexander Kropotov, BSC-CNS
-# Date: 22.02.2022
-# Description: 
+# Date: 30.01.2025
+# Last updated to run under XSCT-2024.2
 
 
 
@@ -37,7 +37,7 @@ repo -apps
 if {![file exists ./project/ethernet_system_wrapper_orig.xsa]} {
       file rename ./project/ethernet_system_wrapper.xsa      ./project/ethernet_system_wrapper_orig.xsa
 }
-file copy -force ./src/hw/ethernet_system_U280hbm_2021.2.xsa ./project/ethernet_system_wrapper.xsa
+file copy -force ./app4eth_proto/hw/ethernet_system_U280hbm_2021.2.xsa ./project/ethernet_system_wrapper.xsa
 app create -name eth_test -hw ./project/ethernet_system_wrapper.xsa -proc microblaze_0 -arch 32 -os standalone -lang c++ -template {Empty Application (C++)}
 # -os freertos10_xilinx                # tested option to create app under simple OS
 # -lang c -template {lwIP Echo Server} # tested option to create simple lwIP-based app (further importsources command should be commented)
@@ -69,7 +69,7 @@ domain active
 domain report
 
 #config the BSP
-bsp setlib -name lwip213
+bsp setlib -name lwip220
 #additional lwip configurations taken from activated UDP/TCP Perf examples in Vitis GUI
 #for all examples
 #  (DHCP enabling causes lack of dhcp_fine_tmr() and dhcp_coarse_tmr() functions so far)
@@ -131,9 +131,9 @@ if {[eof $file_xpr]} {
 close $file_xpr
 
 bsp config -append extra_compiler_flags "-std=gnu18 -DDEBUG ${DEF_DMA_MEM_HBM} \
-                                         -I../../../../../../../../../src/cpp/syst_hw \
-                                         -I../../../../../../../../../src/cpp/lwip_hw \
-                                  -imacros ../../../../../../../../../src/cpp/lwip_hw/lwip_extra_defs.h -Werror=div-by-zero"
+                                         -I../../../../../../../../../app4eth_proto/cpp/syst_hw \
+                                         -I../../../../../../../../../app4eth_proto/cpp/lwip_hw \
+                                  -imacros ../../../../../../../../../app4eth_proto/cpp/lwip_hw/lwip_extra_defs.h -Werror=div-by-zero"
 # bsp regenerate
 #Report created BSP
 bsp listparams -proc
@@ -141,7 +141,7 @@ bsp getos
 bsp listparams -os
 bsp getdrivers
 bsp getlibs
-bsp listparams -lib lwip213
+bsp listparams -lib lwip220
 # result of above command before bsp config of lwip (default values) and with description, grabbed from .log Vitis file (for lwip211_v1_6 in Vitis-2021.2):
 # ================================================================================                                                  
 # PARAMETER                       VALUE      DESCRIPTION
@@ -242,16 +242,16 @@ sysproj report eth_test_system
 app list
 app report eth_test
 #config the app
-importsources -name eth_test -path ./src/cpp/ 
+importsources -name eth_test -path ./app4eth_proto/cpp/ 
 app config -name eth_test -set build-config release
-set lwip_xil_path "./xsct_ws/ethernet_system_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip213_v1_1/src/contrib/ports/xilinx/"
+set lwip_xil_path "./xsct_ws/ethernet_system_wrapper/microblaze_0/standalone_domain/bsp/microblaze_0/libsrc/lwip220_v1_1/src/lwip-2.2.0/contrib/ports/xilinx"
 app config -name eth_test -add compiler-misc "-std=c++17 -fpermissive -Wall -Og \
                                               -DXLWIP_CONFIG_INCLUDE_AXI_ETHERNET_DMA ${DEF_DMA_MEM_HBM} \
                                               -I../../../project \
-                                              -I../../../src/cpp/syst_hw \
-                                              -I../../../src/cpp/lwip_hw \
+                                              -I../../../app4eth_proto/cpp/syst_hw \
+                                              -I../../../app4eth_proto/cpp/lwip_hw \
                                               -I../../../${lwip_xil_path}/netif \
-                                              -I../../../${lwip_xil_path}/../../../lwip-2.1.3/src/include/lwip"
+                                              -I../../../${lwip_xil_path}/../../../src/include/lwip"
 # by default:_STACK_SIZE=0x400, _HEAP_SIZE=0x800
 app config -name eth_test -add linker-misc {-Wl,--defsym,_HEAP_SIZE=0x80000}
 # app config -name eth_test -add libraries xil   # (-l for lib of drivers for components from the platform (XSA), linked automatically (-L,-l))
@@ -303,24 +303,6 @@ while {[gets $file_orig line] >= 0} {
 close $file_orig
 close $file_fixed
 file rename -force ${lwip_xil_path}/netif/xtopology_g_fixed.c ${lwip_xil_path}/netif/xtopology_g.c
-
-#Fixing error in lwip213_v1_1 lib:
-# contrib/ports/xilinx/netif/xadapter.c: In function 'emaclite_link_status':
-# contrib/ports/xilinx/netif/xadapter.c:406:15: error: conflicting types for 'status'; have 'u16_t' {aka 'short unsigned int'}
-#   406 |         u16_t status;
-#       |               ^~~~~~
-# contrib/ports/xilinx/netif/xadapter.c:405:32: note: previous declaration of 'status' with type 'u32_t' {aka 'unsigned int'}
-#   405 |         u32_t phy_link_status, status, phy_autoneg_status;
-#       |                                ^~~~~~
-set file_orig  [open ${lwip_xil_path}/netif/xadapter.c       r]
-set file_fixed [open ${lwip_xil_path}/netif/xadapter_fixed.c w]
-while {[gets $file_orig line] >= 0} {
-    set line [string map {"u32_t phy_link_status, status, phy_autoneg_status;" "u32_t phy_link_status, phy_autoneg_status;" } $line]
-    puts $file_fixed $line
-}
-close $file_orig
-close $file_fixed
-file rename -force ${lwip_xil_path}/netif/xadapter_fixed.c ${lwip_xil_path}/netif/xadapter.c
 
 #Copying LwIP-level driver for Eth core we mimic in order to compile it
 file copy ${lwip_xil_path}/netif/xaxiemacif.c ./xsct_ws/eth_test/src/lwip_hw/
