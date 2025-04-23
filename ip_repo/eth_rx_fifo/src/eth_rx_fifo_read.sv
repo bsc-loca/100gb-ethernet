@@ -1,8 +1,4 @@
-
-module eth_rx_fifo_read #(
-    parameter MAX_CLUSTER_SIZE = 0,
-    localparam CLUSTER_ID_W = $clog2(MAX_CLUSTER_SIZE)
-) (
+module eth_rx_fifo_read (
     input clk,
     input rstn,
 
