@@ -1,4 +1,4 @@
-# The script to build test Ethernet application, last updated for Vitis/Vivado-2024.1
+# The script to build test Ethernet application, last updated for Vitis/Vivado-2024.2
 
 rm ./eth_test
 
@@ -10,8 +10,8 @@ tclsh ./xparams_eth.tcl
 tclsh ./xparams_soc.tcl
 
 # Taking some DMA driver sources to edit and for reference
-cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_g.c ./
-cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_bdring.c ../cpp/syst_hw/
+cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src/xaxidma_g.c ./
+cp $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src/xaxidma_bdring.c ../cpp/syst_hw/
 sed -i 's|#define XPAR_AXIDMA_0_INCLUDE_SG|//#define XPAR_AXIDMA_0_INCLUDE_SG|g' ./xaxidma_g.c
 
 echo ""
@@ -67,24 +67,24 @@ echo ""
 riscv64-unknown-linux-gnu-gcc -Wall -Og -D__aarch64__ $DEF_DMA_MEM_HBM -o ./eth_test \
                               -I./ \
                               -I../cpp/syst_hw \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/sw_apps/imgsel/misc \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_1/src/common \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_1/src/arm/cortexa9 \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_1/src/arm/common/gcc \
-                              -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_12/src \
-                              -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src \
-                              -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/gpio_v4_11/src \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/sw_apps/asufw/misc \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/common \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/arm/cortexa9 \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/arm/common/gcc \
+                              -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src \
+                              -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src \
+                              -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/gpio_v4_12/src \
                               -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axis_switch_v1_7/src \
-                                $XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_1/src/common/xil_assert.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_12/src/xtmrctr.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_12/src/xtmrctr_l.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_12/src/xtmrctr_sinit.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_12/src/xtmrctr_selftest.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_12/src/xtmrctr_g.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_bd.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_sinit.c \
-                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_18/src/xaxidma_selftest.c \
+                                $XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/common/xil_assert.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr_l.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr_sinit.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr_selftest.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr_g.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src/xaxidma.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src/xaxidma_bd.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src/xaxidma_sinit.c \
+                                $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src/xaxidma_selftest.c \
                                 ./xaxidma_g.c \
                                 ../cpp/syst_hw/xaxidma_bdring.cpp \
                                 ../cpp/syst_hw/EthSyst.cpp \
