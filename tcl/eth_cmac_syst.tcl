@@ -93,12 +93,6 @@ if { $run_remote_bd_flow == 1 } {
 
 current_bd_design $design_name
 
-  # Add the IP repository path of the Ehternet RX FIFO
-  set ip_repo_paths [get_property ip_repo_paths [current_project]]
-  lappend ip_repo_paths $g_root_dir/../../../piton/design/chipset/io_ctrl/xilinx/common/ip_cores/eth_cmac_syst/ip_repo/eth_rx_fifo
-  set_property ip_repo_paths $ip_repo_paths [current_project]
-  update_ip_catalog -rebuild
-
   set bCheckIPsPassed 1
   ##################################################################
   # CHECK IPs
@@ -1090,3 +1084,5 @@ if { ${g_dma_mem} eq "sram" } {
   close_bd_design $design_name 
 }
 # End of cr_bd_Eth_CMAC_syst()
+
+cr_bd_Eth_CMAC_syst ""

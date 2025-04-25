@@ -180,9 +180,14 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 update_ip_catalog -rebuild
 
 if { ${g_board_part} ne "versal" } {
+# Add the IP repository path of the Ehternet RX FIFO
+set ip_repo_paths [get_property ip_repo_paths [current_project]]
+lappend ip_repo_paths $root_dir/ip_repo/eth_rx_fifo
+set_property ip_repo_paths $ip_repo_paths [current_project]
+update_ip_catalog -rebuild
+
 # creating isolated Ethernet subsystem BD for integration with OpenPiton
 source $root_dir/tcl/eth_cmac_syst.tcl
-cr_bd_Eth_CMAC_syst ""
 # creating the IP of isolated Ethernet subsystem
 source $root_dir/tcl/eth_syst_ip.tcl
 file copy -force $root_dir/bd/Eth_CMAC_syst/ip/Eth_CMAC_syst_eth100gb_0/Eth_CMAC_syst_eth100gb_0/header_files/Eth_CMAC_syst_eth100gb_0_axi4_lite_registers.h $root_dir/app4eth_syst/cpp/syst_hw

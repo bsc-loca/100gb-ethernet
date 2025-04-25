@@ -71,7 +71,6 @@ close $tcl_uBlaze
 
 # creation of BD with MicroBlaze inside
 source $g_root_dir/bd/Eth_syst_w_uBlaze/eth_syst_w_uBlaze.tcl
-cr_bd_Eth_syst_w_uBlaze ""
 generate_target all [get_files $g_root_dir/bd/Eth_syst_w_uBlaze/Eth_syst_w_uBlaze.bd]
 
 # generating BSP on base of above BD using HSI tool
