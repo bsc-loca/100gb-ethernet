@@ -840,10 +840,10 @@ if { ${g_dma_mem} eq "sram" } {
 }
 
 if { ${g_dma_mem} ne "sram" } {
-  # Create instance: rx_fifo, and set properties
+  # Create instance: rx_fifo, and set depth enough to withstand data accumulation for low-speed cache-coherent connection
   set rx_fifo [ create_bd_cell -type ip -vlnv bsc:eth:eth_rx_fifo_wrapper:1.0 rx_fifo ]
   set_property -dict [ list \
-   CONFIG.FRAME_QUEUE_LEN {512} \
+   CONFIG.FRAME_QUEUE_LEN {4096} \
  ] $rx_fifo
 
   # Create instance: tx_fifo, and set properties
