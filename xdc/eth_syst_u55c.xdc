@@ -55,3 +55,16 @@ set_max_delay -datapath_only -from $tx_clk  -to $rx_clk  [expr [get_property -mi
 set_max_delay -datapath_only -from $rx_clk  -to $sys_clk [expr [get_property -min period $rx_clk ] * 0.9]
 set_max_delay -datapath_only -from $rx_clk  -to $tx_clk  [expr [get_property -min period $rx_clk ] * 0.9]
 ## ================================
+
+# Pblock assignment to improve placement and timing
+
+create_pblock eth_subsys
+resize_pblock [get_pblocks eth_subsys] -add {CLOCKREGION_X0Y7:CLOCKREGION_X1Y4}
+create_pblock eth_slr1
+resize_pblock [get_pblocks eth_slr1] -add {SLR1}
+
+add_cells_to_pblock [get_pblocks eth_subsys] [get_cells eth_cmac_syst/eth100gb]
+add_cells_to_pblock [get_pblocks eth_subsys] [get_cells eth_cmac_syst/rx_fifo]
+add_cells_to_pblock [get_pblocks eth_subsys] [get_cells eth_cmac_syst/tx_fifo]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells eth_cmac_syst/eth_dma]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells eth_cmac_syst/dma_intconnect]
