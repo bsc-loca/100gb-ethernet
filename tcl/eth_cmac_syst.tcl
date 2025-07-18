@@ -376,23 +376,17 @@ if { $g_dma_mem == "hbm" ||
    CONFIG.USE_AUTOPIPELINING {1} \
  ] $axi_reg_slice_tx
 
-  # In case of U55C/U250 we have single border SLR crossing (mode 10), default mode 15 with Autopipelining causes errors in Vivado-2024.1
+  # In case of U55C/U250 we have single border SLR crossing (NUM_SLR_CROSSINGS = 1), default mode 15 with Autopipelining causes errors in Vivado-2024.1
   if { $g_board_part == "u55c" ||
        $g_board_part == "u250" } {
     set_property -dict [ list \
-      CONFIG.REG_AR {10} \
-      CONFIG.REG_AW {10} \
-      CONFIG.REG_B  {10} \
-      CONFIG.REG_R  {10} \
-      CONFIG.REG_W  {10} \
+      CONFIG.NUM_SLR_CROSSINGS {1} \
+      CONFIG.USE_AUTOPIPELINING {0} \
     ] $axi_reg_slice_rx
 
     set_property -dict [ list \
-      CONFIG.REG_AR {10} \
-      CONFIG.REG_AW {10} \
-      CONFIG.REG_B  {10} \
-      CONFIG.REG_R  {10} \
-      CONFIG.REG_W  {10} \
+      CONFIG.NUM_SLR_CROSSINGS {1} \
+      CONFIG.USE_AUTOPIPELINING {0} \
     ] $axi_reg_slice_tx
   }
 }
