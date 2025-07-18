@@ -65,12 +65,12 @@ resize_pblock [get_pblocks eth_slr1] -add {SLR1}
 create_pblock eth_slr0
 resize_pblock [get_pblocks eth_slr0] -add {SLR0}
 
-add_cells_to_pblock [get_pblocks eth_subsys] [get_cells -hierarchical eth_cmac_syst/eth100gb]
-add_cells_to_pblock [get_pblocks eth_subsys] [get_cells -hierarchical eth_cmac_syst/rx_fifo]
-add_cells_to_pblock [get_pblocks eth_subsys] [get_cells -hierarchical eth_cmac_syst/tx_fifo]
-add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -hierarchical eth_cmac_syst/eth_dma]
-add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -hierarchical eth_cmac_syst/dma_intconnect]
-add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_rx*slr_master*"]
-add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_rx*slr_slave*"]
-add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_tx*slr_master*"]
-add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_tx*slr_slave*"]
+add_cells_to_pblock [get_pblocks eth_subsys] [get_cells eth_cmac_syst/eth100gb]
+add_cells_to_pblock [get_pblocks eth_subsys] [get_cells eth_cmac_syst/rx_fifo]
+add_cells_to_pblock [get_pblocks eth_subsys] [get_cells eth_cmac_syst/tx_fifo]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet eth_cmac_syst/eth_dma]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet eth_cmac_syst/dma_intconnect]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_rx*slr_master*"]
+add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_rx*slr_slave*"]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_tx*slr_master*"]
+add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_tx*slr_slave*"]
