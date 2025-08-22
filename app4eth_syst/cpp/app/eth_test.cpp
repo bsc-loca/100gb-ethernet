@@ -660,7 +660,8 @@ int main(int argc, char *argv[])
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
 
-        size_t packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        // less packets in inter-board tests because of more stressfull Tx traffic which could lead to Rx FIFO overflow for slow DMA access
+        size_t packets = txrxMemSize/ETH_MEMPACK_SIZE - 1;
         if (XAxiDma_HasSg(&ethSyst.axiDma))
           packets = std::min(packets,
                     std::min(ethSyst.txBdCount,
@@ -777,7 +778,8 @@ int main(int argc, char *argv[])
           for (size_t addr = 0; addr < CACHE_SIZE; addr += CACHE_LINE) dummyMem[addr] = 0;
         #endif
 
-        packets = txrxMemSize/ETH_MEMPACK_SIZE;
+        // less packets in inter-board tests because of more stressfull Tx traffic which could lead to Rx FIFO overflow for slow DMA access
+        packets = txrxMemSize/ETH_MEMPACK_SIZE - 1;
         if (XAxiDma_HasSg(&ethSyst.axiDma))
           packets = std::min(packets,
                     std::min(ethSyst.txBdCount,

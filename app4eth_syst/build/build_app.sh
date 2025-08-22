@@ -1,4 +1,4 @@
-# The script to build test Ethernet application, last updated for Vitis/Vivado-2024.2
+# The script to build test Ethernet application, last updated for Vitis/Vivado-2025.1
 
 rm ./eth_test
 
@@ -68,14 +68,14 @@ riscv64-unknown-linux-gnu-gcc -Wall -Og -D__aarch64__ $DEF_DMA_MEM_HBM -o ./eth_
                               -I./ \
                               -I../cpp/syst_hw \
                               -I$XILINX_VITIS/data/embeddedsw/lib/sw_apps/asufw/misc \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/common \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/arm/cortexa9 \
-                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/arm/common/gcc \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_3/src/common \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_3/src/arm/cortexa9 \
+                              -I$XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_3/src/arm/common/gcc \
                               -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src \
                               -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axidma_v9_19/src \
                               -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/gpio_v4_12/src \
                               -I$XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/axis_switch_v1_7/src \
-                                $XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_2/src/common/xil_assert.c \
+                                $XILINX_VITIS/data/embeddedsw/lib/bsp/standalone_v9_3/src/common/xil_assert.c \
                                 $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr.c \
                                 $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr_l.c \
                                 $XILINX_VITIS/data/embeddedsw/XilinxProcessorIPLib/drivers/tmrctr_v4_13/src/xtmrctr_sinit.c \
