@@ -1,4 +1,14 @@
-# The script to build test Ethernet application, last updated for Vitis/Vivado-2025.1
+# The script to cross-compile Linux test Ethernet application for 100GbE IP being integrated in different SOC types.
+
+# The script should be run in this folder preferably with 100GbE repo being inside higher level SOC (as submodule or bender repo).
+# Thus the script tries to define automatically the address map in particular SOC searching for OpenPiton SOC `devices.xml` file
+# and generating `xparams_soc.h` header. If devices.xml file is not found, the script will use the default `xparams_soc.h` file.
+# Please check if the default address map is suitable for your SOC.
+# The script also tries to define automatically the type of memory connection to Eth DMA engine (internal SRAM, external non-cached DRAM or cached DRAM).
+# The result should be checked in printed messaging, and if needed corrected manually by uncommenting corresponding line in the script below.
+
+# The script should be run with activated Xilinx environment (last updated for Vitis/Vivado-2025.1) and RISCV toolchain with enabled cross-compilation for Linux.
+# The script generates `eth_test` executable file in the current folder.
 
 rm ./eth_test
 
@@ -52,8 +62,7 @@ else
   DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
 fi
 
-#Manual setting of Eth DMA connection type
-# Eth DMA utilizes non-cached region of DRAM through direct connection
+#Manual setting of Eth DMA connection type: uncomment one of the following lines if automatic detection above is not successful or needs correction.
 #  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM"
 # Eth DMA utilizes cached region of DRAM through direct connection (requires explicit cache flush/invalidate, suitable for OP Ariane-based design)
 #  DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED"
