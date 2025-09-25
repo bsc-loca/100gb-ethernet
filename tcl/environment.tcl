@@ -36,6 +36,7 @@ set g_saxi_freq 100000000
 set g_saxi_prot AXI4LITE-64
 set g_max_dma_addr_width 40
 set g_ext_dma_addr_width $g_max_dma_addr_width
+set g_en_eth_loopback 0
 
 set g_fpga_part xc${g_board_part}-fsvh2892-2L-e
 set g_root_dir    [file normalize "$script_folder/../"]
