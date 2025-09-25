@@ -74,3 +74,5 @@ add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet -hierarchica
 add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_rx*slr_slave*"]
 add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_tx*slr_master*"]
 add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_tx*slr_slave*"]
+add_cells_to_pblock -quiet [get_pblocks eth_slr1] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_sg*slr_master*"]
+add_cells_to_pblock -quiet [get_pblocks eth_slr0] [get_cells -quiet -hierarchical -filter "NAME=~*eth_cmac_syst/axi_reg_slice_sg*slr_slave*"]
