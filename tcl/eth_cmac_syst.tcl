@@ -937,10 +937,8 @@ if { ${g_dma_mem} ne "sram" } {
 
   # Create interface connections
   connect_bd_intf_net [get_bd_intf_ports qsfp_4x] [get_bd_intf_pins eth100gb/gt_serial_port]
-  connect_bd_intf_net [get_bd_intf_pins eth_dma/M_AXIS_MM2S] [get_bd_intf_pins tx_axis_switch/S01_AXIS]
   connect_bd_intf_net [get_bd_intf_pins dma_loopback_fifo/M_AXIS] [get_bd_intf_pins rx_axis_switch/S00_AXIS]
   connect_bd_intf_net [get_bd_intf_ports qsfp_refck] [get_bd_intf_pins eth100gb/gt_ref_clk]
-  connect_bd_intf_net [get_bd_intf_pins eth_dma/S_AXIS_S2MM] [get_bd_intf_pins rx_axis_switch/M01_AXIS]
   connect_bd_intf_net [get_bd_intf_pins eth100gb/s_axi] [get_bd_intf_pins periph_connect/M00_AXI]
   connect_bd_intf_net [get_bd_intf_pins eth_dma/S_AXI_LITE] [get_bd_intf_pins periph_connect/M01_AXI]
   connect_bd_intf_net [get_bd_intf_pins periph_connect/M02_AXI] [get_bd_intf_pins tx_rx_ctl_stat/S_AXI]
