@@ -549,13 +549,11 @@ if { ${g_dma_mem} eq "hbm" } {
      CONFIG.NUM_SI   {3} \
      CONFIG.NUM_CLKS {3} \
     ] $dma_intconnect
-  } elseif {$g_dma_axi_clk == "s_axi"} {
+  } else {
     set_property -dict [ list \
      CONFIG.NUM_SI   {3} \
      CONFIG.NUM_CLKS {1} \
     ] $dma_intconnect
-  } else {
-    set_property -dict [ list CONFIG.NUM_SI {3} CONFIG.NUM_CLKS {2} ] $dma_intconnect
   }
 }
 
@@ -1082,12 +1080,12 @@ if { ${g_dma_mem} eq "sram" } {
   connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins rx_axis_switch/aresetn] [get_bd_pins rx_mem_dma/s_axi_aresetn]
   connect_bd_net [get_bd_ports s_axi_resetn] [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ext_rstn_inv/Op1] [get_bd_pins gt_ctl/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins rx_mem_cpu/s_axi_aresetn] [get_bd_pins rx_rst_gen/aux_reset_in] [get_bd_pins rx_rst_gen/ext_reset_in] [get_bd_pins sg_mem_cpu/s_axi_aresetn] [get_bd_pins sg_mem_dma/s_axi_aresetn] [get_bd_pins tx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins tx_mem_cpu/s_axi_aresetn] [get_bd_pins tx_rst_gen/aux_reset_in] [get_bd_pins tx_rst_gen/ext_reset_in] [get_bd_pins tx_rx_ctl_stat/s_axi_aresetn]
 } else {
-  connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins eth100gb/s_axi_aclk] [get_bd_pins eth_dma/m_axi_sg_aclk] [get_bd_pins eth_dma/s_axi_lite_aclk] [get_bd_pins gt_ctl/s_axi_aclk] [get_bd_pins periph_connect/aclk] [get_bd_pins rx_axis_switch/s_axi_ctrl_aclk] [get_bd_pins tx_axis_switch/s_axi_ctrl_aclk] [get_bd_pins tx_rx_ctl_stat/s_axi_aclk]
+  connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins eth100gb/s_axi_aclk] [get_bd_pins eth_dma/s_axi_lite_aclk] [get_bd_pins gt_ctl/s_axi_aclk] [get_bd_pins periph_connect/aclk] [get_bd_pins rx_axis_switch/s_axi_ctrl_aclk] [get_bd_pins tx_axis_switch/s_axi_ctrl_aclk] [get_bd_pins tx_rx_ctl_stat/s_axi_aclk]
   connect_bd_net [get_bd_pins dma_loopback_fifo/m_axis_aclk] [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth100gb/rx_clk] [get_bd_pins eth_loopback_fifo/s_axis_aclk] [get_bd_pins rx_axis_switch/aclk] [get_bd_pins rx_fifo/clk]
   connect_bd_net [get_bd_pins dma_loopback_fifo/s_axis_aclk] [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_loopback_fifo/m_axis_aclk] [get_bd_pins tx_axis_switch/aclk] [get_bd_pins tx_fifo/s_axis_aclk]
   connect_bd_net [get_bd_ports s_axi_resetn] [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins ext_rstn_inv/Op1] [get_bd_pins gt_ctl/s_axi_aresetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins rx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins rx_rst_gen/aux_reset_in] [get_bd_pins rx_rst_gen/ext_reset_in] [get_bd_pins tx_axis_switch/s_axi_ctrl_aresetn] [get_bd_pins tx_rst_gen/aux_reset_in] [get_bd_pins tx_rst_gen/ext_reset_in] [get_bd_pins tx_rx_ctl_stat/s_axi_aresetni]
   if { $g_dma_axi_clk != "eth" } {
-    connect_bd_net [get_bd_ports $dma_clk] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins rx_clk_conv/m_axis_aclk] [get_bd_pins tx_clk_conv/s_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
+    connect_bd_net [get_bd_ports $dma_clk] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins eth_dma/m_axi_sg_aclk] [get_bd_pins rx_clk_conv/m_axis_aclk] [get_bd_pins tx_clk_conv/s_axis_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
     connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins rx_clk_conv/s_axis_aclk] [get_bd_pins dma_s2mm_reset/slowest_sync_clk]
     connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins tx_clk_conv/m_axis_aclk] [get_bd_pins dma_mm2s_reset/slowest_sync_clk]
     connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins dma_s2mm_reset/ext_reset_in]
@@ -1118,8 +1116,6 @@ if { ${g_dma_mem} eq "sram" } {
     if {$g_dma_axi_clk == "eth"} {
       connect_bd_net [get_bd_pins dma_intconnect/aclk1] [get_bd_pins eth_dma/m_axi_s2mm_aclk]
       connect_bd_net [get_bd_pins dma_intconnect/aclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk]
-    } else {
-      connect_bd_net [get_bd_pins dma_intconnect/aclk1] [get_bd_pins $dma_clk]
     }
   }
   if { ${g_dma_mem} eq "hbm" } {
