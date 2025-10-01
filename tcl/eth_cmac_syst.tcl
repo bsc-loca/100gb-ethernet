@@ -28,16 +28,22 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
   global g_saxi_prot
   global g_max_dma_addr_width
   global g_init_clk_freq
-  # dma clock: "eth" connect to Ethernet IP clock (322MHz), "s_axi" connect to s_axi_clk, "ext" connect to external clock dma_clk
+  # dma clock: "eth" connect to Ethernet IP clock (322MHz), "s_axi" connect to s_axi_clk, [freq] connect to external clock dma_clk with frequency freq Hz
   global g_dma_axi_clk
-  # Freq (Hz) of dma_clk if g_dma_axi_clk is set to "ext"
-  global g_dma_ext_clk_freq
   global g_en_eth_loopback
   # CHANGE DESIGN NAME HERE
   set design_name Eth_CMAC_syst
 
+  # If not set, g_dma_axi_clk default value is "eth"
+  if { ![info exists g_dma_axi_clk] } {
+    set g_dma_axi_clk "eth"
+  } elseif { [string is digit -strict $g_dma_axi_clk] } {
+    set dma_ext_clk_freq $g_dma_axi_clk
+    set g_dma_axi_clk "ext"
+  }
+
   if {$g_dma_axi_clk != "eth" && ($g_dma_mem == "ddr" || $g_dma_mem == "sram")} {
-    puts "Invalid ethernet configuration. DMA synchronous clock is not compatible with ddr, or sram memory configuration."
+    puts "Invalid ethernet configuration. DMA synchronous clock is not compatible with ddr or sram memory configuration."
     exit 1
   }
 
@@ -311,7 +317,7 @@ if { $g_dma_mem == "hbm" ||
   set intc [ create_bd_port -dir O -from 1 -to 0 intc ]
 
   if { $g_dma_axi_clk == "ext" } {
-    create_bd_port -dir I -type clk -freq_hz $g_dma_ext_clk_freq dma_clk
+    create_bd_port -dir I -type clk -freq_hz $dma_ext_clk_freq dma_clk
   }
 
 if { $g_dma_mem == "hbm" ||
