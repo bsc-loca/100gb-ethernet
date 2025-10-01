@@ -1100,6 +1100,7 @@ if { ${g_dma_mem} eq "sram" } {
     connect_bd_net [get_bd_pins dma_s2mm_reset/peripheral_aresetn] [get_bd_pins eth_loopback_fifo/s_axis_aresetn] [get_bd_pins rx_axis_switch/aresetn] [get_bd_pins rx_fifo/rstn] [get_bd_pins rx_clk_conv/s_axis_aresetn]
     connect_bd_net  [get_bd_ports s_axi_resetn] [get_bd_pins rx_clk_conv/m_axis_aresetn] [get_bd_pins tx_clk_conv/s_axis_aresetn]
   } else {
+    connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins eth_dma/m_axi_sg_aclk]
     connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
     connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
     connect_bd_net [get_bd_pins dma_loopback_fifo/s_axis_aresetn] [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins tx_axis_switch/aresetn] [get_bd_pins tx_fifo/s_axis_aresetn]
@@ -1174,7 +1175,6 @@ if { ${g_dma_mem} eq "sram" } {
 
   # Restore current instance
   current_bd_instance $oldCurInst
-
   validate_bd_design
   save_bd_design
   close_bd_design $design_name 
