@@ -73,7 +73,7 @@ echo "----- Eth DMA mem define line: $DEF_DMA_MEM_HBM"
 echo ""
 
 # -DDEBUG for enabling Xilinx debug output
-riscv64-unknown-linux-gnu-gcc -Wall -Og -D__aarch64__ $DEF_DMA_MEM_HBM -o ./eth_test \
+riscv64-unknown-linux-gnu-gcc -Wall -O0 -g -march=rv64g -D__aarch64__ $DEF_DMA_MEM_HBM -o ./eth_test \
                               -I./ \
                               -I../cpp/syst_hw \
                               -I$XILINX_VITIS/data/embeddedsw/lib/sw_apps/asufw/misc \
