@@ -341,7 +341,7 @@ if {[string is digit -strict $g_saxi_freq]} {
 } else {
   set s_axi_clk [ create_bd_port -dir I -type clk s_axi_clk ]
 }
-if {[string is digit -strict $g_init_clk_freq]} {
+if {[info exists g_init_clk_freq]} {
   set init_clk  [ create_bd_port -dir I -type clk -freq_hz $g_init_clk_freq init_clk  ]
 } else {
   set init_clk  [ create_bd_port -dir I -type clk init_clk  ]
@@ -571,7 +571,7 @@ if { ${g_dma_mem} eq "hbm" } {
  ] $dma_loopback_fifo
 
 set eth100gb_init_clk_freq 100
-if { [string is digit -strict $g_saxi_freq] && ![string is digit -strict $g_init_clk_freq] && ($g_saxi_freq < 50000000 || $g_saxi_freq > 250000000) } {
+if { [string is digit -strict $g_saxi_freq] && ![info exists g_init_clk_freq] && ($g_saxi_freq < 50000000 || $g_saxi_freq > 250000000) } {
   #Create instance: clk_wiz_cmac, and set properties
   set clk_wiz_cmac [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_cmac ]
   #By default we have 100 MHz as output
@@ -579,7 +579,7 @@ if { [string is digit -strict $g_saxi_freq] && ![string is digit -strict $g_init
    CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
    CONFIG.PRIMITIVE {Auto} \
  ] $clk_wiz_cmac
-} elseif { [string is digit -strict $g_init_clk_freq] } {
+} elseif { [info exists g_init_clk_freq] } {
   set eth100gb_init_clk_freq [expr $g_init_clk_freq/1000000]
 } elseif { [string is digit -strict $g_saxi_freq] } {
   set eth100gb_init_clk_freq [expr $g_saxi_freq/1000000]
@@ -1136,7 +1136,7 @@ if { ${g_dma_mem} eq "sram" } {
 }
 
 # drp_clk and init_clk inputs of CMAC require frequency in range 50...250 MHz
-if { [string is digit -strict $g_saxi_freq] && ![string is digit -strict $g_init_clk_freq] } {
+if { [string is digit -strict $g_saxi_freq] && ![info exists g_init_clk_freq] } {
   if { $g_saxi_freq < 50000000 || $g_saxi_freq > 250000000 } {
     connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins clk_wiz_cmac/clk_in1]
     connect_bd_net [get_bd_pins clk_wiz_cmac/clk_out1] [get_bd_pins eth100gb/drp_clk] [get_bd_pins eth100gb/init_clk]
