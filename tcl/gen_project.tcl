@@ -198,8 +198,8 @@ source $root_dir/tcl/eth_cmac_syst.tcl
 source $root_dir/tcl/eth_syst_ip.tcl
 file copy -force $root_dir/bd/Eth_CMAC_syst/ip/Eth_CMAC_syst_eth100gb_0/Eth_CMAC_syst_eth100gb_0/header_files/Eth_CMAC_syst_eth100gb_0_axi4_lite_registers.h $root_dir/app4eth_syst/cpp/syst_hw
 # adding bare microBlaze to above BD and exporting BSP with xparameters.h from it
-file copy -force $root_dir/tcl/eth_cmac_syst.tcl $root_dir/bd/Eth_CMAC_syst/
-source $root_dir/tcl/eth_syst_bsp.tcl
+# file copy -force $root_dir/tcl/eth_cmac_syst.tcl $root_dir/bd/Eth_CMAC_syst/
+# source $root_dir/tcl/eth_syst_bsp.tcl
 }
 
 
