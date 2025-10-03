@@ -36,6 +36,10 @@ set g_saxi_freq 100000000
 set g_saxi_prot AXI4LITE-64
 set g_max_dma_addr_width 40
 set g_ext_dma_addr_width $g_max_dma_addr_width
+# dma clock: "eth" connect to Ethernet IP clock (322MHz), "s_axi_clk" connect to s_axi_clk, [freq] connect to external clock dma_clk with frequency freq Hz
+set g_dma_axi_clk eth
+# Eth init clock: "s_axi_clk" utilizes s_axi_clk, [freq] connect to external clock init_clk with frequency freq Hz
+set g_init_clk_freq s_axi_clk
 set g_en_eth_loopback 0
 
 set g_fpga_part xc${g_board_part}-fsvh2892-2L-e

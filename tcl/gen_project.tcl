@@ -63,6 +63,12 @@ if { $::argc > 0 } {
         if { $::argc > 5 } {
           set g_ext_dma_addr_width [lindex $argv 5]
         }
+        if { $::argc > 6 } {
+          set g_dma_axi_clk  [lindex $argv 6]
+        }
+        if { $::argc > 7 } {
+          set g_init_clk_freq [lindex $argv 7]
+        }
 }
 
 set root_dir $g_root_dir
