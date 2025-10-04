@@ -44,8 +44,9 @@ proc cr_bd_Eth_CMAC_syst { parentCell } {
   }
 
   if {$g_dma_axi_clk != "eth" && ($g_dma_mem == "ddr" || $g_dma_mem == "sram")} {
-    puts "Invalid Eth system configuration. DMA engine clock asynchronous to CMAC tx/rx clocks is not supported for ddr or sram memory types."
-    exit 1
+    puts "IGNORING requested DMA engine clock (g_dma_axi_clk) as `${g_dma_axi_clk}` since it is not supported async to CMAC tx/rx clocks for set DMA memory type (g_dma_mem) `${g_dma_mem}`."
+    set g_dma_axi_clk "eth"
+    puts "DMA engine clock (g_dma_axi_clk) is overriden to `${g_dma_axi_clk}`."
   }
 
   if { $g_dma_axi_clk == "s_axi_clk" } {
