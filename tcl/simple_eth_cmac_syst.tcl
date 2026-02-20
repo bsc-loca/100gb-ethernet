@@ -268,9 +268,9 @@ connect_bd_net [get_bd_pins const_gnd/dout] [get_bd_pins eth100gb/drp_clk]
 
 # Resets
 connect_bd_net [get_bd_ports s_axi_resetn] [get_bd_pins periph_connect/aresetn] [get_bd_pins dma_intconnect/aresetn] [get_bd_pins eth_dma/axi_resetn] [get_bd_pins rx_clk_conv/m_axis_aresetn] [get_bd_pins tx_clk_conv/s_axis_aresetn] [get_bd_pins tx_reset/ext_reset_in] [get_bd_pins rx_reset/ext_reset_in] [get_bd_pins mac_gpio/s_axi_aresetn] [get_bd_pins s_axi_rstn_inv/Op1]
-connect_bd_net [get_bd_pins s_axi_rstn_inv/Res] [get_bd_pins eth100gb/s_axi_sreset] [get_bd_pins eth100gb/sys_reset] [get_bd_pins eth100gb/core_rx_reset] [get_bd_pins eth100gb/core_tx_reset]
+connect_bd_net [get_bd_pins s_axi_rstn_inv/Res] [get_bd_pins eth100gb/s_axi_sreset] [get_bd_pins eth100gb/sys_reset] [get_bd_pins eth100gb/core_rx_reset] [get_bd_pins eth100gb/core_tx_reset] [get_bd_pins eth100gb/gtwiz_reset_tx_datapath] [get_bd_pins eth100gb/gtwiz_reset_rx_datapath]
 connect_bd_net [get_bd_pins tx_reset/peripheral_aresetn] [get_bd_pins tx_fifo/s_axis_aresetn] [get_bd_pins tx_clk_conv/m_axis_aresetn]
-connect_bd_net [get_bd_pins rx_reset/peripheral_aresetn] [get_bd_pins rx_fifo/rstn] [get_bd_pins rx_clk_conv/s_axi_aresetn]
+connect_bd_net [get_bd_pins rx_reset/peripheral_aresetn] [get_bd_pins rx_fifo/rstn] [get_bd_pins rx_clk_conv/s_axis_aresetn]
 
 assign_bd_address -offset 0x00010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth100gb/s_axi/Reg]
 assign_bd_address -offset 0x00000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_dma/S_AXI_LITE/Reg]
