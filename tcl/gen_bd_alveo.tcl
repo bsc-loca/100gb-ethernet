@@ -66,7 +66,7 @@ xilinx.com:ip:system_ila:1.1\
 xilinx.com:ip:cmac_usplus:3.1\
 xilinx.com:ip:axi_dma:7.1\
 xilinx.com:ip:axi_ethernetlite:3.0\
-xilinx.com:ip:gig_ethernet_pcs_pma:16.2\
+xilinx.com:ip:gig_ethernet_pcs_pma\
 xilinx.com:ip:axi_gpio:2.0\
 xilinx.com:ip:util_reduced_logic:2.0\
 xilinx.com:ip:hbm:1.0\
@@ -748,7 +748,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
       set g_gig_phy_loc "X0Y24"
     }
   }
-  set gig_eth_phy [ create_bd_cell -type ip -vlnv xilinx.com:ip:gig_ethernet_pcs_pma:16.2 gig_eth_phy ]
+  set gig_eth_phy [ create_bd_cell -type ip -vlnv xilinx.com:ip:gig_ethernet_pcs_pma gig_eth_phy ]
   set_property -dict [ list \
    CONFIG.Auto_Negotiation {false} \
    CONFIG.DIFFCLK_BOARD_INTERFACE {Custom} \
