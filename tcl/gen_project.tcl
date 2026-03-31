@@ -204,14 +204,14 @@ file copy -force $root_dir/bd/Eth_CMAC_syst/ip/Eth_CMAC_syst_eth100gb_0/Eth_CMAC
 
 
 # creating full Ethernet system BD
-if { ${g_board_part} eq "versal" } {
-source $root_dir/tcl/gen_bd_versal.tcl
-create_root_design ""
-# prototype design is not yet supported for U250
-} elseif { $g_board_part != "u250" } {
-source $root_dir/tcl/gen_bd_alveo.tcl
-create_root_design ""
-}
+#if { ${g_board_part} eq "versal" } {
+#source $root_dir/tcl/gen_bd_versal.tcl
+#create_root_design ""
+## prototype design is not yet supported for U250
+#} elseif { $g_board_part != "u250" } {
+#source $root_dir/tcl/gen_bd_alveo.tcl
+#create_root_design ""
+#}
 
 validate_bd_design
 save_bd_design
