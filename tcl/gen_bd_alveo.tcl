@@ -66,7 +66,7 @@ xilinx.com:ip:system_ila:1.1\
 xilinx.com:ip:cmac_usplus:3.1\
 xilinx.com:ip:axi_dma:7.1\
 xilinx.com:ip:axi_ethernetlite:3.0\
-xilinx.com:ip:gig_ethernet_pcs_pma\
+xilinx.com:ip:gig_ethernet_pcs_pma:16.2\
 xilinx.com:ip:axi_gpio:2.0\
 xilinx.com:ip:util_reduced_logic:2.0\
 xilinx.com:ip:hbm:1.0\
