@@ -118,55 +118,6 @@ if { $run_remote_bd_flow == 1 } {
 
 current_bd_design $design_name
 
-  set bCheckIPsPassed 1
-  ##################################################################
-  # CHECK IPs
-  ##################################################################
-  set bCheckIPs 1
-  if { $bCheckIPs == 1 } {
-     set list_check_ips "\ 
-  xilinx.com:ip:xlconcat:2.1\
-  xilinx.com:ip:axi_register_slice:2.1\
-  xilinx.com:ip:axi_timer:2.0\
-  xilinx.com:ip:xlconstant:1.1\
-  xilinx.com:ip:xlslice:1.0\
-  xilinx.com:ip:axis_data_fifo:2.0\
-  xilinx.com:ip:cmac_usplus:3.1\
-  xilinx.com:ip:axi_dma:7.1\
-  xilinx.com:ip:blk_mem_gen:8.4\
-  xilinx.com:ip:util_vector_logic:2.0\
-  xilinx.com:ip:axi_gpio:2.0\
-  xilinx.com:ip:util_reduced_logic:2.0\
-  xilinx.com:ip:axis_switch:1.1\
-  xilinx.com:ip:axi_bram_ctrl:4.1\
-  xilinx.com:ip:proc_sys_reset:5.0\
-  xilinx.com:ip:smartconnect:1.0\
-  "
-
-   set list_ips_missing ""
-   common::send_gid_msg -ssname BD::TCL -id 2011 -severity "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
-
-   foreach ip_vlnv $list_check_ips {
-      set ip_obj [get_ipdefs -all $ip_vlnv]
-      if { $ip_obj eq "" } {
-         lappend list_ips_missing $ip_vlnv
-      }
-   }
-
-   if { $list_ips_missing ne "" } {
-      catch {common::send_gid_msg -ssname BD::TCL -id 2012 -severity "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
-      set bCheckIPsPassed 0
-   }
-
-  }
-
-  if { $bCheckIPsPassed != 1 } {
-    common::send_gid_msg -ssname BD::TCL -id 2023 -severity "WARNING" "Will not continue with creation of design due to the error(s) above."
-    return 3
-  }
-
-  variable script_folder
-
   if { $parentCell eq "" } {
      set parentCell [get_bd_cells /]
   }
@@ -722,8 +673,6 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
   if {$g_dma_axi_clk != "eth"} {
     set rx_clk_conv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter: rx_clk_conv]
     set tx_clk_conv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter: tx_clk_conv]
-    set dma_mm2s_reset [create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset: dma_mm2s_reset]
-    set dma_s2mm_reset [create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset: dma_s2mm_reset]
   }
 
   # Create instance: tx_axis_switch, and set properties
@@ -745,9 +694,8 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
    CONFIG.ROUTING_MODE {1} \
  ] $rx_axis_switch
 
-if {[info exists g_en_eth_loopback] &&
-                $g_en_eth_loopback != "0"} {
-  # Create instance: eth_loopback_fifo, and set properties
+if {[info exists g_en_eth_loopback] ? $g_en_eth_loopback != "0" : $g_dma_mem == "sram"} {
+  # Create instance: eth_loopback_fifo for far-end test puposes, enforcing if disabled in DMA SRAM mode
   set eth_loopback_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 eth_loopback_fifo ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {16} \
@@ -757,9 +705,9 @@ if {[info exists g_en_eth_loopback] &&
   connect_bd_intf_net [get_bd_intf_pins eth_loopback_fifo/M_AXIS] [get_bd_intf_pins tx_axis_switch/S00_AXIS]
   connect_bd_intf_net [get_bd_intf_pins eth_loopback_fifo/S_AXIS] [get_bd_intf_pins rx_axis_switch/M00_AXIS]
 
-  connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth_loopback_fifo/s_axis_aclk]
-  connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_loopback_fifo/m_axis_aclk]
-  connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins eth_loopback_fifo/s_axis_aresetn]
+  connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2]  [get_bd_pins eth_loopback_fifo/s_axis_aclk]
+  connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2]  [get_bd_pins eth_loopback_fifo/m_axis_aclk]
+  connect_bd_net [get_bd_pins rx_axis_switch/aresetn] [get_bd_pins eth_loopback_fifo/s_axis_aresetn]
 }
 
 if { ${g_dma_mem} eq "sram" } {
@@ -976,15 +924,15 @@ if { ${g_dma_mem} ne "sram" } {
   # Create instance: rx_rst_gen, and set properties
   set rx_rst_gen [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rx_rst_gen ]
   set_property -dict [ list \
-   CONFIG.RESET_BOARD_INTERFACE {Custom} \
-   CONFIG.USE_BOARD_FLOW {true} \
+   CONFIG.C_AUX_RESET_HIGH.VALUE_SRC USER \
+   CONFIG.C_AUX_RESET_HIGH {0} \
  ] $rx_rst_gen
 
   # Create instance: tx_rst_gen, and set properties
   set tx_rst_gen [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 tx_rst_gen ]
   set_property -dict [ list \
-   CONFIG.RESET_BOARD_INTERFACE {Custom} \
-   CONFIG.USE_BOARD_FLOW {true} \
+   CONFIG.C_AUX_RESET_HIGH.VALUE_SRC USER \
+   CONFIG.C_AUX_RESET_HIGH {0} \
  ] $tx_rst_gen
 
   # Create instance: tx_rx_ctl_stat, and set properties
@@ -1141,9 +1089,11 @@ if { ${g_dma_mem} eq "sram" } {
                  [get_bd_pins tx_rst_gen/mb_debug_sys_rst]
   connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] \
                  [get_bd_pins eth100gb/rx_clk] \
+                 [get_bd_pins rx_rst_gen/slowest_sync_clk] \
                  [get_bd_pins dma_loopback_fifo/m_axis_aclk] \
                  [get_bd_pins rx_axis_switch/aclk]
   connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] \
+                 [get_bd_pins tx_rst_gen/slowest_sync_clk] \
                  [get_bd_pins dma_loopback_fifo/s_axis_aclk] \
                  [get_bd_pins tx_axis_switch/aclk]
 if { ${g_dma_mem} eq "sram" } {
@@ -1160,12 +1110,10 @@ if { ${g_dma_mem} eq "sram" } {
                  [get_bd_pins sg_mem_dma/s_axi_aresetn]
   connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] \
                  [get_bd_pins tx_mem_dma/s_axi_aclk] \
-                 [get_bd_pins eth_dma/m_axi_mm2s_aclk] \
-                 [get_bd_pins tx_rst_gen/slowest_sync_clk]
+                 [get_bd_pins eth_dma/m_axi_mm2s_aclk]
   connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] \
                  [get_bd_pins rx_mem_dma/s_axi_aclk] \
-                 [get_bd_pins eth_dma/m_axi_s2mm_aclk] \
-                 [get_bd_pins rx_rst_gen/slowest_sync_clk]
+                 [get_bd_pins eth_dma/m_axi_s2mm_aclk]
   connect_bd_net [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] \
                  [get_bd_pins tx_axis_switch/aresetn] \
                  [get_bd_pins tx_mem_dma/s_axi_aresetn] \
@@ -1175,10 +1123,8 @@ if { ${g_dma_mem} eq "sram" } {
                  [get_bd_pins rx_mem_dma/s_axi_aresetn]
 } else {
   connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] \
-                 [get_bd_pins eth_loopback_fifo/s_axis_aclk] \
                  [get_bd_pins rx_fifo/clk]
   connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] \
-                 [get_bd_pins eth_loopback_fifo/m_axis_aclk] \
                  [get_bd_pins tx_fifo/s_axis_aclk]
   if { $g_dma_axi_clk != "eth" } {
     connect_bd_net [get_bd_ports $dma_clk] \
@@ -1186,42 +1132,38 @@ if { ${g_dma_mem} eq "sram" } {
                    [get_bd_pins eth_dma/m_axi_s2mm_aclk] \
                    [get_bd_pins eth_dma/m_axi_sg_aclk] \
                    [get_bd_pins rx_clk_conv/m_axis_aclk] \
-                   [get_bd_pins tx_clk_conv/s_axis_aclk] \
-                   [get_bd_pins tx_rst_gen/slowest_sync_clk] \
-                   [get_bd_pins rx_rst_gen/slowest_sync_clk]
-    connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins rx_clk_conv/s_axis_aclk] [get_bd_pins dma_s2mm_reset/slowest_sync_clk]
-    connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins tx_clk_conv/m_axis_aclk] [get_bd_pins dma_mm2s_reset/slowest_sync_clk]
-    connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_pins dma_s2mm_reset/ext_reset_in]
-    connect_bd_net [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_pins dma_mm2s_reset/ext_reset_in]
-    connect_bd_net [get_bd_pins dma_mm2s_reset/peripheral_aresetn] \
+                   [get_bd_pins tx_clk_conv/s_axis_aclk]
+    connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins rx_clk_conv/s_axis_aclk]
+    connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins tx_clk_conv/m_axis_aclk]
+    connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] [get_bd_ports rx_rstn]
+    connect_bd_net [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] [get_bd_ports tx_rstn]
+    connect_bd_net [get_bd_pins tx_rst_gen/peripheral_aresetn] \
                    [get_bd_pins dma_loopback_fifo/s_axis_aresetn] \
                    [get_bd_pins tx_axis_switch/aresetn] \
                    [get_bd_pins tx_fifo/s_axis_aresetn] \
                    [get_bd_pins tx_clk_conv/m_axis_aresetn]
-    connect_bd_net [get_bd_pins dma_s2mm_reset/peripheral_aresetn] \
-                   [get_bd_pins eth_loopback_fifo/s_axis_aresetn] \
+    connect_bd_net [get_bd_pins rx_rst_gen/peripheral_aresetn] \
                    [get_bd_pins rx_axis_switch/aresetn] \
                    [get_bd_pins rx_fifo/rstn] \
                    [get_bd_pins rx_clk_conv/s_axis_aresetn]
     connect_bd_net [get_bd_ports s_axi_resetn] [get_bd_pins rx_clk_conv/m_axis_aresetn] [get_bd_pins tx_clk_conv/s_axis_aresetn]
   } else {
     connect_bd_net [get_bd_ports s_axi_clk] [get_bd_pins eth_dma/m_axi_sg_aclk]
-    connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_pins rx_rst_gen/slowest_sync_clk]
-    connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_pins tx_rst_gen/slowest_sync_clk]
+    connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins eth_dma/m_axi_s2mm_aclk]
+    connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins eth_dma/m_axi_mm2s_aclk]
+    connect_bd_net [get_bd_pins rx_rst_gen/peripheral_aresetn] [get_bd_ports rx_rstn]
+    connect_bd_net [get_bd_pins tx_rst_gen/peripheral_aresetn] [get_bd_ports tx_rstn]
     connect_bd_net [get_bd_pins eth_dma/mm2s_prmry_reset_out_n] \
                    [get_bd_pins dma_loopback_fifo/s_axis_aresetn] \
                    [get_bd_pins tx_axis_switch/aresetn] \
                    [get_bd_pins tx_fifo/s_axis_aresetn]
     connect_bd_net [get_bd_pins eth_dma/s2mm_prmry_reset_out_n] \
-                   [get_bd_pins eth_loopback_fifo/s_axis_aresetn] \
                    [get_bd_pins rx_axis_switch/aresetn] \
                    [get_bd_pins rx_fifo/rstn]
   }
 
   if { $g_dma_mem == "hbm" ||
        $g_dma_mem == "ddr" } {
-  connect_bd_net [get_bd_ports rx_rstn] [get_bd_pins rx_rst_gen/peripheral_aresetn]
-  connect_bd_net [get_bd_ports tx_rstn] [get_bd_pins tx_rst_gen/peripheral_aresetn]
   connect_bd_net [get_bd_pins axi_reg_slice_rx/aclk]    [get_bd_pins eth_dma/m_axi_s2mm_aclk] [get_bd_ports rx_clk]
   connect_bd_net [get_bd_pins axi_reg_slice_tx/aclk]    [get_bd_pins eth_dma/m_axi_mm2s_aclk] [get_bd_ports tx_clk]
   connect_bd_net [get_bd_pins axi_reg_slice_sg/aclk]    [get_bd_pins eth_dma/m_axi_sg_aclk]
