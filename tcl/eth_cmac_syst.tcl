@@ -1126,10 +1126,8 @@ if { ${g_dma_mem} == "sram" } {
                  [get_bd_pins rx_axis_switch/aresetn] \
                  [get_bd_pins rx_mem_dma/s_axi_aresetn]
 } else {
-  connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] \
-                 [get_bd_pins rx_fifo/clk]
-  connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] \
-                 [get_bd_pins tx_fifo/s_axis_aclk]
+  connect_bd_net [get_bd_pins eth100gb/gt_rxusrclk2] [get_bd_pins rx_fifo/clk]
+  connect_bd_net [get_bd_pins eth100gb/gt_txusrclk2] [get_bd_pins tx_fifo/s_axis_aclk]
   if { $g_dma_axi_clk != "eth" } {
     connect_bd_net [get_bd_pins eth_dma/m_axi_mm2s_aclk] \
                    [get_bd_pins eth_dma/m_axi_s2mm_aclk] \

@@ -190,7 +190,7 @@ if { ${g_board_part} ne "versal" } {
 add_files $root_dir/ip_repo/eth_rx_fifo/src/
 update_compile_order -fileset sources_1
 
-# creating isolated Ethernet subsystem BD for integration with OpenPiton
+# creating isolated Ethernet subsystem BD for integration with some SOC
 source $root_dir/tcl/eth_cmac_syst.tcl
 # creating the IP of isolated Ethernet subsystem
 source $root_dir/tcl/eth_syst_ip.tcl
@@ -200,16 +200,13 @@ file copy -force $root_dir/bd/Eth_CMAC_syst/ip/Eth_CMAC_syst_eth100gb_0/Eth_CMAC
 # source $root_dir/tcl/eth_syst_bsp.tcl
 }
 
-
-# creating full Ethernet system BD
-#if { ${g_board_part} eq "versal" } {
-#source $root_dir/tcl/gen_bd_versal.tcl
-#create_root_design ""
-## prototype design is not yet supported for U250
-#} elseif { $g_board_part != "u250" } {
-#source $root_dir/tcl/gen_bd_alveo.tcl
-#create_root_design ""
-#}
+# creating independent prototype BD of Ethernet system
+if { ${g_board_part} eq "versal" } {
+source $root_dir/tcl/gen_bd_versal.tcl
+# prototype design is not yet supported for U250
+} elseif { $g_board_part != "u250" } {
+source $root_dir/tcl/gen_bd_alveo.tcl
+}
 
 validate_bd_design
 save_bd_design

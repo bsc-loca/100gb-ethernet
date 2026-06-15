@@ -36,81 +36,9 @@ proc get_script_folder {} {
 variable script_folder
 set script_folder [_tcl::get_script_folder]
 
-################################################################
-# START
-################################################################
-
-# To test this script, run the following commands from Vivado Tcl console:
-# source ethernet_system_script.tcl
-
-set bCheckIPsPassed 1
-##################################################################
-# CHECK IPs
-##################################################################
-set bCheckIPs 1
-if { $bCheckIPs == 1 } {
-   set list_check_ips "\ 
-xilinx.com:ip:xlconcat:2.1\
-xilinx.com:ip:axi_register_slice:2.1\
-xilinx.com:ip:axi_timer:2.0\
-xilinx.com:ip:axi_uartlite:2.0\
-xilinx.com:ip:axis_broadcaster:1.1\
-xilinx.com:ip:axis_combiner:1.1\
-xilinx.com:ip:util_vector_logic:2.0\
-xilinx.com:ip:xlconstant:1.1\
-xilinx.com:ip:xlslice:1.0\
-xilinx.com:ip:ddr4:2.2\
-xilinx.com:ip:util_ds_buf:2.2\
-xilinx.com:ip:proc_sys_reset:5.0\
-xilinx.com:ip:system_ila:1.1\
-xilinx.com:ip:cmac_usplus:3.1\
-xilinx.com:ip:axi_dma:7.1\
-xilinx.com:ip:axi_ethernetlite:3.0\
-xilinx.com:ip:gig_ethernet_pcs_pma:16.2\
-xilinx.com:ip:axi_gpio:2.0\
-xilinx.com:ip:util_reduced_logic:2.0\
-xilinx.com:ip:hbm:1.0\
-xilinx.com:ip:axis_data_fifo:2.0\
-xilinx.com:ip:bscan_jtag:1.0\
-xilinx.com:ip:debug_bridge:3.0\
-xilinx.com:ip:mdm:3.2\
-xilinx.com:ip:smartconnect:1.0\
-xilinx.com:ip:microblaze:11.0\
-xilinx.com:ip:axi_intc:4.1\
-xilinx.com:ip:axis_switch:1.1\
-xilinx.com:ip:blk_mem_gen:8.4\
-xilinx.com:ip:axi_bram_ctrl:4.1\
-xilinx.com:ip:clk_wiz:6.0\
-xilinx.com:ip:lmb_bram_if_cntlr:4.0\
-xilinx.com:ip:lmb_v10:3.0\
-"
-
-   set list_ips_missing ""
-   common::send_gid_msg -ssname BD::TCL -id 2011 -severity "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
-
-   foreach ip_vlnv $list_check_ips {
-      set ip_obj [get_ipdefs -all $ip_vlnv]
-      if { $ip_obj eq "" } {
-         lappend list_ips_missing $ip_vlnv
-      }
-   }
-
-   if { $list_ips_missing ne "" } {
-      catch {common::send_gid_msg -ssname BD::TCL -id 2012 -severity "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
-      set bCheckIPsPassed 0
-   }
-
-}
-
-if { $bCheckIPsPassed != 1 } {
-  common::send_gid_msg -ssname BD::TCL -id 2023 -severity "WARNING" "Will not continue with creation of design due to the error(s) above."
-  return 3
-}
-
 ##################################################################
 # DESIGN PROCs
 ##################################################################
-
 
 # Hierarchical cell: microblaze_0_local_memory
 proc create_hier_cell_microblaze_0_local_memory { parentCell nameHier } {
@@ -205,7 +133,7 @@ proc create_hier_cell_microblaze_0_local_memory { parentCell nameHier } {
 
 # Procedure to create entire design; Provide argument to make
 # procedure reusable. If parentCell is "", will use root.
-proc create_root_design { parentCell } {
+proc cr_bd_eth_proto { parentCell } {
 
   global g_root_dir
   global g_board_part
@@ -748,7 +676,7 @@ http://www.xilinx.com/support/documentation/user_guides/ug578-ultrascale-gty-tra
       set g_gig_phy_loc "X0Y24"
     }
   }
-  set gig_eth_phy [ create_bd_cell -type ip -vlnv xilinx.com:ip:gig_ethernet_pcs_pma:16.2 gig_eth_phy ]
+  set gig_eth_phy [ create_bd_cell -type ip -vlnv xilinx.com:ip:gig_ethernet_pcs_pma gig_eth_phy ]
   set_property -dict [ list \
    CONFIG.Auto_Negotiation {false} \
    CONFIG.DIFFCLK_BOARD_INTERFACE {Custom} \
@@ -1568,26 +1496,6 @@ if { ${g_board_part} eq "u55c" } {
   current_bd_instance $oldCurInst
 
 }
-# End of create_root_design()
+# End of cr_bd_eth_proto()
 
-
-
-
-proc available_tcl_procs { } {
-   puts "##################################################################"
-   puts "# Available Tcl procedures to recreate hierarchical blocks:"
-   puts "#"
-   puts "#    create_hier_cell_microblaze_0_local_memory parentCell nameHier"
-   puts "#    create_root_design"
-   puts "#"
-   puts "#"
-   puts "# The following procedures will create hiearchical blocks with addressing "
-   puts "# for IPs within those blocks and their sub-hierarchical blocks. Addressing "
-   puts "# will not be handled outside those blocks:"
-   puts "#"
-   puts "#    create_root_design"
-   puts "#"
-   puts "##################################################################"
-}
-
-available_tcl_procs
+cr_bd_eth_proto ""
