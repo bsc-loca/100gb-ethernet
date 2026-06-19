@@ -34,7 +34,7 @@ set g_eth_port qsfp1
 set g_dma_mem hbm
 set g_saxi_freq 100000000
 set g_saxi_prot AXI4LITE-64
-set g_max_dma_addr_width 40
+set g_max_dma_addr_width 48
 set g_ext_dma_addr_width $g_max_dma_addr_width
   # DMA clock: "eth" connects to Ethernet IP clock (322MHz), [freq] or "ext" connects to external clock dma_clk with frequency freq Hz, otherwise connects to s_axi_clk
 set g_dma_axi_clk eth

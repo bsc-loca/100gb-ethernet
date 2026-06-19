@@ -37,15 +37,18 @@ then
     DEF_DMA_MEM_HBM="-DAURORA -DDMA_MEM_HBM"
   fi
 elif grep -s "ETHERNET,yes" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-     grep -s "set g_dma_mem" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+     grep -s "set g_dma_mem" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl ||
+     grep -s "set g_dma_mem" ../../../../scripts/gen_project.tcl
 then
   if grep -s "ETHERNET,yes.*sram" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-     grep -s "set g_dma_mem.*sram" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+     grep -s "set g_dma_mem.*sram" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl ||
+     grep -s "set g_dma_mem.*sram" ../../../../scripts/gen_project.tcl
   then
     echo "----- Eth DMA memory is SRAM-based."
     DEF_DMA_MEM_HBM=""
   elif grep -s "ETHERNET,yes.*AXI4" ../../../../accelerator/meep_shell/accelerator_def.csv ||
-       grep -s "set g_dma_mem.*AXI4" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl
+       grep -s "set g_dma_mem.*AXI4" ../../../../../../../../../tools/src/proto/vivado/gen_project.tcl ||
+       grep -s "set g_dma_mem.*AXI4" ../../../../scripts/gen_project.tcl
   then
     echo "----- Eth DMA memory is DRAM-based with cache-coherent connection."
     DEF_DMA_MEM_HBM="-DDMA_MEM_HBM -DSG_MEM_CACHED -DTXRX_MEM_CACHED -DDMA_MEM_COHER"
